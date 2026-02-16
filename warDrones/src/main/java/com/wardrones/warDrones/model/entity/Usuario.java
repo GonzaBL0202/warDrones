@@ -16,6 +16,10 @@ public class Usuario {
 
     private int usuarioCantVictorias;
 
+    public Usuario(String nombre){
+        this.usuarioNombre = nombre.trim();
+    };
+
     public Long getId(){
         return usuarioId;
     }
