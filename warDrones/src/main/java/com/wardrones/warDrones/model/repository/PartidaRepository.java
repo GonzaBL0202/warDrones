@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 import com.wardrones.warDrones.model.entity.Partida;
 
 @Repository
-public interface PartidaRepository extends JpaRepository<Partida, Long> {
+public interface PartidaRepository extends JpaRepository<Partida, Integer> {
 }

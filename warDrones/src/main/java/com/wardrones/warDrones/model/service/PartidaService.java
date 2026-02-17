@@ -10,26 +10,29 @@ import com.wardrones.warDrones.model.repository.UsuarioRepository;
 @Service
 public class PartidaService {
 
-    private final PartidaRepository partidaRepository;
-    private final UsuarioRepository usuarioRepository;
+    private final PartidaRepository pRepository;
+    private final UsuarioRepository uRepository;
 
-    public PartidaService(PartidaRepository partidaRepository,
-                          UsuarioRepository usuarioRepository) {
-        this.partidaRepository = partidaRepository;
-        this.usuarioRepository = usuarioRepository;
+    public PartidaService(PartidaRepository ppRepository,
+                          UsuarioRepository puRepository) {
+        this.pRepository = ppRepository;
+        this.uRepository = puRepository;
     }
 
-    public Partida crearPartida(Long usuarioId) {
+    public Partida crearPartida(int usuarioId) {
 
-        Usuario creador = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        Usuario creador = uRepository.findById(usuarioId).orElseThrow(
+            () -> new RuntimeException("Usuario no encontrado")
+        );
 
         Partida game = new Partida(creador,true);
-        return partidaRepository.save(game);
+        return pRepository.save(game);
+
     }
 
-    public Partida obtenerPartida(Long id) {
-        return partidaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+    public Partida obtenerPartida(int id) {
+        return pRepository.findById(id).orElseThrow(
+            () -> new RuntimeException("Partida no encontrada")
+        );
     }
 }

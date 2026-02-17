@@ -14,16 +14,16 @@ import com.wardrones.warDrones.model.service.UsuarioService;
 @CrossOrigin
 public class UsuarioController {
 
-    private final UsuarioService usuarioService;
+    private final UsuarioService uService;
 
     public UsuarioController(UsuarioService usuarioService) {
-        this.usuarioService = usuarioService;
+        this.uService = usuarioService;
     }
 
     @PostMapping("/login")
     public ResponseEntity<Usuario> login( @RequestBody LoginRequest request) {
 
-        Usuario usuario = usuarioService.login(request.getUsername() );
+        Usuario usuario = uService.login(request.getUsername() );
 
         return ResponseEntity.ok(usuario);
     }

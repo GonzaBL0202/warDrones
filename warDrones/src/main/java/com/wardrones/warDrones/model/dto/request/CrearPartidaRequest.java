@@ -2,16 +2,16 @@ package com.wardrones.warDrones.model.dto.request;
 
 public class CrearPartidaRequest {
 
-    private Long usuarioId;
+    private int usuarioId;
 
     public CrearPartidaRequest() {
     }
 
-    public Long getUsuarioId() {
+    public int getUsuarioId() {
         return usuarioId;
     }
 
-    public void setUsuarioId(Long usuarioId) {
+    public void setUsuarioId(int usuarioId) {
         this.usuarioId = usuarioId;
     }
 }

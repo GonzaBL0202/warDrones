@@ -14,16 +14,16 @@ import com.wardrones.warDrones.model.service.PartidaService;
 @CrossOrigin
 public class PartidaController {
 
-    private final PartidaService partidaService;
+    private final PartidaService pService;
 
     public PartidaController(PartidaService partidaService) {
-        this.partidaService = partidaService;
+        this.pService = partidaService;
     }
 
     @PostMapping("/partidas")
     public ResponseEntity<Partida> crearPartida( @RequestBody CrearPartidaRequest request) {
 
-        Partida partida = partidaService.crearPartida( request.getUsuarioId() );
+        Partida partida = pService.crearPartida( request.getUsuarioId() );
 
         return ResponseEntity.ok(partida);
     }
