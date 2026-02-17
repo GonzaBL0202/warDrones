@@ -1,6 +1,7 @@
 package com.wardrones.warDrones.model.entity;
 
 import com.wardrones.warDrones.model.enums.Bando;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -12,8 +13,6 @@ import jakarta.persistence.ManyToOne;
 
 @Entity
 public class Partida {
-
-    protected Partida() {} //JPA requiere un constructor sin argumentos para crear instancias de la entidad.
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

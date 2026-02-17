@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <title>Inicio de Sesion</title>
     <link rel="stylesheet" href="css/fondo.css">
@@ -11,61 +12,59 @@
 </head>
 
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0;">
-    <section style="background-image: url('img/gold_panel_8x.png'); background-size: 100% 100%; background-repeat: no-repeat; padding: 56px 48px; min-width: 320px; display: flex; flex-direction: column; align-items: center;">
+    <section
+        style="background-image: url('img/gold_panel_8x.png'); background-size: 100% 100%; background-repeat: no-repeat; padding: 56px 48px; min-width: 320px; display: flex; flex-direction: column; align-items: center;">
         <h1 class="jacquard-12-regular" style="margin: 0 0 16px 0;">Inicio de Sesion</h1>
         <form id="loginForm" style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-        <input class="texto" type="text" id="username" name="username" placeholder="Usuario" style="padding: 8px; width: 200px;">
-        <button class="boton" type="submit" style="font-size: 16px;">
-            <span class="jacquard-12-regular">Iniciar</span>
-        </button>
-</form>
+            <input class="texto" type="text" id="username" name="username" placeholder="Usuario"
+                style="padding: 8px; width: 200px;" required
+                oninvalid="this.setCustomValidity('Debes ingresar un usuario.')" oninput="this.setCustomValidity('')">
+            <button class="boton" type="submit" style="font-size: 16px;">
+                <span class="jacquard-12-regular">Iniciar</span>
+            </button>
+        </form>
 
-<script>
-    const form = document.getElementById("loginForm");
-    const input = document.getElementById("username");
-    form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+        <script>
+            const form = document.getElementById("loginForm");
+            const input = document.getElementById("username");
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
 
-    const username = input.value.trim();
-    if (!username) {
-        alert("Ingresá un usuario");
-        input.focus();
-        return;
-    }
+                const username = input.value.trim();
 
-    // 1) intentamos login
-    let res = await fetch("/api/usuarios/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username })
-    });
+                // 1) intentamos login
+                let res = await fetch("/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username })
+                });
 
-    // 2) si no existe, lo registramos
-    if (!res.ok) {
-        res = await fetch("/api/usuarios/registrar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username })
-        });
-    }
+                // 2) si no existe, lo registramos
+                if (!res.ok) {
+                    res = await fetch("/registrar", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ username })
+                    });
+                }
 
-    if (!res.ok) {
-        const msg = await res.text();
-        alert("Error: " + msg);
-        return;
-    }
+                if (!res.ok) {
+                    const msg = await res.text();
+                    alert("Error: " + msg);
+                    return;
+                }
 
-    const user = await res.json();
-    // ajustá estos nombres si tu JSON devuelve otros campos
-    localStorage.setItem("userId", user.id ?? user.usuarioId ?? "");
-    localStorage.setItem("username", user.nombre ?? user.usuarioNombre ?? username);
+                const user = await res.json();
+                // ajustá estos nombres si tu JSON devuelve otros campos
+                localStorage.setItem("userId", user.id ?? user.usuarioId ?? "");
+                localStorage.setItem("username", user.nombre ?? user.usuarioNombre ?? username);
 
-    window.location.href = "sections/menu.html";
-    });
-</script>
+                window.location.href = "sections/menu.html";
+            });
+        </script>
 
     </section>
 
 </body>
-</html>
 
+</html>

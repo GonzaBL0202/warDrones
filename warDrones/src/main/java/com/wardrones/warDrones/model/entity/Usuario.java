@@ -1,6 +1,10 @@
 package com.wardrones.warDrones.model.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 
 @Entity
 public class Usuario {
@@ -11,8 +15,6 @@ public class Usuario {
 
     @Column(nullable = false, unique = true)
     private String usuarioNombre;
-
-    protected Usuario(){} //JPA requiere un constructor sin argumentos para crear instancias de la entidad.
 
     private int usuarioCantVictorias;
 
