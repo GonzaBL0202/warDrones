@@ -1,0 +1,173 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Partida</title>
+    <link rel="stylesheet" href="../css/fondo.css">
+    <link rel="stylesheet" href="../css/botom.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jacquard+12&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/fuente.css">
+</head>
+<body style="margin: 0; min-height: 100vh; display: flex; align-items: stretch;">
+    <aside style="width: 25vw; min-width: 260px; max-width: 380px; position: relative; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+        <img src="../img/gold_panel_8x.png" alt="Panel" style="position: absolute; inset: 16px; width: calc(100% - 32px); height: calc(100% - 32px); image-rendering: pixelated;">
+        <div style="position: relative; z-index: 1; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+            <h1 class="jacquard-12-regular" style="margin: 0 0 6px; font-size: 46px; text-align: center;">Partida</h1>
+            <p class="jacquard-12-regular" style="margin: 0; font-size: 24px;">Mapa 2D</p>
+            <form action="menu.html" method="get">
+                <button class="boton boton-menu" type="submit" style="font-size: 18px;"><span class="jacquard-12-regular">Volver al Menu</span></button>
+            </form>
+        </div>
+    </aside>
+
+    <main style="width: 75vw; padding: 16px 16px 16px 0; box-sizing: border-box; display: flex; align-items: stretch;">
+        <canvas id="mapCanvas" style="width: 100%; height: calc(100vh - 32px); border: 4px solid #6a4a1c; box-sizing: border-box; background: #24323d; cursor: pointer;"></canvas>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('mapCanvas');
+        const ctx = canvas.getContext('2d');
+        const grid = 32;
+        const revealRadius = 4;
+        let cols = 0;
+        let rows = 0;
+        let discovered = [];
+        let player = { x: 0, y: 0 };
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = Math.floor(rect.width);
+            canvas.height = Math.floor(rect.height);
+            cols = Math.max(1, Math.floor(canvas.width / grid));
+            rows = Math.max(1, Math.floor(canvas.height / grid));
+            discovered = Array.from({ length: rows }, () => Array(cols).fill(false));
+            player = {
+                x: Math.floor(cols / 2),
+                y: Math.floor(rows / 2)
+            };
+            revealAroundPlayer();
+            drawScene();
+        }
+
+        function drawMap() {
+            ctx.fillStyle = '#24323d';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+            ctx.lineWidth = 1;
+
+            for (let x = 0; x <= canvas.width; x += grid) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+
+            for (let y = 0; y <= canvas.height; y += grid) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+
+        function revealAroundPlayer() {
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const dx = x - player.x;
+                    const dy = y - player.y;
+                    if ((dx * dx) + (dy * dy) <= revealRadius * revealRadius) {
+                        discovered[y][x] = true;
+                    }
+                }
+            }
+        }
+
+        function drawFog() {
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    ctx.fillStyle = discovered[y][x] ? 'rgba(0, 0, 0, 0.35)' : 'rgba(0, 0, 0, 0.9)';
+                    ctx.fillRect(x * grid, y * grid, grid, grid);
+                }
+            }
+
+            const px = (player.x + 0.5) * grid;
+            const py = (player.y + 0.5) * grid;
+            const radiusPx = revealRadius * grid;
+            const gradient = ctx.createRadialGradient(px, py, 0, px, py, radiusPx);
+            gradient.addColorStop(0, 'rgba(0,0,0,1)');
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(px, py, radiusPx, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawPlayer() {
+            const px = (player.x + 0.5) * grid;
+            const py = (player.y + 0.5) * grid;
+            const size = Math.max(10, Math.floor(grid * 0.35));
+
+            ctx.fillStyle = '#f2cb67';
+            ctx.beginPath();
+            ctx.arc(px, py, size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawScene() {
+            drawMap();
+            drawFog();
+            drawPlayer();
+        }
+
+        function movePlayer(dx, dy) {
+            const newX = Math.min(cols - 1, Math.max(0, player.x + dx));
+            const newY = Math.min(rows - 1, Math.max(0, player.y + dy));
+
+            if (newX === player.x && newY === player.y) {
+                return;
+            }
+
+            player.x = newX;
+            player.y = newY;
+            revealAroundPlayer();
+            drawScene();
+        }
+
+        function movePlayerTo(targetX, targetY) {
+            const newX = Math.min(cols - 1, Math.max(0, targetX));
+            const newY = Math.min(rows - 1, Math.max(0, targetY));
+
+            if (!discovered[newY] || !discovered[newY][newX]) {
+                return;
+            }
+
+            if (newX === player.x && newY === player.y) {
+                return;
+            }
+
+            player.x = newX;
+            player.y = newY;
+            revealAroundPlayer();
+            drawScene();
+        }
+
+        canvas.addEventListener('click', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.floor((event.clientX - rect.left) / grid);
+            const y = Math.floor((event.clientY - rect.top) / grid);
+            movePlayerTo(x, y);
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+    </script>
+</body>
+</html>

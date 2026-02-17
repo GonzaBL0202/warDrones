@@ -36,7 +36,16 @@ public class Partida {
 
     private boolean partidaActiva;
 
+    //Constructora
+    public Partida(){}
+
+    public Partida(Usuario u1, boolean activa){
+        this.partidaUsuarioId1 = u1;
+        this.partidaActiva = activa;
+    }
+
     // Getters
+
     public int getPartidaId() {
         return partidaId;
     }
