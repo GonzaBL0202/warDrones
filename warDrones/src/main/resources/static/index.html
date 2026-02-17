@@ -1,13 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <title>Document</title>
+    <title>Inicio de Sesion</title>
+    <link rel="stylesheet" href="css/fondo.css">
+    <link rel="stylesheet" href="css/botom.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jacquard+12&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/fuente.css">
 </head>
 
-<body>
-    <h1>Hello world</h1>
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0;">
+    <section style="background-image: url('img/gold_panel_8x.png'); background-size: 100% 100%; background-repeat: no-repeat; padding: 56px 48px; min-width: 320px; display: flex; flex-direction: column; align-items: center;">
+        <h1 class="jacquard-12-regular" style="margin: 0 0 16px 0;">Inicio de Sesion</h1>
+        <form action="sections/menu.html" method="get" style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <input class="texto" type="text" id="username" name="username" placeholder="Usuario" style="padding: 8px; width: 200px;">
+            <button class="boton" type="submit" style="font-size: 16px;"><span class="jacquard-12-regular">Iniciar</span></button>
+        </form>
+    </section>
+    
 </body>
-
 </html>
+

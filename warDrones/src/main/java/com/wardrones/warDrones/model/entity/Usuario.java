@@ -10,13 +10,20 @@ public class Usuario {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long usuarioId;
+    private int usuarioId;
 
     private String usuarioNombre;
 
     private int usuarioCantVictorias;
 
-    public Long getId(){
+    public Usuario(){
+    }
+    
+    public Usuario(String nombre){
+        this.usuarioNombre = nombre.trim();
+    };
+
+    public int getId(){
         return usuarioId;
     }
     

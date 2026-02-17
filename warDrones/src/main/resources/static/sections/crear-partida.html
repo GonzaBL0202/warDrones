@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Crear Partida</title>
+    <link rel="stylesheet" href="../css/fondo.css">
+    <link rel="stylesheet" href="../css/botom.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jacquard+12&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/fuente.css">
+</head>
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0;">
+    <section style="position: relative; width: 420px; height: 420px; display: flex; align-items: center; justify-content: center;">
+        <img src="../img/gold_panel_8x.png" alt="Panel" style="position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated;">
+        <div style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+            <h1 class="jacquard-12-regular" style="margin: 0 0 12px; font-size: 50PX;">Crear Partida</h1>
+
+            <form action="partida.html" method="get" style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start;">
+                <label class="jacquard-12-regular" style="font-size: 20px;">Elegir bando:</label>
+                <label class="jacquard-12-regular" style="font-size: 20px;">
+                    <input type="radio" name="bando" value="aereo" required>
+                    Aereo
+                </label>
+                <label class="jacquard-12-regular" style="font-size: 20px;">
+                    <input type="radio" name="bando" value="naval">
+                    Naval
+                </label>
+                <button class="boton" type="submit" style="font-size: 20px; width: 190px; height: 42px;"><span class="jacquard-12-regular">Iniciar Partida</span></button>
+            </form>
+
+            <form action="menu.html" method="get">
+                <button class="boton" type="submit" style="font-size: 20px; width: 190px; height: 42px;"><span class="jacquard-12-regular">Volver al Menu</span></button>
+            </form>
+        </div>
+    </section>
+</body>
+</html>
