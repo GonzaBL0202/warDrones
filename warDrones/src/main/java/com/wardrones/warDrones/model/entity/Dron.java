@@ -14,6 +14,8 @@ import jakarta.persistence.ManyToOne;
 @Entity
 public class Dron {
 
+    protected Dron(){} //JPA requiere un constructor sin argumentos para crear instancias de la entidad.
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int dronId;
