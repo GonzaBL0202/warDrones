@@ -1,5 +1,6 @@
 package com.wardrones.warDrones.model.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -12,6 +13,7 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int usuarioId;
 
+    @Column(nullable = false, unique = true)
     private String usuarioNombre;
 
     private int usuarioCantVictorias;
