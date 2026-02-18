@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.wardrones.warDrones.model.dto.request.CrearPartidaRequest;
+import com.wardrones.warDrones.model.dto.request.AccionRequest;
 import com.wardrones.warDrones.model.entity.Partida;
 import com.wardrones.warDrones.model.service.PartidaService;
 
@@ -26,5 +27,16 @@ public class PartidaController {
         Partida partida = pService.crearPartida( request.getUsuarioId() );
 
         return ResponseEntity.ok(partida);
+    }
+
+     @PostMapping("/accion")
+    public ResponseEntity<Boolean> realizarAccion(@RequestBody AccionRequest request){
+
+        boolean hecho = pService.cambiarTurno(
+                request.getPartidaId(),
+                request.getUsuarioId()
+        );
+
+        return ResponseEntity.ok(hecho);
     }
 }
