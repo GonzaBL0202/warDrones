@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <title>Menu Principal</title>
     <link rel="stylesheet" href="../css/fondo.css">
@@ -9,30 +10,49 @@
     <link href="https://fonts.googleapis.com/css2?family=Jacquard+12&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/fuente.css">
 </head>
+
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0;">
-    <section style="position: relative; width: 420px; height: 420px; display: flex; align-items: center; justify-content: center;">
-        <img src="../img/gold_panel_8x.png" alt="Panel" style="position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated;">
-        <div style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+    <section
+        style="position: relative; width: 420px; height: 420px; display: flex; align-items: center; justify-content: center;">
+        <img src="../img/gold_panel_8x.png" alt="Panel"
+            style="position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated;">
+        <div
+            style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 12px;">
             <h1 class="jacquard-12-regular" style="margin: 0 0 10px ;font-size: 50PX;">
                 Menu Principal
             </h1>
-            <p class="jacquard-12-regular" style="margin: 0 0 18px;">
-                Usuario: </span> 
+            <p class="jacquard-12-regular" style="margin: 0 0 18px; font-size: 18px;">
+                Usuario: <span id="nombreUsuario"></span>
             </p>
 
             <form action="crear-partida.html" method="get">
-                <button class="boton boton-menu" type="submit" style="font-size: 18px;"><span class="jacquard-12-regular">Crear Partida</span></button>
+                <button class="boton boton-menu" type="submit" style="font-size: 18px;"><span
+                        class="jacquard-12-regular">Crear Partida</span></button>
             </form>
             <form action="cargar-partida.html" method="get">
-                <button class="boton boton-menu" type="submit" style="font-size: 18px;"><span class="jacquard-12-regular">Cargar Partida</span></button>
+                <button class="boton boton-menu" type="submit" style="font-size: 18px;"><span
+                        class="jacquard-12-regular">Cargar Partida</span></button>
             </form>
             <form action="ranking.html" method="get">
-                <button class="boton boton-menu" type="submit" style="font-size: 18px;"><span class="jacquard-12-regular">Ranking</span></button>
+                <button class="boton boton-menu" type="submit" style="font-size: 18px;"><span
+                        class="jacquard-12-regular">Ranking</span></button>
             </form>
             <form action="../index.html" method="get">
-                <button class="boton boton-menu" type="submit" style="font-size: 18px;"><span class="jacquard-12-regular">Salir</span></button>
+                <button class="boton boton-menu" type="submit" style="font-size: 18px;"><span
+                        class="jacquard-12-regular">Salir</span></button>
             </form>
         </div>
     </section>
+
+    <script>
+        // Obtener el nombre de usuario del almacenamiento local
+        const nombreUsuario = localStorage.getItem("username");
+
+        // Mostrar el nombre de usuario en la página
+        if (nombreUsuario) {
+            document.getElementById("nombreUsuario").textContent = nombreUsuario;
+        }
+    </script>
 </body>
+
 </html>

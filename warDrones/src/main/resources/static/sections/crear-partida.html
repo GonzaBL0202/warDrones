@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <title>Crear Partida</title>
     <link rel="stylesheet" href="../css/fondo.css">
@@ -9,17 +10,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Jacquard+12&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/fuente.css">
 </head>
+
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0;">
-    <section style="position: relative; width: 420px; height: 420px; display: flex; align-items: center; justify-content: center;">
-        <img src="../img/gold_panel_8x.png" alt="Panel" style="position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated;">
-        <div style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+    <section
+        style="position: relative; width: 420px; height: 420px; display: flex; align-items: center; justify-content: center;">
+        <img src="../img/gold_panel_8x.png" alt="Panel"
+            style="position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated;">
+        <div
+            style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 12px;">
             <h1 class="jacquard-12-regular" style="margin: 0 0 12px; font-size: 50PX;">Crear Partida</h1>
 
-            <form id= "formCrearPartida" style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start;">
+            <form id="formCrearPartida"
+                style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start;">
                 <label class="jacquard-12-regular" style="font-size: 20px;">Elegir bando:</label>
-            
+
                 <label class="jacquard-12-regular" style="font-size: 20px;">
-                    <input type="radio" name="bando" value="AEREO" required>
+                    <input type="radio" name="bando" value="AEREO" required
+                        oninvalid="this.setCustomValidity('Debes elegir un bando.')"
+                        onchange="this.setCustomValidity('')">
                     Aereo
                 </label>
 
@@ -27,44 +35,54 @@
                     <input type="radio" name="bando" value="NAVAL">
                     Naval
                 </label>
-                
+
                 <button class="boton" type="submit" style="font-size: 20px; width: 190px; height: 42px;">
                     <span class="jacquard-12-regular">Iniciar Partida</span>
                 </button>
             </form>
 
             <form action="menu.html" method="get">
-                <button class="boton" type="submit" style="font-size: 20px; width: 190px; height: 42px;"><span class="jacquard-12-regular">Volver al Menu</span></button>
+                <button class="boton" type="submit" style="font-size: 20px; width: 190px; height: 42px;"><span
+                        class="jacquard-12-regular">Volver al Menu</span></button>
             </form>
         </div>
     </section>
     <script>
-        const API_URL = 'http://localhost8080';
+        const API_URL = 'http://localhost:8080';
+
+        const form = document.getElementById('formCrearPartida');
 
         function getId() {
-            const id = localStorage.getItem('usuario_id');
+            const id = localStorage.getItem('userId');
             return id ? parseInt(id) : null;
         }
 
-        document.getElementById('formCrearPartida').addEventListener('submit', async (event) => {
+        form.addEventListener('submit', async (event) => {
             event.preventDefault();
-            
-            const usuarioId = getId();
-            if (!usuarioId) {
-                console.error('Usuario no autenticado');
-                return;
-            }
+
+            //Validar bando seleccionado
             const bando = document.querySelector('input[name="bando"]:checked')?.value;
-            if(!bando) {
-                console.error('Bando no seleccionado');
+            if (!bando) {
+                alert('Debes elegir un bando.');
                 return;
             }
 
+            //Validar usuario logueado
+            const userId = getId();
+            if (!userId) {
+                alert('Usuario no logueado.');
+                return;
+            }
+
+            //guardar bando elegido en localStorage para usarlo en la lobby
+            localStorage.setItem('bando', bando);
+
+            //Crear partida en el backend
             try {
                 const response = await fetch(`${API_URL}/partidas`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ usuarioId, bando })
+                    body: JSON.stringify({ usuarioId: userId })
                 });
 
                 if (!response.ok) {
@@ -72,16 +90,19 @@
                     console.error('Error al crear partida:', txt);
                     return;
                 }
+
                 const partida = await response.json();
 
-                localStorage.setItem('partida_id', partida.id);
-                localStorage.setItem('bando', partida.bando);
+                //Guardar el ID de la partida creada
+                localStorage.setItem('partidaId', partida.partidaId);
 
-                window.location.href = 'partida.html';
+
+                window.location.href = 'lobby.html';
             } catch (error) {
                 console.error('No se pudo crear la partida:', error);
             }
         });
     </script>
 </body>
+
 </html>
