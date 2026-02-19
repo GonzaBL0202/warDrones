@@ -13,6 +13,7 @@ import com.wardrones.warDrones.model.entity.Partida;
 public class GameSessionManager {
 
     private final Map<Integer, GameSession> partidasActivas = new ConcurrentHashMap<>();
+    
 
     public GameSession crearSesion(Partida partida) {
         GameSession session = new GameSession(partida);

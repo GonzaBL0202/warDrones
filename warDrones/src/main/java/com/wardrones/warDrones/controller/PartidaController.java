@@ -2,14 +2,17 @@ package com.wardrones.warDrones.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.wardrones.warDrones.model.dto.request.CrearPartidaRequest;
 import com.wardrones.warDrones.model.dto.request.AccionRequest;
 import com.wardrones.warDrones.model.entity.Partida;
 import com.wardrones.warDrones.model.service.PartidaService;
+
 
 @RestController
 @CrossOrigin
@@ -29,6 +32,7 @@ public class PartidaController {
         return ResponseEntity.ok(partida);
     }
 
+
      @PostMapping("/accion")
     public ResponseEntity<Boolean> realizarAccion(@RequestBody AccionRequest request){
 
@@ -39,4 +43,11 @@ public class PartidaController {
 
         return ResponseEntity.ok(hecho);
     }
+
+    @GetMapping("/partida/usuario/{usuario_id}")
+    public String getMethodName(@RequestParam String param) {
+        return new String();
+    }
+    
+
 }

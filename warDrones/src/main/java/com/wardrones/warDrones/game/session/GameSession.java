@@ -29,7 +29,7 @@ public class GameSession {
             throw new IllegalStateException("No es tu turno");
         }
     }
-
+    
     public void cambiarTurno() {
         if (jugadorEnTurno == jugador1Id) {
             jugadorEnTurno = jugador2Id;
