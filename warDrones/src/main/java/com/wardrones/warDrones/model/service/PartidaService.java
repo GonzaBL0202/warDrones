@@ -1,7 +1,11 @@
 package com.wardrones.warDrones.model.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
+import com.wardrones.warDrones.game.session.GameSession;
+import com.wardrones.warDrones.game.session.GameSessionManager;
 import com.wardrones.warDrones.model.entity.Partida;
 import com.wardrones.warDrones.model.entity.Usuario;
 import com.wardrones.warDrones.model.repository.PartidaRepository;
@@ -12,11 +16,14 @@ public class PartidaService {
 
     private final PartidaRepository pRepository;
     private final UsuarioRepository uRepository;
+    private final GameSessionManager gameSManager;
+    private final LobbyNotifier lobbyNotifier;
 
-    public PartidaService(PartidaRepository ppRepository,
-                          UsuarioRepository puRepository) {
+    public PartidaService(PartidaRepository ppRepository,UsuarioRepository puRepository, GameSessionManager gsm, LobbyNotifier lobbyNotifier ) {
         this.pRepository = ppRepository;
         this.uRepository = puRepository;
+        this.gameSManager = gsm;
+        this.lobbyNotifier = lobbyNotifier;
     }
 
     public Partida crearPartida(int usuarioId) {
@@ -24,10 +31,31 @@ public class PartidaService {
         Usuario creador = uRepository.findById(usuarioId).orElseThrow(
             () -> new RuntimeException("Usuario no encontrado")
         );
+        
+        Partida game = pRepository.buscarPartidaAbierta().orElse(null);  //Busca una partida activa sin jugador 2, sino encuentra asigna null
 
-        Partida game = new Partida(creador,true);
-        return pRepository.save(game);
+        if (game == null)
+            game = new Partida(creador,true);                           //Si esta en null, crea una nueva
+        else{
+            Usuario u2 = uRepository.findById(usuarioId).orElse(null);
+            if (u2 != null){
+                game.setUsuario2(u2);
+                gameSManager.crearSesion(game);                                 //Se crea en sesion solo cuando ya estan ambos usuarios
+                if (game.getUsuarioId1() != null) {
+                    try {
+                        lobbyNotifier.notifyUser(game.getUsuarioId1().getId(), game.getPartidaId());
+                    } catch (Exception e) {
+                        // no interrumpir el flujo principal si la notificación falla
+                    }
+                }
+            }
+        }
+        
+        return pRepository.save(game);     //Aca se persiste en bd
+    }
 
+    public List<Partida> obtenerPartidasGuardadas(int usuarioId) {
+        return pRepository.findByPartidaUsuarioId1_UsuarioIdOrPartidaUsuarioId2_UsuarioId(usuarioId, usuarioId);
     }
 
     public Partida obtenerPartida(int id) {
@@ -35,4 +63,23 @@ public class PartidaService {
             () -> new RuntimeException("Partida no encontrada")
         );
     }
+
+    public boolean cambiarTurno(int partidaId, int usuarioId){
+
+        try {
+            GameSession gs = gameSManager.obtenerSesion(partidaId);
+            if (gs == null) {
+                throw new RuntimeException("Sesion no encontrada");
+            }
+
+            gs.validarTurno(usuarioId);   // valida que sea su turno
+            gs.cambiarTurno();            // alterna internamente
+
+            return true;
+
+        } catch (IllegalStateException e) {
+            return false;
+        }
+    }
+
 }
