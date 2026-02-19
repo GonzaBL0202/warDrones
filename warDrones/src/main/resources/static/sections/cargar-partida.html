@@ -2,11 +2,87 @@
 <html lang="en">
 <head>
     <title>Cargar Partida</title>
+    <link rel="stylesheet" href="../css/fondo.css">
+    <link rel="stylesheet" href="../css/botom.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
-<body style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 65vh; margin: 0;">
-    <h1>Cargar Partida</h1>
-    <form action="menu.html" method="get">
-        <input type="submit" value="Volver al Menu" style="margin-top: 12px;">
-    </form>
+
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0;">
+    <section style="position: relative; width: 420px; height: 420px; display: flex; align-items: center; justify-content: center;">
+        <img src="../img/gold_panel_8x.png" alt="Panel"
+            style="position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated;">
+
+        <div style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; width: 80%;">
+
+            <h1 class="jacquard-12-regular" style="margin: 0 0 8px; font-size: 45px;">
+                Cargar Partida
+            </h1>
+
+            <p class="jacquard-12-regular" style="margin: 0 0 10px; font-size: 18px;">
+                Seleccioná una partida guardada:
+            </p>
+
+            <!-- Lista (con scroll) -->
+            <div id="listaPartidas"
+                class="jacquard-12-regular"
+                style="width: 100%; max-height: 190px; overflow-y: auto; font-size: 18px; display: flex; flex-direction: column; gap: 8px;">
+                <!-- Botones se crean por JS -->
+            </div>
+
+            <form action="menu.html" method="get">
+                <button class="boton" type="submit" style="font-size: 18px; width: 190px; height: 42px;">
+                    <span class="jacquard-12-regular">Volver al Menu</span>
+                </button>
+            </form>
+
+        </div>
+    </section>
+
+    <script>
+        const API_URL = 'http://localhost:8080';
+
+        function getId() {
+            return localStorage.getItem('usuario_id');
+        }
+
+        async function cargarPartidas() {
+            const usuarioId = getId();
+            if (!usuarioId) {
+                console.error('Usuario no autenticado');
+                return;
+            }
+            try {
+                const response = await fetch(`${API_URL}/partidas/guardadas/${usuarioId}`);
+                const partidas = await response.json();
+                
+                const cont = document.getElementById('listaPartidas');
+                cont.innerHTML = '';
+
+                if (partidas.length === 0) {
+                    cont.innerHTML = "<div style='text-align: center; color: #555;'>No hay partidas guardadas</div>";
+                    return;
+                }
+
+                partidas.forEach(partida => {
+                    const btn = document.createElement('button');
+                    btn.className = 'boton';
+                    btn.type = 'button';
+                    btn.style.width = '100%';
+                    btn.style.height = '42px';
+                    btn.innerHTML = `<span class="jacquard-12-regular">Partida #${partida.id} - Bando${partida.bando}</span>`;
+                    btn.addEventListener('click', () => {
+                        localStorage.setItem('partida_id', partida.id);
+                        window.location.href = 'partida.html';
+                    });
+                    cont.appendChild(btn);
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('listaPartidas').innerHTML = "<div style='text-align: center; color: red;'>Error al cargar partidas</div>";
+            }
+        }
+        cargarPartidas();
+    </script>
 </body>
 </html>

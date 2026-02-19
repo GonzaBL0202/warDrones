@@ -1,5 +1,7 @@
 package com.wardrones.warDrones.model.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 import com.wardrones.warDrones.model.entity.Partida;
@@ -14,7 +16,7 @@ public class PartidaService {
     private final UsuarioRepository uRepository;
 
     public PartidaService(PartidaRepository ppRepository,
-                          UsuarioRepository puRepository) {
+                        UsuarioRepository puRepository) {
         this.pRepository = ppRepository;
         this.uRepository = puRepository;
     }
@@ -28,6 +30,10 @@ public class PartidaService {
         Partida game = new Partida(creador,true);
         return pRepository.save(game);
 
+    }
+
+    public List<Partida> obtenerPartidasGuardadas(int usuarioId) {
+        return pRepository.findByPartidaUsuarioId1_UsuarioIdOrPartidaUsuarioId2_UsuarioId(usuarioId, usuarioId);
     }
 
     public Partida obtenerPartida(int id) {
