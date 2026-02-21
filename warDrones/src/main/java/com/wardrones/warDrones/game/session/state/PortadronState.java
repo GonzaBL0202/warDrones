@@ -60,6 +60,51 @@ public class PortadronState {
         return movimientoBase;
     }
 
+    public List<Integer> getListadoDronesIds() {
+        return listadoDronesIds;
+    }
+
+    //modificadoras
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public void setPartidaId(int partidaId) {
+        this.partidaId = partidaId;
+    }
+
+    public void setTipoDePortadron(Bando tipo) {
+        this.tipo = tipo;
+    }
+
+    public void setPosicionX(int x) {
+        this.x = x;
+    }
+
+    public void setPosicionY(int y) {
+        this.y = y;
+    }
+
+    public void setEstado(boolean estado) {
+        this.estado = estado;
+    }
+
+    public void setVida(int vida) {
+        this.vida = vida;
+    }
+
+    public void setAtaqueBase(int ataqueBase) {
+        this.ataqueBase = ataqueBase;
+    }   
+
+    public void setMovimientoBase(int movimientoBase) {
+        this.movimientoBase = movimientoBase;
+    }
+
+    public void setListadoDronesIds(List<Integer> listadoDronesIds) {
+        this.listadoDronesIds = listadoDronesIds;
+    }
+
     //getlistadodronesid
 }
 

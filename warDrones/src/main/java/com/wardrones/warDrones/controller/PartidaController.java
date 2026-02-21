@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.wardrones.warDrones.model.dto.request.AccionRequest;
 import com.wardrones.warDrones.model.dto.request.CrearPartidaRequest;
-import com.wardrones.warDrones.model.dto.request.AccionRequest;
+import com.wardrones.warDrones.model.dto.request.MovimientoDronRequest;
 import com.wardrones.warDrones.model.entity.Partida;
 import com.wardrones.warDrones.model.service.PartidaService;
 
@@ -47,6 +47,41 @@ public class PartidaController {
         );
 
         return ResponseEntity.ok(hecho);
+    }
+
+    @PostMapping("/{id}/moverDron")
+    public ResponseEntity<?> mover(@RequestBody MovimientoDronRequest dto) {
+
+        pService.moverDron(
+                dto.getPartidaId(),
+                dto.getJugadorId(),
+                dto.getDronId(),
+                dto.getX(),
+                dto.getY()
+        );
+
+    return ResponseEntity.ok().build();
+
+    }
+
+    @PostMapping("/moverPortaDron")
+    public ResponseEntity<?> moverPortaDron(@RequestBody MovimientoDronRequest dto) {
+
+        pService.moverPortaDron(
+                dto.getPartidaId(),
+                dto.getJugadorId(),
+                dto.getX(),
+                dto.getY()
+        );
+
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/iniciarPartida/{partidaId}")
+    public ResponseEntity<?> iniciarPartida(@PathVariable int partidaId) {
+
+        pService.iniciarPartida(partidaId);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/partida/usuario/{usuario_id}")

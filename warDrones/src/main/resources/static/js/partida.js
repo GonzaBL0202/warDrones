@@ -687,7 +687,6 @@
                 updateInfoPanel();
                 drawScene();
 
-                //aca codigollamado a api para guardar posicion de dron desplegado 
                 return;
             }
 
@@ -714,8 +713,83 @@
                 return;
             }
 
+            if(isPortaSelected){
+                //consumo de api para mover porta dron
+                let res = fetch("/partidas/moverPortaDron", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        partidaId: localStorage.getItem("partidaId")    ,
+                        jugadorId: getId(),
+                        //portadronId: getActivePortaDron().id, como el porta dron es unico por bando, el backend lo identifica sin necesidad de enviar un id
+                        x: x,
+                        y: y
+                    })
+                });
+
+                if (!res.ok) {
+                    const msg = res.text();
+                    alert("Error: " + msg);
+                    return;
+                }
+
+                const user = res.json();
+            }else{
+                //consumo de api para mover dron activo
+                let res = fetch("/partidas/moverDron", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        partidaId: localStorage.getItem("partidaId")    ,
+                        jugadorId: getId(),
+                        dronId: getActiveDrone().id,
+                        x: x,
+                        y: y
+                    })
+                });
+
+                if (!res.ok) {
+                    const msg = res.text();
+                    alert("Error: " + msg);
+                    return;
+                }
+
+                const user = res.json();
+
+                if (isDeployMode){
+                    let nextIndex = activeDroneIndex;
+                    let deploys = 0;
+                    for (let i = 0; i < drones.length; i++) {
+                        nextIndex = (nextIndex + 1) % drones.length;
+                        if (drones[nextIndex].deployed) {
+                            deploys++;
+                        }
+                    }
+
+                    if (deploys === drones.length) {
+                        let res = fetch("/partidas/iniciarPartida/" + localStorage.getItem("partidaId"), {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                        });
+
+                        if (!res.ok) {
+                            const msg = res.text();
+                            alert("Error: " + msg);
+                            return;
+                        }
+
+                        const user = res.json();
+                    }
+                }
+            }
+
             moveActiveDroneTo(x, y);
         });
+
+        function getId() {
+            const id = localStorage.getItem('userId');
+            return id ? parseInt(id) : null;
+        }
 
         /* Boton del panel para avanzar al siguiente dron de la flota */
         nextDroneBtn.addEventListener('click', () => {

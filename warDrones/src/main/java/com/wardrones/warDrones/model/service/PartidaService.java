@@ -58,7 +58,26 @@ public class PartidaService {
         return pRepository.save(game);     //Aca se persiste en bd
     }
 
+    public GameSession iniciarPartida(int partidaId) {
+        Partida partida = pRepository.findById(partidaId).orElseThrow(
+            () -> new RuntimeException("Partida no encontrada")
+        );
 
+         try {
+            GameSession gs = gameSManager.obtenerSesion(partidaId);
+            if (gs == null) {
+                throw new RuntimeException("Sesion no encontrada");
+            }
+
+            gs.setJugadorEnTurno(partida.getUsuarioId1().getId());   // El jugador 1 inicia la partida
+            return gs; 
+
+        } catch (IllegalStateException e) {
+            return null;
+        }
+    }
+   
+   
     public Partida obtenerPartida(int id) {
         return pRepository.findById(id).orElseThrow(
             () -> new RuntimeException("Partida no encontrada")
@@ -81,6 +100,19 @@ public class PartidaService {
         } catch (IllegalStateException e) {
             return false;
         }
+    }
+
+    public void moverDron(int partidaId, int jugadorId, int dronId, int x, int y) {
+
+        GameSession session = gameSManager.obtenerSesion(partidaId);
+        session.moverDron(dronId, x, y, jugadorId);
+        session.cambiarTurno();
+    }
+
+    public void moverPortaDron(int partidaId, int jugadorId, int x, int y) {
+        GameSession session = gameSManager.obtenerSesion(partidaId);
+        session.moverPortaDron(x, y, jugadorId);
+        session.cambiarTurno();
     }
 
     @Transactional
