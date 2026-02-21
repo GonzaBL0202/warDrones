@@ -79,6 +79,12 @@ public class Partida {
         this.partidaUsuarioId2 = u2;
     }
 
+    public void setActiva(boolean estado){
+        this.partidaActiva = estado;
+    }
+    public boolean isActiva(){
+        return this.partidaActiva;
+    }
     //funciones temporales para hardcordear y probar en postman
     
     

@@ -21,10 +21,9 @@
         <div
             style="position: relative; z-index: 1; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px;">
             <h1 class="jacquard-12-regular" style="margin: 0 0 6px; font-size: 46px; text-align: center;">Partida</h1>
-            <form action="menu.html" method="get">
-                <button class="boton boton-menu" type="submit" style="font-size: 18px;"><span
-                        class="jacquard-12-regular">Volver al Menu</span></button>
-            </form>
+            <button id="btnVolverMenu" class="boton boton-menu" type="button" style="font-size: 18px;">
+  <span class="jacquard-12-regular">Volver al Menu</span>
+</button>
         </div>
     </aside>
 
@@ -174,7 +173,35 @@
 
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
+
+        const API_URL = "http://localhost:8080";
+        async function salirDePartida() {
+            const partidaId = localStorage.getItem("partidaId");
+            if (!partidaId) {
+                console.error("No se encontró el ID de la partida en localStorage.");
+                return;
+            }
+            try {
+                await fetch(`${API_URL}/partidas/${partidaId}/salir`, {
+                    method: 'PUT'});
+                } catch (error) {
+                    console.error("Error al salir de la partida:", error);
+                }
+            }
+            document.getElementById("btnVolverMenu").addEventListener("click", async () => {
+                await salirDePartida();
+                window.location.href = "menu.html";
+                });
+        
+                window.addEventListener("beforeunload", async (event) => {
+                    const partidaId = localStorage.getItem("partidaId");
+                    if (!partidaId) return;
+                    const url = `${API_URL}/partidas/salir/${partidaId}`;
+                    navigator.sendBeacon(url);
+                    
+                });
+    
     </script>
 </body>
-
+            
 </html>

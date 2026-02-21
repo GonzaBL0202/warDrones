@@ -49,7 +49,8 @@
                 return;
             }
 
-            const response = await fetch(`${API_URL}/partida/crearOUnirse`, {
+           try{
+                const response = await fetch(`${API_URL}/partidas`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ usuarioId: userId })
@@ -60,16 +61,30 @@
                 console.error('Error al crear partida:', txt);
                 return;
             }
-            const data = await response.json();
-            localStorage.setItem('partidaId', data.partidaId);
+            const partida = await response.json();
+            
 
-            //Si no hay usuario2, pal lobby, sino a la partida
-            if (!data.usuario2Id) {
-                window.location.href = 'lobby.html';
-            } else
-                window.location.href = 'partida.html';
+            // Si la partida ya tiene usuario2 asignado y es este usuario, ir directo a la partida
+                const currentUserId = getId();
+
+                // Extraer usuario2 de la respuesta comprobando varias variantes de nombres y propiedades
+                const usuario2 = partida.usuarioId2 || partida.partidaUsuarioId2 || partida.usuarioId_2 || partida.partidaUsuarioId_2 || partida.partidaUsuarioId2 || null;
+                let usuario2Id = null;
+                if (usuario2) {
+                    usuario2Id = usuario2.id ?? usuario2.usuarioId ?? usuario2.userId ?? null;
+                }
+                
+                if (usuario2Id && currentUserId && Number(usuario2Id) === Number(currentUserId)) {
+                    window.location.href = 'partida.html';
+                } else {
+                    window.location.href = 'lobby.html';
+                }
+            } catch (error) {
+                console.error('No se pudo crear la partida:', error);
+            }
         });
     </script>
 </body>
+
 
 </html>
