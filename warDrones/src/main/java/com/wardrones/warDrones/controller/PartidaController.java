@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.wardrones.warDrones.model.dto.request.CrearPartidaRequest;
 import com.wardrones.warDrones.model.dto.request.AccionRequest;
+import com.wardrones.warDrones.model.dto.request.CrearPartidaRequest;
 import com.wardrones.warDrones.model.entity.Partida;
 import com.wardrones.warDrones.model.service.PartidaService;
 
@@ -53,12 +53,12 @@ public class PartidaController {
         return new String();
     }
     
-@PutMapping("/salir/{partidaId}")
-public ResponseEntity<?> salirPartida(@PathVariable int partidaId) {
+    @PutMapping("/partida/salir/{partidaId}")
+    public ResponseEntity<?> salirPartida(@PathVariable int partidaId) {
 
     pService.salirPartida(partidaId);
 
-        return ResponseEntity.ok("Has salido de la partida");
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/cargar/{usuarioId}")

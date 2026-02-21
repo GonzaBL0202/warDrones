@@ -11,6 +11,8 @@ import com.wardrones.warDrones.model.entity.Usuario;
 import com.wardrones.warDrones.model.repository.PartidaRepository;
 import com.wardrones.warDrones.model.repository.UsuarioRepository;
 
+import jakarta.transaction.Transactional;
+
 
 
 @Service
@@ -80,6 +82,7 @@ public class PartidaService {
         }
     }
 
+    @Transactional
     public void salirPartida(int partidaId) {
         Partida partida = pRepository.findById(partidaId).orElseThrow(
             () -> new RuntimeException("Partida no encontrada"));
