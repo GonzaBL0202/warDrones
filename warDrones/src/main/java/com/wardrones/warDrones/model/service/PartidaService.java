@@ -11,6 +11,10 @@ import com.wardrones.warDrones.model.entity.Usuario;
 import com.wardrones.warDrones.model.repository.PartidaRepository;
 import com.wardrones.warDrones.model.repository.UsuarioRepository;
 
+import jakarta.transaction.Transactional;
+
+
+
 @Service
 public class PartidaService {
 
@@ -54,9 +58,6 @@ public class PartidaService {
         return pRepository.save(game);     //Aca se persiste en bd
     }
 
-    public List<Partida> obtenerPartidasGuardadas(int usuarioId) {
-        return pRepository.findByPartidaUsuarioId1_UsuarioIdOrPartidaUsuarioId2_UsuarioId(usuarioId, usuarioId);
-    }
 
     public Partida obtenerPartida(int id) {
         return pRepository.findById(id).orElseThrow(
@@ -82,4 +83,20 @@ public class PartidaService {
         }
     }
 
+    @Transactional
+    public void salirPartida(int partidaId) {
+        Partida partida = pRepository.findById(partidaId).orElseThrow(
+            () -> new RuntimeException("Partida no encontrada"));
+        
+        partida.setActiva(false);
+        pRepository.save(partida
+        );
+    }
+
+    public List<Partida> obtenerPartidasGuardadas(int usuarioId) {
+        Usuario usuario = uRepository.findById(usuarioId).orElseThrow(
+            () -> new RuntimeException("Usuario no encontrado")
+        );
+        return pRepository.buscarPartidasGuardadas(usuario);
+    }
 }

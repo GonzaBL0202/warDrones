@@ -1,13 +1,18 @@
 package com.wardrones.warDrones.controller;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.wardrones.warDrones.model.dto.request.AccionRequest;
 import com.wardrones.warDrones.model.dto.request.CrearPartidaRequest;
 import com.wardrones.warDrones.model.dto.request.AccionRequest;
 import com.wardrones.warDrones.model.entity.Partida;
@@ -49,5 +54,19 @@ public class PartidaController {
         return new String();
     }
     
+    @PutMapping("/partida/salir/{partidaId}")
+    public ResponseEntity<?> salirPartida(@PathVariable int partidaId) {
+
+    pService.salirPartida(partidaId);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/cargar/{usuarioId}")
+    public List<Partida> cargarPartidas(@PathVariable int usuarioId) {
+        return pService.obtenerPartidasGuardadas(usuarioId);
+    }
 
 }
+
+
