@@ -88,7 +88,6 @@
             }
 
             try {
-                // ⚠️ Este endpoint tiene que existir en backend:
                 // GET /partidas/guardadas/{userId}  (o el que tengas)
                 const response = await fetch(`${API_URL}/partidas/guardadas/${userId}`);
 
@@ -113,7 +112,6 @@
                 }
 
                 partidas.forEach(p => {
-                    // Ajustá si tu backend devuelve otro nombre:
                     const id = p.partidaId ?? p.id;
 
                     const btn = document.createElement("button");

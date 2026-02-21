@@ -53,6 +53,33 @@
         document.getElementById("btnCancelar").addEventListener("click", () => {
             window.location.href = "menu.html";
         });
+
+        
+        // Conectar SSE para esperar a que otro jugador se una
+        (function () {
+            const userId = localStorage.getItem("userId");
+            if (!userId) return;
+
+            // el endpoint espera el param 'usuarioId', pero la clave en localStorage se guarda como 'userId'
+            const url = `/lobby/connect?usuarioId=${encodeURIComponent(userId)}`;
+            const es = new EventSource(url);
+            
+            es.addEventListener('connected', () => {
+                console.log('Lobby SSE conectado');
+            });
+
+            es.addEventListener('partida-start', (evt) => {
+                const partidaId = evt.data;
+                localStorage.setItem('partidaId', partidaId);
+                // Redirigir a la página de partida
+                window.location.href = 'partida.html';
+            });
+
+            es.onerror = (err) => {
+                console.warn('SSE error', err);
+                es.close();
+            };
+        })();
     </script>
 </body>
 
