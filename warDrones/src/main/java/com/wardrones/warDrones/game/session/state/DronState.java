@@ -14,6 +14,7 @@ public class DronState {
     //falta aclarar si el ataque y el rango de movimiento se define como atributos propios o se calcula mediante funciones ya sea en esta clase o en otra relacionada (portadronstate)
 
     //aca iria constructora/funcion para crear el objeto con los datos obtenidos desde la base de datos mediante la clase Dron o definirla en otra clase (ya sea esta, service o gamesession)
+    public DronState() {}
 
     //selectoras
     public int getId() {

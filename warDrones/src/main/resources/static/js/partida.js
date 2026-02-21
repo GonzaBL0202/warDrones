@@ -51,7 +51,7 @@
         const portaDronNaval = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#4ec5ff', nombre: 'Porta Dron Naval' };
         const portaDronAereo = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#ffd166', nombre: 'Porta Dron Aereo' };
 
-        /* Cuando carga la imagen, calcula tamaño y numero de frames */
+        /* Cuando carga la imagen, calcula tamaï¿½o y numero de frames */
         droneSprite.onload = () => {
             /* Asume un sprite horizontal de frames cuadrados */
             spriteFrameSize = droneSprite.height;
@@ -686,6 +686,8 @@
                 revealAroundActiveDrone();
                 updateInfoPanel();
                 drawScene();
+
+                //aca codigollamado a api para guardar posicion de dron desplegado 
                 return;
             }
 
@@ -759,7 +761,7 @@
             setupHint.textContent = `Despliegue activo: haz click en el mapa para colocar #${drone.id}`;
         });
 
-        /* Evento que se ejecuta cuando cambia el tamaño de la ventana.
+        /* Evento que se ejecuta cuando cambia el tamaï¿½o de la ventana.
            Recalcula el canvas y redibuja el mapa para mantener la escala correcta */
         window.addEventListener('resize', resizeCanvas);
 

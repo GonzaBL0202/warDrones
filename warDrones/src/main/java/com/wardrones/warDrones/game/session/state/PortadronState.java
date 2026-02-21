@@ -17,9 +17,11 @@ public class PortadronState {
     private int ataqueBase; //es una constante, seria para definir el ataque de sus drones, a revisar
     private int movimientoBase; //es una constante, seria para definir el movimiento de sus drones, a revisar
 
+    //listado de ids de drones 
     private List<Integer> listadoDronesIds;
 
     //aca iria constructora/funcion para crear el objeto con los datos obtenidos desde la base de datos mediante la clase Portadron o definirla en otra clase (ya sea esta, service o gamesession)
+    public PortadronState () {}
 
     //selectoras
     public int getId() {
