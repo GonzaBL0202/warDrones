@@ -1,5 +1,10 @@
 package com.wardrones.warDrones.game.session;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import com.wardrones.warDrones.game.session.state.DronState;
+import com.wardrones.warDrones.game.session.state.PortadronState;
 import com.wardrones.warDrones.model.entity.Partida;
 
 //GameSession: Es utilizado para manejar en mememoria el estado de la partida (turnos,estado,drones,etc...)
@@ -12,8 +17,16 @@ public class GameSession {
     private int jugadorEnTurno;
     private boolean activa;
 
-    // private Map<int, DronState> drones;
-    //Mapeo de drones de la partida **A agregarse en incremento 3**
+    //asignacion de portadrones
+    private PortadronState PortadronNaval;
+    private PortadronState portadronAereo;
+
+    //Mapeo de drones en la partida
+    private final Map<Integer, DronState> drones = new HashMap<>();
+
+    //tamanio del mapa
+    private int anchoMapa = 35;
+    private int largoMapa = 20;
 
 
     public GameSession(Partida par){
