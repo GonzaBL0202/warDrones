@@ -53,17 +53,29 @@ public class PartidaController {
         return new String();
     }
     
-    @PutMapping("/partida/salir/{partidaId}")
-    public ResponseEntity<?> salirPartida(@PathVariable int partidaId) {
+    //@PutMapping("/partida/salir/{partidaId}")
+    //public ResponseEntity<?> salir(@PathVariable int partidaId) {
 
-    pService.salirPartida(partidaId);
+    //pService.salirPartida(partidaId);
 
-        return ResponseEntity.ok().build();
-    }
+      //  return ResponseEntity.ok().build();
+    //}
 
     @GetMapping("/cargar/{usuarioId}")
     public List<Partida> cargarPartidas(@PathVariable int usuarioId) {
         return pService.obtenerPartidasGuardadas(usuarioId);
+    }
+//----------- Abandono de partida -----------
+    @PutMapping("/partida/renunciar/{partidaId}")
+    public ResponseEntity<?> renunciar(@PathVariable int partidaId){
+        pService.renunciarPartida(partidaId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/partida/guardar/{partidaId}")
+    public ResponseEntity<?> guardar(@PathVariable int partidaId){
+        pService.guardarPartida(partidaId);
+        return ResponseEntity.ok().build();
     }
 
 }

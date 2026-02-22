@@ -10,7 +10,6 @@ public class GameSession {
     private int jugador1Id;
     private int jugador2Id;
     private int jugadorEnTurno;
-    private boolean activa;
 
     // private Map<int, DronState> drones;
     //Mapeo de drones de la partida **A agregarse en incremento 3**
@@ -21,10 +20,9 @@ public class GameSession {
         jugador1Id = par.getUsuarioId1().getId();
         jugador2Id = par.getUsuarioId2().getId();
         jugadorEnTurno = par.getTurno();
-        activa = par.getActiva();
-    }
+        }
 
-     public void validarTurno(int usuarioId) {
+    public void validarTurno(int usuarioId) {
         if (usuarioId != jugadorEnTurno) {
             throw new IllegalStateException("No es tu turno");
         }
@@ -44,10 +42,6 @@ public class GameSession {
 
     public int getPartidaId(){
         return partidaId;
-    }
-
-    public boolean getActiva(){
-        return activa;
     }
 
     public int getJugadorEnTurno(){

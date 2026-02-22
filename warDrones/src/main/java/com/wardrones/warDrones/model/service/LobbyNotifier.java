@@ -42,4 +42,32 @@ public class LobbyNotifier {
             }
         }
     }
+
+    public void notifyPartidaFinalizada(int usuarioId, int partidaId) {
+        SseEmitter emitter = emitters.get(usuarioId);
+        if (emitter != null) {
+            try {
+                emitter.send(
+                    SseEmitter.event()
+                    .name("partida-finalizada")
+                    .data(String.valueOf(partidaId)));
+            } catch (IOException e) {
+                emitters.remove(usuarioId);
+            }
+        }
+    }
+
+    public void notifyPartidaGuardada(int usuarioId, int partidaId) {
+        SseEmitter emitter = emitters.get(usuarioId);
+        if (emitter != null) {
+            try {
+                emitter.send(
+                    SseEmitter.event()
+                    .name("partida-guardada")
+                    .data(String.valueOf(partidaId)));
+            } catch (IOException e) {
+                emitters.remove(usuarioId);
+            }
+        }
+    }
 }

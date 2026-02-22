@@ -1,6 +1,7 @@
 package com.wardrones.warDrones.model.entity;
 
 import com.wardrones.warDrones.model.enums.Bando;
+import com.wardrones.warDrones.model.enums.Estado;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -33,16 +34,20 @@ public class Partida {
     private Bando partidaBando2;
 
     private int partidaTurno;
+    
+    @Enumerated(EnumType.STRING)
+    private Estado partidaEstado;
 
-    private boolean partidaActiva;
+    //private boolean partidaActiva;
 
     //Constructora
     public Partida(){}
 
-    public Partida(Usuario u1, boolean activa){
+    public Partida(Usuario u1, Estado estado) {
         this.partidaUsuarioId1 = u1;
-        this.partidaActiva = activa;
+       // this.partidaActiva = activa;
         this.partidaTurno = u1.getId();
+        this.partidaEstado = estado;
     }
 
     // Getters
@@ -71,20 +76,27 @@ public class Partida {
         return partidaTurno;
     }
 
-    public boolean getActiva() {
-        return partidaActiva;
+    public Estado getPartidaEstado() {
+        return partidaEstado;
     }
-    
+    //public boolean getActiva() {
+    //    return partidaActiva;
+   // }
+    //Setters
     public void setUsuario2(Usuario u2){
         this.partidaUsuarioId2 = u2;
     }
 
-    public void setActiva(boolean estado){
-        this.partidaActiva = estado;
+    public void setPartidaEstado(Estado estado) {
+        this.partidaEstado = estado;
     }
-    public boolean isActiva(){
-        return this.partidaActiva;
-    }
+
+    //public void setActiva(boolean estado){
+    //    this.partidaActiva = estado;
+    //}
+    //public boolean isActiva(){
+     //   return this.partidaActiva;
+   // }
     //funciones temporales para hardcordear y probar en postman
     
     

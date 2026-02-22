@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Jacquard+12&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/fuente.css">
+    <link rel="stylesheet" href="/css/fuente.css">
 </head>
 
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0;">
@@ -29,54 +29,10 @@
             </button>
         </form>
 
-        <script>
-            const form = document.getElementById("loginForm");
-            const input = document.getElementById("username");
-
-            form.addEventListener("submit", async (e) => {
-                e.preventDefault();
-
-                const username = input.value.trim();
-                if (!username) {
-                    input.setCustomValidity("Debes ingresar un usuario.");
-                    input.reportValidity();
-                    return;
-                }
-
-                input.setCustomValidity(""); // resetear mensaje de error
-
-                // 1) intentamos login
-                let res = await fetch("/login", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username })
-                });
-
-                // 2) si no existe, lo registramos
-                if (!res.ok) {
-                    res = await fetch("/registrar", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ username })
-                    });
-                }
-
-                if (!res.ok) {
-                    const msg = await res.text();
-                    alert("Error: " + msg);
-                    return;
-                }
-
-                const user = await res.json();
-                localStorage.setItem("userId", user.id ?? user.usuarioId ?? "");
-                localStorage.setItem("username", user.nombre ?? user.usuarioNombre ?? username);
-
-                window.location.href = "sections/menu.html";
-            });
-        </script>
+        
 
     </section>
-
+<script src ="js/index.js"></script>
 </body>
 
 </html>
