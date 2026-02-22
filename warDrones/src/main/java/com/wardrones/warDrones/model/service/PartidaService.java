@@ -14,8 +14,6 @@ import com.wardrones.warDrones.model.repository.UsuarioRepository;
 
 import jakarta.transaction.Transactional;
 
-
-
 @Service
 public class PartidaService {
 
@@ -24,7 +22,7 @@ public class PartidaService {
     private final GameSessionManager gameSManager;
     private final LobbyNotifier lobbyNotifier;
 
-    public PartidaService(PartidaRepository ppRepository,UsuarioRepository puRepository, GameSessionManager gsm, LobbyNotifier lobbyNotifier ) {
+    public PartidaService(PartidaRepository ppRepository, UsuarioRepository puRepository, GameSessionManager gsm, LobbyNotifier lobbyNotifier) {
         this.pRepository = ppRepository;
         this.uRepository = puRepository;
         this.gameSManager = gsm;
@@ -34,17 +32,18 @@ public class PartidaService {
     public Partida crearPartida(int usuarioId) {
 
         Usuario creador = uRepository.findById(usuarioId).orElseThrow(
-            () -> new RuntimeException("Usuario no encontrado")
+                () -> new RuntimeException("Usuario no encontrado")
         );
-        
-        Partida game = pRepository.buscarPartidaAbierta(Estado.CREADA).orElse(null);  //Busca una partida activa sin jugador 2, sino encuentra asigna null
 
-        if (game == null)
-            game = new Partida(creador,Estado.CREADA);                           //Si esta en null, crea una nueva
-        else{
+        Partida game = pRepository.buscarPartidaAbierta().orElse(null);  //Busca una partida activa sin jugador 2, sino encuentra asigna null
+
+        if (game == null) {
+            game = new Partida(creador, Estado.CREADA);                           //Si esta en null, crea una nueva
+        }else {
             Usuario u2 = uRepository.findById(usuarioId).orElse(null);
-            if (u2 != null){
+            if (u2 != null) {
                 game.setUsuario2(u2);
+                game.setPartidaEstado(Estado.EN_CURSO);
                 gameSManager.crearSesion(game);                                 //Se crea en sesion solo cuando ya estan ambos usuarios
                 if (game.getUsuarioId1() != null) {
                     try {
@@ -55,17 +54,17 @@ public class PartidaService {
                 }
             }
         }
-        
+
         return pRepository.save(game);     //Aca se persiste en bd
     }
-
+    
     public Partida obtenerPartida(int id) {
         return pRepository.findById(id).orElseThrow(
-            () -> new RuntimeException("Partida no encontrada")
+                () -> new RuntimeException("Partida no encontrada")
         );
     }
 
-    public boolean cambiarTurno(int partidaId, int usuarioId){
+    public boolean cambiarTurno(int partidaId, int usuarioId) {
 
         try {
             GameSession gs = gameSManager.obtenerSesion(partidaId);
@@ -83,57 +82,88 @@ public class PartidaService {
         }
     }
 
-    
-
-public List<Partida> obtenerPartidasGuardadas(int usuarioId) {
-    return pRepository.buscarPartidasGuardadas(usuarioId);
-}
-
-
-
-
-
+    public List<Partida> obtenerPartidasGuardadas(int usuarioId) {
+        return pRepository.buscarPartidasGuardadas(usuarioId);
+    }
 
 //------------Abandono de partida -----------
-@Transactional
-public void renunciarPartida(int partidaId) {
-    Partida partida = pRepository.findById(partidaId).orElseThrow(
-        () -> new RuntimeException("Partida no encontrada")
-    );
-    partida.setPartidaEstado(Estado.FINALIZADA);
-    pRepository.save(partida);
+    @Transactional
+    public void renunciarPartida(int partidaId) {
+        Partida partida = pRepository.findById(partidaId).orElseThrow(
+                () -> new RuntimeException("Partida no encontrada")
+        );
+        partida.setPartidaEstado(Estado.FINALIZADA);
+        pRepository.save(partida);
 
-    //Aviso a ambos jugadores que la partida ha finalizado al renunciar uno
-    try {
-        lobbyNotifier.notifyPartidaFinalizada(
-            partida.getUsuarioId1().getId(),
-            partidaId);
-        }catch(Exception e){}
+        //Aviso a ambos jugadores que la partida ha finalizado al renunciar uno
+        try {
+            lobbyNotifier.notifyPartidaFinalizada(
+                    partida.getUsuarioId1().getId(),
+                    partidaId);
+        } catch (Exception e) {
+        }
+
+        try {
+            lobbyNotifier.notifyPartidaFinalizada(
+                    partida.getUsuarioId2().getId(),
+                    partidaId);
+        } catch (Exception e) {
+        }
+    }
+
+    @Transactional
+    public void guardarPartida(int partidaId) {
+        Partida partida = pRepository.findById(partidaId).orElseThrow(
+                () -> new RuntimeException("Partida no encontrada")
+        );
+        partida.setPartidaEstado(Estado.GUARDADA);
+        pRepository.save(partida);
+
+        //Sacar ambos al menu principal al guardar la partida
+        try {
+            lobbyNotifier.notifyPartidaGuardada(
+                    partida.getUsuarioId1().getId(),
+                    partidaId);
+        } catch (Exception e) {
+        }
+        try {
+            lobbyNotifier.notifyPartidaGuardada(
+                    partida.getUsuarioId2().getId(),
+                    partidaId);
+        } catch (Exception e) {
+        }
+    }
     
-    try {
-        lobbyNotifier.notifyPartidaFinalizada(
-            partida.getUsuarioId2().getId(),
-            partidaId);
+    public List<Partida> obtenerPartidasReanudables(int usuarioId){
+        return pRepository.buscarPartidasReanudables(usuarioId);
+    }
+
+    @Transactional
+    public void marcarReanudando(int partidaId){
+        Partida partida = pRepository.findById(partidaId).orElseThrow(()-> new RuntimeException("Partida no encontrada."));
+        partida.setPartidaEstado(Estado.REANUDANDO);
+        pRepository.save(partida);
+    }
+
+    @Transactional
+    public void unirseReanudando(int partidaId, int usuarioId) {
+        Partida partida = pRepository.findById(partidaId)
+        .orElseThrow(() -> new RuntimeException("Partida no encontrada."));
+
+        partida.setPartidaEstado(Estado.EN_CURSO);
+        pRepository.save(partida);
+
+        gameSManager.crearSesion(partida);
+        
+        try{
+            lobbyNotifier.notifyUser(partida.getUsuarioId1().getId(), partidaId);
         }catch(Exception e){}
+        
+        try {
+            lobbyNotifier.notifyUser(partida.getUsuarioId2().getId(), partidaId);
+        }catch (Exception e) {}
+
+    }
+
+    
 }
-
-@Transactional
-public void guardarPartida(int partidaId) {
-    Partida partida = pRepository.findById(partidaId).orElseThrow(
-        () -> new RuntimeException("Partida no encontrada")
-    );
-    partida.setPartidaEstado(Estado.GUARDADA);
-    pRepository.save(partida);
-
-    //Sacar ambos al menu principal al guardar la partida
-    try{
-        lobbyNotifier.notifyPartidaGuardada(
-            partida.getUsuarioId1().getId(),
-            partidaId);
-    }catch(Exception e){}
-    try{
-        lobbyNotifier.notifyPartidaGuardada(
-            partida.getUsuarioId2().getId(),
-            partidaId);
-        }catch(Exception e){}
-}}

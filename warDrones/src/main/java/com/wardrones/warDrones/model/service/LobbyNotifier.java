@@ -33,7 +33,9 @@ public class LobbyNotifier {
         SseEmitter emitter = emitters.get(usuarioId);
         if (emitter != null) {
             try {
-                emitter.send(SseEmitter.event().name("partida-start").data(String.valueOf(partidaId)));
+                emitter.send(SseEmitter.event()
+                .name("partida-start")
+                .data(partidaId));
                 emitter.complete();
             } catch (IOException e) {
                 // remove emitter on error
@@ -47,10 +49,9 @@ public class LobbyNotifier {
         SseEmitter emitter = emitters.get(usuarioId);
         if (emitter != null) {
             try {
-                emitter.send(
-                    SseEmitter.event()
-                    .name("partida-finalizada")
-                    .data(String.valueOf(partidaId)));
+                emitter.send(SseEmitter.event()
+                .name("partida-finalizada")
+                .data(partidaId));
             } catch (IOException e) {
                 emitters.remove(usuarioId);
             }
@@ -64,7 +65,7 @@ public class LobbyNotifier {
                 emitter.send(
                     SseEmitter.event()
                     .name("partida-guardada")
-                    .data(String.valueOf(partidaId)));
+                    .data(partidaId));
             } catch (IOException e) {
                 emitters.remove(usuarioId);
             }

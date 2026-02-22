@@ -11,12 +11,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.wardrones.warDrones.model.dto.request.AccionRequest;
-import com.wardrones.warDrones.model.dto.request.CrearPartidaRequest;
+import com.wardrones.warDrones.model.dto.request.*;
 import com.wardrones.warDrones.model.entity.Partida;
 import com.wardrones.warDrones.model.service.PartidaService;
-
 
 @RestController
 @CrossOrigin
@@ -27,18 +24,17 @@ public class PartidaController {
     public PartidaController(PartidaService partidaService) {
         this.pService = partidaService;
     }
-
+    
     @PostMapping("/partidas")
-    public ResponseEntity<Partida> crearPartida( @RequestBody CrearPartidaRequest request) {
+    public ResponseEntity<Partida> crearPartida(@RequestBody CrearPartidaRequest request) {
 
-        Partida partida = pService.crearPartida( request.getUsuarioId() );
+        Partida partida = pService.crearPartida(request.getUsuarioId());
 
         return ResponseEntity.ok(partida);
     }
 
-
     @PostMapping("/accion")
-    public ResponseEntity<Boolean> realizarAccion(@RequestBody AccionRequest request){
+    public ResponseEntity<Boolean> realizarAccion(@RequestBody AccionRequest request) {
 
         boolean hecho = pService.cambiarTurno(
                 request.getPartidaId(),
@@ -52,32 +48,47 @@ public class PartidaController {
     public String getMethodName(@RequestParam String param) {
         return new String();
     }
-    
-    //@PutMapping("/partida/salir/{partidaId}")
-    //public ResponseEntity<?> salir(@PathVariable int partidaId) {
-
-    //pService.salirPartida(partidaId);
-
-      //  return ResponseEntity.ok().build();
-    //}
 
     @GetMapping("/cargar/{usuarioId}")
     public List<Partida> cargarPartidas(@PathVariable int usuarioId) {
         return pService.obtenerPartidasGuardadas(usuarioId);
     }
-//----------- Abandono de partida -----------
+
+    //----------- Abandono de partida -----------
     @PutMapping("/partida/renunciar/{partidaId}")
-    public ResponseEntity<?> renunciar(@PathVariable int partidaId){
+    public ResponseEntity<?> renunciar(@PathVariable int partidaId) {
         pService.renunciarPartida(partidaId);
         return ResponseEntity.ok().build();
     }
 
+    //-----------Guardado de partida -----------
     @PutMapping("/partida/guardar/{partidaId}")
-    public ResponseEntity<?> guardar(@PathVariable int partidaId){
+    public ResponseEntity<?> guardar(@PathVariable int partidaId) {
         pService.guardarPartida(partidaId);
         return ResponseEntity.ok().build();
     }
 
-}
+    //-------------Carga de partidas guardadas --------
+    @GetMapping("/partida/reanudables/{usuarioId}")
+    public List<Partida> reanudables(@PathVariable int usuarioId){
+        return pService.obtenerPartidasReanudables(usuarioId);
+    }
 
+    @PutMapping("/partida/reanudar/{partidaId}")
+    public ResponseEntity<?> reanudar(@PathVariable int partidaId){
+        pService.marcarReanudando(partidaId);
+        return ResponseEntity.ok().build();
+    }
+    
+    @PutMapping("/partida/reanudar/unirse/{partidaId}")
+    public ResponseEntity<?> unirseReanudando(
+        @PathVariable int partidaId,
+        @RequestParam int usuarioId)
+        {
+            pService.unirseReanudando(partidaId, usuarioId);
+            return ResponseEntity.ok().build();
+        }
+    
+}
+    
 
