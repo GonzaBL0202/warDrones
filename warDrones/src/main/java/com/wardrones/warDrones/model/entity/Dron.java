@@ -35,12 +35,27 @@ public class Dron {
     private int dronRecargas;
 
 
+    public Dron(Portadron portadron, Bando tipo){
+        this.dronPortaDronId = portadron;
+        this.dronTipo = tipo;
+        this.dronPosicionX = 0;
+        this.dronPosicionY = 0;
+        this.dronEstado = true;
+        this.dronRecargas = 1;
+        this.dronVida = 1;
+        if (tipo == Bando.NAVAL){
+            this.dronMunicion = 2;
+        } else {
+            this.dronMunicion = 1;
+        }
+    }
+
     // Getters
     public int getId() {
         return dronId;
     }
 
-    public Portadron getPartidaId() {
+    public Portadron getPortadronId() {
         return dronPortaDronId;
     }
 

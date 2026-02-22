@@ -2,6 +2,7 @@ package com.wardrones.warDrones.game.session.state;
 
 import java.util.List;
 
+import com.wardrones.warDrones.model.entity.Portadron;
 import com.wardrones.warDrones.model.enums.Bando;
 
 public class PortadronState {
@@ -15,13 +16,31 @@ public class PortadronState {
     private int vida;
 
     private int ataqueBase; //es una constante, seria para definir el ataque de sus drones, a revisar
-    private int movimientoBase; //es una constante, seria para definir el movimiento de sus drones, a revisar
+    private int municionBase; //es una constante, seria para definir el movimiento de sus drones, a revisar
 
     //listado de ids de drones 
     private List<Integer> listadoDronesIds;
 
     //aca iria constructora/funcion para crear el objeto con los datos obtenidos desde la base de datos mediante la clase Portadron o definirla en otra clase (ya sea esta, service o gamesession)
     public PortadronState () {}
+
+    public PortadronState(Portadron p){
+        this.id = p.getId();
+        this.partidaId = p.getPartidaId().getPartidaId();
+        this.tipo = p.getTipo();
+        this.x = p.getPosicionX();
+        this.y = p.getPosicionY();
+        this.estado = p.getEstado();
+        this.vida = p.getVida();
+
+        if (tipo == Bando.AEREO){
+            this.ataqueBase = 1;
+            this.municionBase = 1;
+        } else {
+            this.ataqueBase = 2;
+            this.municionBase = 2;
+        }
+    }
 
     //selectoras
     public int getId() {
@@ -56,8 +75,8 @@ public class PortadronState {
         return ataqueBase;
     }
 
-    public int getMovimientoBase() {
-        return movimientoBase;
+    public int getMunicionBase() {
+        return municionBase;
     }
 
     public List<Integer> getListadoDronesIds() {
@@ -97,8 +116,8 @@ public class PortadronState {
         this.ataqueBase = ataqueBase;
     }   
 
-    public void setMovimientoBase(int movimientoBase) {
-        this.movimientoBase = movimientoBase;
+    public void setMunicionBase(int municionBase) {
+        this.municionBase = municionBase;
     }
 
     public void setListadoDronesIds(List<Integer> listadoDronesIds) {

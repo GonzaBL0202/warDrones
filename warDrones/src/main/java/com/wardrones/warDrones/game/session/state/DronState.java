@@ -1,5 +1,7 @@
 package com.wardrones.warDrones.game.session.state;
 
+import com.wardrones.warDrones.model.entity.Dron;
+
 public class DronState {
 
     private int id;            //no cambia, a revisar
@@ -15,6 +17,17 @@ public class DronState {
 
     //aca iria constructora/funcion para crear el objeto con los datos obtenidos desde la base de datos mediante la clase Dron o definirla en otra clase (ya sea esta, service o gamesession)
     public DronState() {}
+
+    public DronState(Dron dron){
+        this.id = dron.getId();
+        this.portadronId = dron.getPortadronId().getId();
+        this.vida = dron.getVida();
+        this.estado = dron.getEstado();
+        this.recargas = dron.getRecargas();
+        this.municion = dron.getMunicion();
+        this.x = dron.getPosicionX();
+        this.y = dron.getPosicionY();
+    }
 
     //selectoras
     public int getId() {

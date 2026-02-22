@@ -1,14 +1,20 @@
 package com.wardrones.warDrones.model.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
 import com.wardrones.warDrones.game.session.GameSession;
 import com.wardrones.warDrones.game.session.GameSessionManager;
+import com.wardrones.warDrones.model.entity.Dron;
 import com.wardrones.warDrones.model.entity.Partida;
+import com.wardrones.warDrones.model.entity.Portadron;
 import com.wardrones.warDrones.model.entity.Usuario;
+import com.wardrones.warDrones.model.enums.Bando;
+import com.wardrones.warDrones.model.repository.DronRepository;
 import com.wardrones.warDrones.model.repository.PartidaRepository;
+import com.wardrones.warDrones.model.repository.PortaDronRepository;
 import com.wardrones.warDrones.model.repository.UsuarioRepository;
 
 import jakarta.transaction.Transactional;
@@ -20,18 +26,21 @@ public class PartidaService {
 
     private final PartidaRepository pRepository;
     private final UsuarioRepository uRepository;
+    private final PortaDronRepository pdRepository;
+    private final DronRepository dRepository;
     private final GameSessionManager gameSManager;
     private final LobbyNotifier lobbyNotifier;
 
-    public PartidaService(PartidaRepository ppRepository,UsuarioRepository puRepository, GameSessionManager gsm, LobbyNotifier lobbyNotifier ) {
+    public PartidaService(PartidaRepository ppRepository,UsuarioRepository puRepository, PortaDronRepository pdRepository, DronRepository dRepository,  GameSessionManager gsm, LobbyNotifier lobbyNotifier ) {
         this.pRepository = ppRepository;
         this.uRepository = puRepository;
+        this.pdRepository = pdRepository;
+        this.dRepository = dRepository; 
         this.gameSManager = gsm;
         this.lobbyNotifier = lobbyNotifier;
     }
 
     public Partida crearPartida(int usuarioId) {
-
         Usuario creador = uRepository.findById(usuarioId).orElseThrow(
             () -> new RuntimeException("Usuario no encontrado")
         );
@@ -39,7 +48,7 @@ public class PartidaService {
         Partida game = pRepository.buscarPartidaAbierta().orElse(null);  //Busca una partida activa sin jugador 2, sino encuentra asigna null
 
         if (game == null)
-            game = new Partida(creador,true);                           //Si esta en null, crea una nueva
+            game = new Partida(creador,true);
         else{
             Usuario u2 = uRepository.findById(usuarioId).orElse(null);
             if (u2 != null){
@@ -55,10 +64,31 @@ public class PartidaService {
             }
         }
         
-        return pRepository.save(game);     //Aca se persiste en bd
+        return pRepository.save(game);    //Aca se persiste en bd
     }
 
     public GameSession iniciarPartida(int partidaId) {
+        Partida partida = pRepository.findById(partidaId).orElseThrow(() -> new RuntimeException("Partida not found"));
+
+         try {
+            GameSession gs = gameSManager.obtenerSesion(partidaId);
+            if (gs == null) {
+                throw new RuntimeException("Sesion no encontrada");
+            }
+            gs.setBandosDesplegados(gs.getBandosDesplegados()+1);
+            if(gs.getBandosDesplegados() == 2){
+                gs.setJugadorEnTurno(partida.getUsuarioId1().getId());   // El jugador 1 inicia la partida
+                //llamado sse a ambos usuarios para comenzar
+            }
+            return gs; 
+
+        } catch (IllegalStateException e) {
+            return null;
+        }
+    }
+
+    //Ya confirmado los bandos tenemos toda la info necesario y cargamos todos los valores de GameSession
+    public GameSession asignarBandos(int partidaId, Bando b1, Bando b2) {
         Partida partida = pRepository.findById(partidaId).orElseThrow(
             () -> new RuntimeException("Partida no encontrada")
         );
@@ -69,15 +99,42 @@ public class PartidaService {
                 throw new RuntimeException("Sesion no encontrada");
             }
 
-            gs.setJugadorEnTurno(partida.getUsuarioId1().getId());   // El jugador 1 inicia la partida
+            gs.setBandos(b1, b2);
+        
+            Portadron p1 = new Portadron(partida, b1);
+            pdRepository.save(p1);
+            Portadron p2 = new Portadron(partida, b2);
+            pdRepository.save(p2);
+
+            gs.setPortadrones(p1, p2);
+
+            Portadron aereo = (b1 == Bando.AEREO) ? p1 : p2;
+            Portadron naval = (b1 == Bando.NAVAL) ? p1 : p2;
+
+            //Inicializo una lista de drones 
+            List<Dron> drones = new ArrayList<>();
+           
+            for (int i = 0; i < 12; i++) {
+                Dron d1 = new Dron(aereo, b1);
+                dRepository.save(d1);
+                drones.add(d1);
+            }
+
+            for (int i = 0; i < 6; i++) {
+                Dron d2 = new Dron(naval, b2);
+                dRepository.save(d2);
+                drones.add(d2);
+            }
+
+            gs.setDrones(drones);
+            
             return gs; 
 
         } catch (IllegalStateException e) {
             return null;
         }
     }
-   
-   
+    
     public Partida obtenerPartida(int id) {
         return pRepository.findById(id).orElseThrow(
             () -> new RuntimeException("Partida no encontrada")
@@ -121,8 +178,7 @@ public class PartidaService {
             () -> new RuntimeException("Partida no encontrada"));
         
         partida.setActiva(false);
-        pRepository.save(partida
-        );
+        pRepository.save(partida);
     }
 
     public List<Partida> obtenerPartidasGuardadas(int usuarioId) {

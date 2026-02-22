@@ -38,7 +38,7 @@ public class PartidaController {
     }
 
 
-     @PostMapping("/accion")
+    @PostMapping("/accion")
     public ResponseEntity<Boolean> realizarAccion(@RequestBody AccionRequest request){
 
         boolean hecho = pService.cambiarTurno(
@@ -60,7 +60,7 @@ public class PartidaController {
                 dto.getY()
         );
 
-    return ResponseEntity.ok().build();
+        return ResponseEntity.ok().build();
 
     }
 
@@ -73,10 +73,9 @@ public class PartidaController {
                 dto.getX(),
                 dto.getY()
         );
-
         return ResponseEntity.ok().build();
     }
-
+    
     @PostMapping("/iniciarPartida/{partidaId}")
     public ResponseEntity<?> iniciarPartida(@PathVariable int partidaId) {
 
@@ -92,8 +91,7 @@ public class PartidaController {
     @PutMapping("/partida/salir/{partidaId}")
     public ResponseEntity<?> salirPartida(@PathVariable int partidaId) {
 
-    pService.salirPartida(partidaId);
-
+        pService.salirPartida(partidaId);
         return ResponseEntity.ok().build();
     }
 
