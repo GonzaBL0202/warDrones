@@ -78,25 +78,47 @@ public class GameSession {
         dron.setY(nuevaY);
     }
 
-    public void moverPortaDron(int nuevaX, int nuevaY, int usuarioId) {
+
+    public void moverPortadron(int nuevaX, int nuevaY, int usuarioId) {
 
         validarTurno(usuarioId);
 
-        PortadronState portadron = null;
-
-        if (usuarioId == jugador1Id) {
-            portadron = PortadronNaval;
-        } else if (usuarioId == jugador2Id) {
-            portadron = PortadronAereo;
+        if (usuarioId == jugador1Id){
+            switch (jugador1Bando) {
+                case NAVAL -> {
+                    PortadronNaval.setPosicionX(nuevaX);
+                    PortadronNaval.setPosicionY(nuevaY);
+                }
+                case AEREO -> {
+                    PortadronAereo.setPosicionX(nuevaX);
+                    PortadronAereo.setPosicionY(nuevaY);
+                }
+                default -> throw new IllegalArgumentException("Bando del jugador 1 no reconocido");
+            }
         }
-
-        if (portadron == null) {
-            throw new IllegalArgumentException("PortaDron inexistente");
+        else if (usuarioId == jugador2Id){
+            switch (jugador2Bando) {
+                case NAVAL -> {
+                    PortadronNaval.setPosicionX(nuevaX);
+                    PortadronNaval.setPosicionY(nuevaY);
+                }
+                case AEREO -> {
+                    PortadronAereo.setPosicionX(nuevaX);
+                    PortadronAereo.setPosicionY(nuevaY);
+                }
+                default -> throw new IllegalArgumentException("Bando del jugador 2 no reconocido");
+            }
         }
-
-        portadron.setPosicionX(nuevaX);
-        portadron.setPosicionY(nuevaY);
+        else {
+            throw new IllegalArgumentException("Usuario no encontrado en la partida");
+        }
     }
+
+    //atacar
+    //recargar
+
+
+    //selectoras
 
     public int getTurnoActual() {
         return jugadorEnTurno;

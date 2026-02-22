@@ -5,7 +5,6 @@ public class MovimientoDronRequest {
     private int dronId;
     private int partidaId;
     private int jugadorId;
-    private int portadronId;
     private int x;
     private int y;
 
@@ -21,9 +20,6 @@ public class MovimientoDronRequest {
         return partidaId;
     }
 
-    public int getPortadronId(){
-        return portadronId;
-    }
 
     public int getX(){
         return x;
@@ -43,10 +39,6 @@ public class MovimientoDronRequest {
 
     public void setPartidaId(int partidaId) {
         this.partidaId = partidaId;
-    }
-
-    public void setPortadronId(int portadronId) {
-        this.portadronId = portadronId;
     }
 
     public void setX(int x) {

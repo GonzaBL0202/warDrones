@@ -12,7 +12,7 @@ public class PortadronState {
     private Bando tipo;     //no cambia y quizas ni deba ser de tipo Bando, a revisar
     private int x;
     private int y;
-    private boolean estado;
+    private boolean estado; //se puede ir no se usa
     private int vida;
 
     private int ataqueBase; //es una constante, seria para definir el ataque de sus drones, a revisar

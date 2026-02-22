@@ -19,7 +19,7 @@ import com.wardrones.warDrones.model.repository.UsuarioRepository;
 
 import jakarta.transaction.Transactional;
 
-
+//Service decide si los datos recibidos desde el controller deben destinarse hacia la persistencia de bd (Repository), hacia el juego en memoria (Gamesession) o ambas opciones
 
 @Service
 public class PartidaService {
@@ -111,7 +111,6 @@ public class PartidaService {
             Portadron aereo = (b1 == Bando.AEREO) ? p1 : p2;
             Portadron naval = (b1 == Bando.NAVAL) ? p1 : p2;
 
-            //Inicializo una lista de drones 
             List<Dron> drones = new ArrayList<>();
            
             for (int i = 0; i < 12; i++) {
@@ -159,6 +158,8 @@ public class PartidaService {
         }
     }
 
+    //Acciones dentro de la partida
+
     public void moverDron(int partidaId, int jugadorId, int dronId, int x, int y) {
 
         GameSession session = gameSManager.obtenerSesion(partidaId);
@@ -166,11 +167,15 @@ public class PartidaService {
         session.cambiarTurno();
     }
 
-    public void moverPortaDron(int partidaId, int jugadorId, int x, int y) {
+    public void moverPortadron(int partidaId, int jugadorId, int x, int y) {
         GameSession session = gameSManager.obtenerSesion(partidaId);
-        session.moverPortaDron(x, y, jugadorId);
+        session.moverPortadron(x, y, jugadorId);//
         session.cambiarTurno();
     }
+
+    //atacar
+    //recargar
+    //ver si el del get tb va
 
     @Transactional
     public void salirPartida(int partidaId) {
