@@ -6,6 +6,7 @@ import java.util.Map;
 import com.wardrones.warDrones.game.session.state.DronState;
 import com.wardrones.warDrones.game.session.state.PortadronState;
 import com.wardrones.warDrones.model.entity.Partida;
+import com.wardrones.warDrones.model.enums.Bando;
 
 //GameSession: Es utilizado para manejar en mememoria el estado de la partida (turnos,estado,drones,etc...)
 
@@ -14,11 +15,13 @@ public class GameSession {
     private int partidaId;
     private int jugador1Id;
     private int jugador2Id;
+    private Bando jugador1Bando;
+    private Bando jugador2Bando;
     private int jugadorEnTurno;
     private boolean activa;
 
     //asignacion de portadrones
-    private PortadronState PortadronNaval;
+    private PortadronState portadronNaval;
     private PortadronState portadronAereo;
 
     //Mapeo de drones en la partida
@@ -27,6 +30,8 @@ public class GameSession {
     //tamanio del mapa
     private final int anchoMapa = 35;
     private final int largoMapa = 20;
+
+    private int bandosDesplegados = 0;
 
 
     public GameSession(Partida par){
@@ -64,42 +69,56 @@ public class GameSession {
             throw new IllegalArgumentException("Dron inexistente");
         }
 
-        //A travez del usuario encontrar el portadron y validar que el dron pertenezca a ese portadron
-        if (usuarioId == jugador1Id) {
-            if (!PortadronNaval.getListadoDronesIds().contains(dronId)) {
-                throw new IllegalArgumentException("El dron no pertenece al jugador");
-            }
-        } else if (usuarioId == jugador2Id) {
-            if (!portadronAereo.getListadoDronesIds().contains(dronId)) {
-                throw new IllegalArgumentException("El dron no pertenece al jugador");
-            }
-        }   else {
-            throw new IllegalArgumentException("Usuario no reconocido");
+        if (!portadronNaval.getListadoDronesIds().contains(dronId) && !portadronAereo.getListadoDronesIds().contains(dronId)) {
+            throw new IllegalArgumentException("El dron no pertenece a ningún portadron");
         }
 
         dron.setX(nuevaX);
         dron.setY(nuevaY);
     }
 
-    public void moverPortaDron(int nuevaX, int nuevaY, int usuarioId) {
+
+
+    public void moverPortadron(int nuevaX, int nuevaY, int usuarioId) {
 
         validarTurno(usuarioId);
 
-        PortadronState portadron = null;
-
-        if (usuarioId == jugador1Id) {
-            portadron = PortadronNaval;
-        } else if (usuarioId == jugador2Id) {
-            portadron = portadronAereo;
+        if (usuarioId == jugador1Id){
+            switch (jugador1Bando) {
+                case NAVAL -> {
+                    portadronNaval.setPosicionX(nuevaX);
+                    portadronNaval.setPosicionY(nuevaY);
+                }
+                case AEREO -> {
+                    portadronAereo.setPosicionX(nuevaX);
+                    portadronAereo.setPosicionY(nuevaY);
+                }
+                default -> throw new IllegalArgumentException("Bando del jugador 1 no reconocido");
+            }
         }
-
-        if (portadron == null) {
-            throw new IllegalArgumentException("PortaDron inexistente");
+        else if (usuarioId == jugador2Id){
+            switch (jugador2Bando) {
+                case NAVAL -> {
+                    portadronNaval.setPosicionX(nuevaX);
+                    portadronNaval.setPosicionY(nuevaY);
+                }
+                case AEREO -> {
+                    portadronAereo.setPosicionX(nuevaX);
+                    portadronAereo.setPosicionY(nuevaY);
+                }
+                default -> throw new IllegalArgumentException("Bando del jugador 2 no reconocido");
+            }
         }
-
-        portadron.setPosicionX(nuevaX);
-        portadron.setPosicionY(nuevaY);
+        else {
+            throw new IllegalArgumentException("Usuario no encontrado en la partida");
+        }
     }
+
+    //atacar
+    //recargar
+
+
+    //selectoras
 
     public int getTurnoActual() {
         return jugadorEnTurno;

@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.wardrones.warDrones.model.dto.request.AccionRequest;
 import com.wardrones.warDrones.model.dto.request.CrearPartidaRequest;
 import com.wardrones.warDrones.model.dto.request.MovimientoDronRequest;
+import com.wardrones.warDrones.model.dto.request.MovimientoPortadronRequest;
 import com.wardrones.warDrones.model.entity.Partida;
 import com.wardrones.warDrones.model.service.PartidaService;
 
@@ -38,6 +38,8 @@ public class PartidaController {
     }
 
 
+    //Endpoints dentro de la partida:
+
      @PostMapping("/accion")
     public ResponseEntity<Boolean> realizarAccion(@RequestBody AccionRequest request){
 
@@ -49,8 +51,8 @@ public class PartidaController {
         return ResponseEntity.ok(hecho);
     }
 
-    @PostMapping("/{id}/moverDron")
-    public ResponseEntity<?> mover(@RequestBody MovimientoDronRequest dto) {
+    @PostMapping("/moverDron")
+    public ResponseEntity<?> moverDron(@RequestBody MovimientoDronRequest dto) {
 
         pService.moverDron(
                 dto.getPartidaId(),
@@ -64,10 +66,10 @@ public class PartidaController {
 
     }
 
-    @PostMapping("/moverPortaDron")
-    public ResponseEntity<?> moverPortaDron(@RequestBody MovimientoDronRequest dto) {
+    @PostMapping("/moverPortadron")
+    public ResponseEntity<?> moverPortadron(@RequestBody MovimientoPortadronRequest dto) {
 
-        pService.moverPortaDron(
+        pService.moverPortadron(
                 dto.getPartidaId(),
                 dto.getJugadorId(),
                 dto.getX(),
@@ -76,6 +78,16 @@ public class PartidaController {
 
         return ResponseEntity.ok().build();
     }
+
+    //post de atacar
+
+    //post de recargar
+
+    //get generico para todas las acciones
+
+
+
+    //Endpoints generales:
 
     @PostMapping("/iniciarPartida/{partidaId}")
     public ResponseEntity<?> iniciarPartida(@PathVariable int partidaId) {

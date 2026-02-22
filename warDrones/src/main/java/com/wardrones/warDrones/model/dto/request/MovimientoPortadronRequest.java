@@ -2,12 +2,17 @@ package com.wardrones.warDrones.model.dto.request;
 
 public class MovimientoPortadronRequest {
 
-    private int portadronId;
+    private int jugadorId;
+    private int partidaId;
     private int x;
     private int y;
 
-     public int getPortaDronId(){
-        return portadronId;
+    public int getJugadorId(){
+        return jugadorId;
+    }
+
+    public int getPartidaId(){
+        return partidaId;
     }
 
     public int getX(){
@@ -18,12 +23,12 @@ public class MovimientoPortadronRequest {
         return y;
     }
 
-    public int getPortadronId() {
-        return portadronId;
+    public void setJugadorId(int jugadorId) {
+        this.jugadorId = jugadorId;
     }
 
-    public void setPortadronId(int portadronId) {
-        this.portadronId = portadronId;
+    public void setPartidaId(int partidaId) {
+        this.partidaId = partidaId;
     }
 
     public void setX(int x) {

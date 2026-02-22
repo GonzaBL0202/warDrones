@@ -2,23 +2,23 @@ package com.wardrones.warDrones.model.dto.request;
 
 public class RecargarDronRequest {
 
-    private Long portadronId;
+    private int portadronId;
 
-    private Long dronId;
+    private int dronId;
 
-    public Long getPortadronId() {
+    public int getPortadronId() {
         return portadronId;
     }   
 
-    public Long getDronId() {
+    public int getDronId() {
         return dronId;
     }
 
-    public void setPortadronId(Long portadronId) {
+    public void setPortadronId(int portadronId) {
         this.portadronId = portadronId;
     }
 
-    public void setDronId(Long dronId) {
+    public void setDronId(int dronId) {
         this.dronId = dronId;
     }
 }
