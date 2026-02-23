@@ -12,7 +12,7 @@ public class PortadronState {
     private Bando tipo;     //no cambia y quizas ni deba ser de tipo Bando, a revisar
     private int x;
     private int y;
-    private boolean estado; //se puede ir no se usa
+    private boolean estado; 
     private int vida;
 
     private int ataqueBase; //es una constante, seria para definir el ataque de sus drones, a revisar
@@ -110,6 +110,10 @@ public class PortadronState {
 
     public void setVida(int vida) {
         this.vida = vida;
+    }
+
+    public void reducirVida() {
+        this.vida--;
     }
 
     public void setAtaqueBase(int ataqueBase) {

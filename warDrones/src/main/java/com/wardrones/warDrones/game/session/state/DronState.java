@@ -62,6 +62,7 @@ public class DronState {
         return y;
     }
 
+    //setters
     public void setX(int x) {
         this.x = x;
     }
@@ -70,5 +71,23 @@ public class DronState {
         this.y = y;
     }
 
+    public void setVida(int vida) {
+        this.vida = vida;
+    }
 
+    public void setEstado(boolean estado) {
+        this.estado = estado;
+    }
+
+    public void setRecargas(int recargas) {
+        this.recargas = recargas;
+    }
+
+    public void bajarMunicion() {
+        this.municion--;
+    }
+
+    public void aumentarMunicion() {
+        this.municion++;
+    }
 }

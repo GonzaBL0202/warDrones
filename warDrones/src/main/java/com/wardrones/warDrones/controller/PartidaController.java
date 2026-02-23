@@ -12,9 +12,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.wardrones.warDrones.model.dto.request.AtacarDronOPortaRequest;
 import com.wardrones.warDrones.model.dto.request.CrearPartidaRequest;
 import com.wardrones.warDrones.model.dto.request.MovimientoDronRequest;
 import com.wardrones.warDrones.model.dto.request.MovimientoPortadronRequest;
+import com.wardrones.warDrones.model.dto.request.RecargarDronRequest;
 import com.wardrones.warDrones.model.entity.Partida;
 import com.wardrones.warDrones.model.service.PartidaService;
 
@@ -79,8 +81,29 @@ public class PartidaController {
     }
 
     //post de atacar
+    @PostMapping("/atacarDronOPorta")
+    public ResponseEntity<?> atacarDronOPorta(@RequestBody AtacarDronOPortaRequest dto) {
+
+        pService.atacarDronOPorta(
+            dto.getPartidaId(),
+            dto.getJugadorId(),
+            dto.getDronAtacanteId(),
+            dto.getDronObjetivoId()
+        );
+        return ResponseEntity.ok().build();
+    }
 
     //post de recargar
+    @PostMapping("/recargarDron")
+    public ResponseEntity<?> recargarDron(@RequestBody RecargarDronRequest dto) {
+
+        pService.recargarDron(
+            dto.getPartidaId(),
+            dto.getJugadorId(),
+            dto.getDronId()
+        );
+        return ResponseEntity.ok().build();
+    }
 
     //get generico para todas las acciones
 

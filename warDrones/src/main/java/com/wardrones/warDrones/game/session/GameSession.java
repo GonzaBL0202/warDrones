@@ -114,8 +114,150 @@ public class GameSession {
         }
     }
 
-    //atacar
-    //recargar
+
+    public void atacarDron(int dronAtaId, int dronObjId, int usuarioId) {
+
+        validarTurno(usuarioId);
+
+        DronState dronA = drones.get(dronAtaId);
+        DronState dronB = drones.get(dronObjId);
+
+        if (dronA ==null) 
+            throw new IllegalArgumentException("Dron atacante inexistente");
+        else if (dronB==null)
+            throw new IllegalArgumentException("Dron objetivo inexistente");
+
+        if(!PortadronNaval.getListadoDronesIds().contains(dronAtaId) && !PortadronAereo.getListadoDronesIds().contains(dronAtaId))
+            throw new IllegalArgumentException("El dron atacante no pertenece a ningún portadron");
+        else if (!PortadronNaval.getListadoDronesIds().contains(dronObjId) && !PortadronAereo.getListadoDronesIds().contains(dronObjId))
+            throw new IllegalArgumentException("El dron objetivo no pertenece a ningún portadron");
+
+
+        //reduce la municion del dron atacante
+        if(dronA.getMunicion()==0)
+            throw new IllegalArgumentException("Dron atacante sin municion");
+        else
+            dronA.bajarMunicion();
+
+        //reduce la vida y mata al dron objetivo
+        if(dronB.getVida()==0 || !dronB.getEstado())
+            throw new IllegalArgumentException("Dron objetivo estaba muerto");
+        else {
+            dronB.setVida(0);
+            dronB.setEstado(false);
+        }
+
+    }
+
+    public void atacarPortadron(int dronAtaId, int usuarioId) {
+
+        validarTurno(usuarioId);
+        
+        int objPorta = 0; //0 si es null, 1 si es naval, 2 si es aereo
+
+        DronState dronA = drones.get(dronAtaId);
+
+        if (dronA ==null) 
+            throw new IllegalArgumentException("Dron atacante inexistente");
+
+        if(!PortadronNaval.getListadoDronesIds().contains(dronAtaId) && !PortadronAereo.getListadoDronesIds().contains(dronAtaId))
+            throw new IllegalArgumentException("El dron atacante no pertenece a ningún portadron");
+
+
+        //validar el bando del portadron objetivo
+        if (usuarioId == jugador1Id){
+            switch (jugador1Bando) {
+                case NAVAL : {
+                    objPorta = 2;
+                } break;
+                case AEREO : {
+                    objPorta = 1;
+                } break;
+                default : throw new IllegalArgumentException("Bando del jugador 1 no reconocido");
+            }
+        }
+        else if (usuarioId == jugador2Id){
+            switch (jugador2Bando) {
+                case NAVAL : {
+                    objPorta = 2;
+                } break;
+                case AEREO : {
+                    objPorta = 1;
+                } break;
+                default : throw new IllegalArgumentException("Bando del jugador 2 no reconocido");
+            }
+        }
+        else {
+            throw new IllegalArgumentException("Usuario no encontrado en la partida");
+        }
+
+        //reduce la municion del dron atacante
+        if(dronA.getMunicion()==0)
+            throw new IllegalArgumentException("Dron atacante sin municion");
+        else
+            dronA.bajarMunicion();
+
+        //reduce la vida y mata al dron objetivo
+        if (objPorta == 1) { //es naval
+            if(PortadronNaval.getVida()==0 || !PortadronNaval.getEstado())
+                throw new IllegalArgumentException("Portadron objetivo estaba muerto");
+            else {
+                PortadronNaval.reducirVida();
+            if (PortadronNaval.getVida()==0)
+                PortadronNaval.setEstado(false);
+            }
+
+        } else if (objPorta == 2) {//es aereo
+            if(PortadronAereo.getVida()==0 || !PortadronAereo.getEstado())
+                throw new IllegalArgumentException("Portadron objetivo estaba muerto");
+            else {
+                PortadronAereo.reducirVida();
+            if (PortadronAereo.getVida()==0)
+                PortadronAereo.setEstado(false);
+            }
+
+        } else
+            throw new IllegalArgumentException("Portadron objetivo inexistente");
+
+    }
+
+
+    public void recargarDron(int dronId, int usuarioId) {
+
+        validarTurno(usuarioId);
+
+        boolean dronNaval;
+
+        DronState dron = drones.get(dronId);
+
+        if (dron == null) {
+            throw new IllegalArgumentException("Dron inexistente");
+        }
+
+        if (PortadronNaval.getListadoDronesIds().contains(dronId)) 
+            dronNaval = true;
+        else if(PortadronAereo.getListadoDronesIds().contains(dronId)) 
+            dronNaval = false;
+        else
+            throw new IllegalArgumentException("El dron no pertenece a ningún portadron");
+        
+
+        //recargar la municion del dron
+        if (dron.getRecargas()==0)
+                throw new IllegalArgumentException("No tiene recargas disponibles");
+        else {
+            if (dronNaval) { //si es naval, recarga 2 misiles extras
+                dron.setRecargas(0);
+                dron.aumentarMunicion();
+                dron.aumentarMunicion();
+            }
+            else { //si es aereo, recarga 1 bomba extra
+                dron.setRecargas(0);
+                dron.aumentarMunicion();
+            }
+        }
+
+    }
 
 
     //selectoras

@@ -1,13 +1,18 @@
 package com.wardrones.warDrones.model.dto.request;
 
-public class AtacarDronRequest {
+public class AtacarDronOPortaRequest {
 
-    private int portadronId;
+    private int jugadorId;
+    private int partidaId;
     private int dronAtacanteId;
     private int dronObjetivoId;
 
-    public int getPortadronId() {
-        return portadronId;
+    public int getJugadorId() {
+        return jugadorId;
+    }
+
+    public int getPartidaId() {
+        return partidaId;
     }
 
     public int getDronAtacanteId() {
@@ -18,8 +23,12 @@ public class AtacarDronRequest {
         return dronObjetivoId;
     }
 
-    public void setPortadronId(int portadronId) {
-        this.portadronId = portadronId;
+    public void setJugadorId(int jugadorId) {
+        this.jugadorId = jugadorId;
+    }
+
+    public void setPartidaId(int partidaId) {
+        this.partidaId = partidaId;
     }
 
     public void setDronAtacanteId(int dronAtacanteId) {

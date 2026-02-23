@@ -173,9 +173,22 @@ public class PartidaService {
         session.cambiarTurno();
     }
 
-    //atacar
-    //recargar
-    //ver si el del get tb va
+    public void atacarDronOPorta(int partidaId, int jugadorId, int dronA, int obj) {
+        GameSession session = gameSManager.obtenerSesion(partidaId);
+        if(obj == 0)
+            session.atacarPortadron(dronA, jugadorId);
+        else
+            session.atacarDron(dronA, obj, jugadorId);
+        session.cambiarTurno();
+    }
+
+    public void recargarDron (int partidaId, int jugadorId, int dronId) {
+        GameSession session = gameSManager.obtenerSesion(partidaId);
+        session.recargarDron(dronId, jugadorId);
+        session.cambiarTurno();
+    }
+
+    //ver si el del get tb va////
 
     @Transactional
     public void salirPartida(int partidaId) {
