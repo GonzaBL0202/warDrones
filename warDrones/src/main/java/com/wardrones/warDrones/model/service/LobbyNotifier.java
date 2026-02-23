@@ -1,5 +1,6 @@
 package com.wardrones.warDrones.model.service;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -32,11 +33,40 @@ public class LobbyNotifier {
         SseEmitter emitter = emitters.get(usuarioId);
         if (emitter != null) {
             try {
-                emitter.send(SseEmitter.event().name("partida-start").data(String.valueOf(partidaId)));
+                emitter.send(SseEmitter.event()
+                .name("partida-start")
+                .data(partidaId));
                 emitter.complete();
             } catch (Exception e) {
                 // remove emitter on error
             } finally {
+                emitters.remove(usuarioId);
+            }
+        }
+    }
+
+    public void notifyPartidaFinalizada(int usuarioId, int partidaId) {
+        SseEmitter emitter = emitters.get(usuarioId);
+        if (emitter != null) {
+            try {
+                emitter.send(SseEmitter.event()
+                .name("partida-finalizada")
+                .data(partidaId));
+            } catch (IOException e) {
+                emitters.remove(usuarioId);
+            }
+        }
+    }
+
+    public void notifyPartidaGuardada(int usuarioId, int partidaId) {
+        SseEmitter emitter = emitters.get(usuarioId);
+        if (emitter != null) {
+            try {
+                emitter.send(
+                    SseEmitter.event()
+                    .name("partida-guardada")
+                    .data(partidaId));
+            } catch (IOException e) {
                 emitters.remove(usuarioId);
             }
         }

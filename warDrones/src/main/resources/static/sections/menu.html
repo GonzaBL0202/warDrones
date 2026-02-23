@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Jacquard+12&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/fuente.css">
+    <link rel="stylesheet" href="/css/fuente.css">
 </head>
 
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0;">
@@ -27,7 +27,7 @@
 
             <form action="crear-partida.html" method="get">
                 <button class="boton boton-menu" type="submit" style="font-size: 18px;"><span
-                        class="jacquard-12-regular">Crear Partida</span></button>
+                        class="jacquard-12-regular">Iniciar Partida</span></button>
             </form>
             <form action="cargar-partida.html" method="get">
                 <button class="boton boton-menu" type="submit" style="font-size: 18px;"><span
@@ -44,15 +44,7 @@
         </div>
     </section>
 
-    <script>
-        // Obtener el nombre de usuario del almacenamiento local
-        const nombreUsuario = localStorage.getItem("username");
-
-        // Mostrar el nombre de usuario en la página
-        if (nombreUsuario) {
-            document.getElementById("nombreUsuario").textContent = nombreUsuario;
-        }
-    </script>
+    <script src="../js/menu.js"></script>
 </body>
 
 </html>

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 import com.wardrones.warDrones.model.entity.Partida;
 
-//GameSessionManager: Es utilizado para si se necesita poder mantener en memoria mas de una partida activa, aqui se guardan, obtienen y borran
+//GameSessionManager: Es utilizado para mantener en memoria mas de una partida activa, aqui se guardan, obtienen y borran
 
 @Component
 public class GameSessionManager {
