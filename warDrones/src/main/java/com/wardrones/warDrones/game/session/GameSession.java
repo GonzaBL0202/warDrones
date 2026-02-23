@@ -10,6 +10,7 @@ import com.wardrones.warDrones.model.entity.Dron;
 import com.wardrones.warDrones.model.entity.Partida;
 import com.wardrones.warDrones.model.entity.Portadron;
 import com.wardrones.warDrones.model.enums.Bando;
+import com.wardrones.warDrones.model.enums.Estado;  
 
 //GameSession: Es utilizado para manejar en mememoria el estado de la partida (turnos,estado,drones,etc...)
 
@@ -21,7 +22,7 @@ public class GameSession {
     private Bando jugador1Bando;
     private Bando jugador2Bando;
     private int jugadorEnTurno;
-    private boolean activa;
+    private Estado estado;
 
     //asignacion de portadrones
     private PortadronState PortadronNaval;
@@ -40,7 +41,7 @@ public class GameSession {
         partidaId = par.getPartidaId();
         jugador1Id = par.getUsuarioId1().getId();
         jugador2Id = par.getUsuarioId2().getId();
-        activa = par.getActiva();
+        estado = par.getPartidaEstado();
     }
 
     //funciones
@@ -270,17 +271,17 @@ public class GameSession {
         return partidaId;
     }
 
-    public boolean getActiva(){
-        return activa;
-    }
-
     public int getJugadorEnTurno(){
         return jugadorEnTurno;
     }
 
     public int getBandosDesplegados(){
         return bandosDesplegados;
-    }       
+    }
+    
+    public Estado getEstado() {
+        return estado;
+    }
 
     public void setJugadorEnTurno(int jugadorEnTurno) {
         this.jugadorEnTurno = jugadorEnTurno;

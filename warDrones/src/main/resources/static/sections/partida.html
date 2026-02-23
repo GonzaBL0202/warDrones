@@ -10,7 +10,43 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Jacquard+12&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../css/fuente.css">
+    <link rel="stylesheet" href="/css/fuente.css">
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background-color: #24323d;
+            border: 4px solid #6a4a1c;
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+            max-width: 400px;
+        }
+        .modal-content h2 {
+            color: #fff;
+            margin-top: 0;
+            font-size: 28px;
+        }
+        .modal-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 
 <body style="margin: 0; min-height: 100vh; display: flex; align-items: stretch;">
@@ -21,6 +57,9 @@
         <div
             style="position: relative; z-index: 1; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px;">
             <h1 class="jacquard-12-regular" style="margin: 0 0 6px; font-size: 46px; text-align: center;">Partida</h1>
+            <button id="btnSalir" class="boton boton-menu" type="button" style="font-size: 18px;">
+                <span class="jacquard-12-regular">Salir</span>
+            </button>
             <form action="menu.html" method="get">
                 <button class="boton boton-menu" type="submit" style="font-size: 18px;"><span
                         class="jacquard-12-regular">Volver al Menu</span></button>
@@ -47,38 +86,55 @@
             style="width: 100%; height: calc(100vh - 32px); border: 4px solid #6a4a1c; box-sizing: border-box; background: #24323d; cursor: pointer;"></canvas>
     </main>
 
-<script src="../js/partida.js"></script>
-<script>
+    <div id="modalSalir" class="modal">
+        <div class="modal-content">
+            <h2 class="jacquard-12-regular">¿Deseas salir?</h2>
+            <div class="modal-buttons">
+                <button id="btnConfirmarSalir" class="boton boton-menu" style="font-size: 16px;">
+                    <span class="jacquard-12-regular">Abandonar</span>
+                </button>
+                <button id="btnGuardar" class="boton boton-menu" style="font-size: 16px;">
+                    <span class="jacquard-12-regular">Guardar</span>
+                </button>
+                <button id="btnCancelar" class="boton boton-menu" style="font-size: 16px;">
+                    <span class="jacquard-12-regular">Cancelar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/partida.js"></script>
+    <script>
         // Este string puede venir de URL, BD, session, etc.
-    // Si otro modulo ya define un valor, usa window.BANDO_ENTRADA.
-    const bandoEntradaRaw = window.BANDO_ENTRADA ?? new URLSearchParams(window.location.search).get('bando') ?? 'aereo';
-    const partidaApp = new PartidaApp(bandoEntradaRaw);
+        // Si otro modulo ya define un valor, usa window.BANDO_ENTRADA.
+        const bandoEntradaRaw = window.BANDO_ENTRADA ?? new URLSearchParams(window.location.search).get('bando') ?? 'aereo';
+        const partidaApp = new PartidaApp(bandoEntradaRaw);
 
-    // Funciones comunes
-    partidaApp.cargarSpritePortaNaval();
-    partidaApp.cargarSpritePortaAereo();
-    partidaApp.ajustarCanvasBase();
-    partidaApp.reiniciarNiebla();
-    partidaApp.posicionarPortaNaval();
-    partidaApp.posicionarPortaAereo();
-    partidaApp.crearFlotaSegunBando();
+        // Funciones comunes
+        partidaApp.cargarSpritePortaNaval();
+        partidaApp.cargarSpritePortaAereo();
+        partidaApp.ajustarCanvasBase();
+        partidaApp.reiniciarNiebla();
+        partidaApp.posicionarPortaNaval();
+        partidaApp.posicionarPortaAereo();
+        partidaApp.crearFlotaSegunBando();
 
-    if (partidaApp.esNaval()) {
-        partidaApp.cargarSpriteDronNaval();
-        partidaApp.revelarInicioNaval();
-        partidaApp.menuNaval();
-        partidaApp.desplegarDronesNaval();
-    } else {
-        partidaApp.cargarSpriteDronAereo();
-        partidaApp.revelarInicioAereo();
-        partidaApp.menuAereo();
-        partidaApp.desplegarDronesAereo();
-    }
+        if (partidaApp.esNaval()) {
+            partidaApp.cargarSpriteDronNaval();
+            partidaApp.revelarInicioNaval();
+            partidaApp.menuNaval();
+            partidaApp.desplegarDronesNaval();
+        } else {
+            partidaApp.cargarSpriteDronAereo();
+            partidaApp.revelarInicioAereo();
+            partidaApp.menuAereo();
+            partidaApp.desplegarDronesAereo();
+        }
 
-    partidaApp.aplicarVisionActiva();
-    partidaApp.renderizarEscena();
-    partidaApp.iniciarLoop();
-</script>
+        partidaApp.aplicarVisionActiva();
+        partidaApp.renderizarEscena();
+        partidaApp.iniciarLoop();
+    </script>
 </body>
 
 </html>
