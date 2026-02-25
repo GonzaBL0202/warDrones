@@ -60,10 +60,7 @@
             <button id="btnSalir" class="boton boton-menu" type="button" style="font-size: 18px;">
                 <span class="jacquard-12-regular">Salir</span>
             </button>
-            <form action="menu.html" method="get">
-                <button class="boton boton-menu" type="submit" style="font-size: 18px;"><span
-                        class="jacquard-12-regular">Volver al Menu</span></button>
-            </form>
+            <!-- El botón 'Volver al Menu' fue removido porque ahora hay un submenu con opciones abandon/guardar -->
             <section style="width: 100%; max-width: 280px; background: rgba(19, 31, 38, 0.75); border: 2px solid #f2cb67; padding: 10px; box-sizing: border-box; color: #f7e7b2;">
                 <p id="bandoLabel" class="jacquard-12-regular" style="margin: 0 0 4px; font-size: 24px;">Bando: -</p>
                 <p id="droneTypeLabel" class="jacquard-12-regular" style="margin: 0 0 2px; font-size: 22px;">Dron activo: -</p>
@@ -75,6 +72,16 @@
                 </button>
                 <button id="nextDroneBtn" class="boton" type="button" style="font-size: 16px; width: 100%; height: 34px; margin-bottom: 8px;">
                     <span class="jacquard-12-regular">Cambiar Dron</span>
+                </button>
+                <!-- nuevos botones de acción -->
+                <button id="moveBtn" class="boton" type="button" style="font-size: 16px; width: 100%; height: 34px; margin-bottom: 8px;">
+                    <span class="jacquard-12-regular">Movimiento</span>
+                </button>
+                <button id="attackBtn" class="boton" type="button" style="font-size: 16px; width: 100%; height: 34px; margin-bottom: 8px;">
+                    <span class="jacquard-12-regular">Atacar</span>
+                </button>
+                <button id="reloadBtn" class="boton" type="button" style="font-size: 16px; width: 100%; height: 34px; margin-bottom: 8px;">
+                    <span class="jacquard-12-regular">Recargar</span>
                 </button>
                 <div id="fleetList" style="max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;"></div>
             </section>

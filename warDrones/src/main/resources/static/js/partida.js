@@ -19,6 +19,15 @@ const setupHint = document.getElementById('setupHint');
 const deployDroneBtn = document.getElementById('deployDroneBtn');
 const fleetList = document.getElementById('fleetList');
 const nextDroneBtn = document.getElementById('nextDroneBtn');
+const moveBtn = document.getElementById('moveBtn');
+const attackBtn = document.getElementById('attackBtn');
+const reloadBtn = document.getElementById('reloadBtn');
+
+/* Modos de acción activados por botones */
+let isMoveMode = false;      // espera click para mover dron activo
+let isAttackMode = false;    // espera seleccionar objetivo para atacar
+// recarga no necesita modo separado, se lanza desde el botón
+
 
 /* Definicion de tipos de dron por bando */
 const DRONE_SETUP = {
@@ -737,10 +746,57 @@ if (usuarioId && currentPartidaId) {
     /* Click sobre canvas:
        1) si haces click en un dron, lo selecciona
        2) si haces click en una celda vacia, intenta mover al dron activo */
-    canvas.addEventListener('click', (event) => {
+    canvas.addEventListener('click', async (event) => {
         const rect = canvas.getBoundingClientRect();
         const x = Math.floor((event.clientX - rect.left) / grid);
         const y = Math.floor((event.clientY - rect.top) / grid);
+
+        // si estamos en modo ataque, cualquier click intenta disparar
+        if (isAttackMode) {
+            let objetivoId = null;
+            const atacante = getActiveDrone(); // Ya validado en el listener del botón de ataque
+
+            // si se clickea en porta enemigo, objetivo 0 según backend
+            if (isInsidePortaArea(x, y, getEnemyPorta())) {
+                objetivoId = 0;
+            } else {
+                // NOTA: Esto actualmente solo permite seleccionar drones del propio bando como objetivos,
+                // ya que el array `drones` solo contiene la flota del jugador.
+                // Para atacar enemigos, se necesitará una lista de drones enemigos visibles.
+                const targetIndex = drones.findIndex(d => d.deployed && d.x === x && d.y === y);
+                if (targetIndex >= 0) {
+                    objetivoId = drones[targetIndex].id;
+                }
+            }
+
+            if (objetivoId !== null) {
+                try {
+                    const res = await fetch(`${API_URL}/partidas/atacarDronOPorta`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            partidaId: localStorage.getItem('partidaId'),
+                            jugadorId: getId(),
+                            dronAtacanteId: atacante.id,
+                            dronObjetivoId: objetivoId
+                        })
+                    });
+                    if (!res.ok) {
+                        const msg = await res.text();
+                        alert('Error al atacar: ' + msg);
+                    } else {
+                        setupHint.textContent = 'Ataque enviado. Esperando actualización del servidor.';
+                    }
+                } catch (err) {
+                    console.error('Error enviando ataque:', err);
+                    alert('Error de red al intentar atacar.');
+                }
+            } else {
+                setupHint.textContent = 'Seleccione un objetivo válido para atacar';
+            }
+            isAttackMode = false;
+            return;
+        }
 
         let esSelec = false;
 
@@ -803,78 +859,62 @@ if (usuarioId && currentPartidaId) {
             return;
         }
 
-        if (!esSelec) {
-            if (isPortaSelected) {
-                //consumo de api para mover porta dron
-                let res = fetch("/partidas/moverPortaDron", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        partidaId: localStorage.getItem("partidaId"),
-                        jugadorId: getId(),
-                        x: x,
-                        y: y
-                    })
-                });
-
-                if (!res.ok) {
-                    const msg = res.text();
-                    alert("Error: " + msg);
-                    return;
-                }
-
-                const user = res.json();
-            } else {
-                //consumo de api para mover dron activo
-                let res = fetch("/partidas/moverDron", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        partidaId: localStorage.getItem("partidaId"),
-                        jugadorId: getId(),
-                        dronId: getActiveDrone().id,
-                        x: x,
-                        y: y
-                    })
-                });
-
-                if (!res.ok) {
-                    const msg = res.text();
-                    alert("Error: " + msg);
-                    return;
-                }
-
-                const user = res.json();
-
-                if (isDeployMode) {
-                    let nextIndex = activeDroneIndex;
-                    let deploys = 0;
-                    for (let i = 0; i < drones.length; i++) {
-                        nextIndex = (nextIndex + 1) % drones.length;
-                        if (drones[nextIndex].deployed) {
-                            deploys++;
-                        }
+        // Si no fue un click de selección y estamos en modo movimiento, procesar la acción.
+        if (!esSelec && isMoveMode) {
+            try {
+                let res;
+                if (isPortaSelected) {
+                    res = await fetch(`${API_URL}/partidas/moverPortaDron`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            partidaId: localStorage.getItem("partidaId"),
+                            jugadorId: getId(),
+                            x: x,
+                            y: y
+                        })
+                    });
+                } else {
+                    const drone = getActiveDrone();
+                    if (!drone || !drone.deployed) {
+                        setupHint.textContent = 'Selecciona un dron desplegado para moverlo.';
+                        isMoveMode = false;
+                        return;
                     }
-
-                    if (deploys === drones.length) {
-                        let res = fetch("/partidas/iniciarPartida/" + localStorage.getItem("partidaId"), {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                        });
-
-                        if (!res.ok) {
-                            const msg = res.text();
-                            alert("Error: " + msg);
-                            return;
-                        }
-
-                        const user = res.json();
-                    }
+                    res = await fetch(`${API_URL}/partidas/moverDron`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            partidaId: localStorage.getItem("partidaId"),
+                            jugadorId: getId(),
+                            dronId: drone.id,
+                            x: x,
+                            y: y
+                        })
+                    });
                 }
+
+                if (res.ok) {
+                    // Actualización optimista: Mueve la unidad en el cliente para dar feedback visual inmediato.
+                    // Lo ideal sería que el servidor envíe el nuevo estado del juego vía SSE.
+                    moveActiveDroneTo(x, y);
+                } else {
+                    const msg = await res.text();
+                    alert("Error al mover: " + msg);
+                }
+            } catch (err) {
+                console.error('Error en la petición de movimiento:', err);
+                alert('Error de red al intentar mover.');
+            } finally {
+                // Salir del modo movimiento y limpiar el hint después del intento.
+                isMoveMode = false;
+                setupHint.textContent = '';
             }
+            return; // La acción de click ha sido manejada.
         }
 
-        moveActiveDroneTo(x, y);
+        // Si se hizo click sin estar en modo movimiento, asegurarse de que el modo se desactive.
+        if (isMoveMode) isMoveMode = false;
     });
 
     function getId() {
@@ -906,6 +946,8 @@ if (usuarioId && currentPartidaId) {
         activeDroneIndex = nextIndex;
         isPortaSelected = false;
         isDeployMode = false;
+        isAttackMode = false;
+        isMoveMode = false;
         revealAroundActiveDrone();
         updateInfoPanel();
         drawScene();
@@ -923,7 +965,62 @@ if (usuarioId && currentPartidaId) {
         }
 
         isDeployMode = true;
+        isAttackMode = false;
+        isMoveMode = false;
         setupHint.textContent = `Despliegue activo: haz click en el mapa para colocar #${drone.id}`;
+    });
+
+    // nuevo botón movimiento
+    moveBtn.addEventListener('click', () => {
+        isMoveMode = true;
+        isAttackMode = false;
+        isDeployMode = false;
+        setupHint.textContent = 'Modo movimiento: haz click en la celda destino';
+    });
+
+    // nuevo botón atacar
+    attackBtn.addEventListener('click', () => {
+        const activeDrone = getActiveDrone();
+        if (!activeDrone || !activeDrone.deployed) {
+            setupHint.textContent = 'Selecciona un dron desplegado para atacar.';
+            return;
+        }
+        isAttackMode = true;
+        isMoveMode = false;
+        isDeployMode = false;
+        setupHint.textContent = 'Modo ataque: selecciona un objetivo (dron o porta enemigo)';
+    });
+
+    // nuevo botón recargar
+    reloadBtn.addEventListener('click', async () => {
+        const drone = getActiveDrone();
+        if (!drone || !drone.deployed) {
+            setupHint.textContent = 'No hay dron desplegado para recargar';
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/partidas/recargarDron`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    partidaId: localStorage.getItem('partidaId'),
+                    jugadorId: getId(),
+                    dronId: drone.id
+                })
+            });
+            if (!res.ok) {
+                const msg = await res.text();
+                alert('Error al recargar: ' + msg);
+            } else {
+                setupHint.textContent = 'Recarga enviada. Esperando actualización del servidor.';
+            }
+        } catch (err) {
+            console.error('Error recargando dron:', err);
+        }
+        // después de la acción vuelve al modo normal
+        isAttackMode = false;
+        isMoveMode = false;
     });
 
     /* Evento que se ejecuta cuando cambia el tama�o de la ventana.
