@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -24,9 +24,11 @@
             align-items: center;
             justify-content: center;
         }
+
         .modal.active {
             display: flex;
         }
+
         .modal-content {
             background-color: #24323d;
             border: 4px solid #6a4a1c;
@@ -35,11 +37,13 @@
             text-align: center;
             max-width: 400px;
         }
+
         .modal-content h2 {
             color: #fff;
             margin-top: 0;
             font-size: 28px;
         }
+
         .modal-buttons {
             display: flex;
             flex-direction: column;
@@ -61,29 +65,40 @@
                 <span class="jacquard-12-regular">Salir</span>
             </button>
             <!-- El botón 'Volver al Menu' fue removido porque ahora hay un submenu con opciones abandon/guardar -->
-            <section style="width: 100%; max-width: 280px; background: rgba(19, 31, 38, 0.75); border: 2px solid #f2cb67; padding: 10px; box-sizing: border-box; color: #f7e7b2;">
+            <section
+                style="width: 100%; max-width: 280px; background: rgba(19, 31, 38, 0.75); border: 2px solid #f2cb67; padding: 10px; box-sizing: border-box; color: #f7e7b2;">
                 <p id="bandoLabel" class="jacquard-12-regular" style="margin: 0 0 4px; font-size: 24px;">Bando: -</p>
-                <p id="droneTypeLabel" class="jacquard-12-regular" style="margin: 0 0 2px; font-size: 22px;">Dron activo: -</p>
-                <p id="droneRangeLabel" class="jacquard-12-regular" style="margin: 0 0 2px; font-size: 20px;">Alcance: -</p>
-                <p id="droneVisionLabel" class="jacquard-12-regular" style="margin: 0 0 6px; font-size: 20px;">Vision: -</p>
-                <p id="setupHint" class="jacquard-12-regular" style="margin: 0 0 6px; font-size: 16px;">Inicio sin piezas. Elige un dron y pulsa Desplegar.</p>
-                <button id="deployDroneBtn" class="boton" type="button" style="font-size: 16px; width: 100%; height: 34px; margin-bottom: 8px;">
+                <p id="droneTypeLabel" class="jacquard-12-regular" style="margin: 0 0 2px; font-size: 22px;">Dron
+                    activo: -</p>
+                <p id="droneRangeLabel" class="jacquard-12-regular" style="margin: 0 0 2px; font-size: 20px;">Alcance: -
+                </p>
+                <p id="droneVisionLabel" class="jacquard-12-regular" style="margin: 0 0 6px; font-size: 20px;">Vision: -
+                </p>
+                <p id="setupHint" class="jacquard-12-regular" style="margin: 0 0 6px; font-size: 16px;">Inicio sin
+                    piezas. Elige un dron y pulsa Desplegar.</p>
+                <button id="deployDroneBtn" class="boton" type="button"
+                    style="font-size: 16px; width: 100%; height: 34px; margin-bottom: 8px;">
                     <span class="jacquard-12-regular">Desplegar Dron</span>
                 </button>
-                <button id="nextDroneBtn" class="boton" type="button" style="font-size: 16px; width: 100%; height: 34px; margin-bottom: 8px;">
+                <button id="nextDroneBtn" class="boton" type="button"
+                    style="font-size: 16px; width: 100%; height: 34px; margin-bottom: 8px;">
                     <span class="jacquard-12-regular">Cambiar Dron</span>
                 </button>
-                <!-- nuevos botones de acción -->
-                <button id="moveBtn" class="boton" type="button" style="font-size: 16px; width: 100%; height: 34px; margin-bottom: 8px;">
+                <!-- nuevos botones de acción - ocultos inicialmente hasta desplegar todos los drones -->
+                <button id="moveBtn" class="boton" type="button"
+                    style="font-size: 16px; width: 100%; height: 34px; margin-bottom: 8px; display: none;">
                     <span class="jacquard-12-regular">Movimiento</span>
                 </button>
-                <button id="attackBtn" class="boton" type="button" style="font-size: 16px; width: 100%; height: 34px; margin-bottom: 8px;">
+                <button id="attackBtn" class="boton" type="button"
+                    style="font-size: 16px; width: 100%; height: 34px; margin-bottom: 8px; display: none;">
                     <span class="jacquard-12-regular">Atacar</span>
                 </button>
-                <button id="reloadBtn" class="boton" type="button" style="font-size: 16px; width: 100%; height: 34px; margin-bottom: 8px;">
+                <button id="reloadBtn" class="boton" type="button"
+                    style="font-size: 16px; width: 100%; height: 34px; margin-bottom: 8px; display: none;">
                     <span class="jacquard-12-regular">Recargar</span>
                 </button>
-                <div id="fleetList" style="max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;"></div>
+                <div id="fleetList"
+                    style="max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;"></div>
             </section>
         </div>
     </aside>
@@ -110,7 +125,25 @@
         </div>
     </div>
 
+    <!-- Modal para seleccionar bando (solo usuario 1) -->
+    <div id="modalSeleccionarBando" class="modal">
+        <div class="modal-content">
+            <h2 class="jacquard-12-regular">Selecciona tu Bando</h2>
+            <div class="modal-buttons">
+                <button id="btnBandoNaval" class="boton boton-menu" style="font-size: 16px;">
+                    <span class="jacquard-12-regular">Dron Naval</span>
+                </button>
+                <button id="btnBandoAereo" class="boton boton-menu" style="font-size: 16px;">
+                    <span class="jacquard-12-regular">Dron Aéreo</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/gameState.js"></script>
+    <script src="../js/api.js"></script>
     <script src="../js/partida.js"></script>
+    <script src="../js/partida_ui.js"></script>
     <script>
         // Este string puede venir de URL, BD, session, etc.
         // Si otro modulo ya define un valor, usa window.BANDO_ENTRADA.
@@ -145,3 +178,4 @@
 </body>
 
 </html>
+

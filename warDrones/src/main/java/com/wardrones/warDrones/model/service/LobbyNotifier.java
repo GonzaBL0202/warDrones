@@ -33,17 +33,17 @@ public class LobbyNotifier {
         SseEmitter emitter = emitters.get(usuarioId);
         if (emitter != null) {
             try {
+                // Send event but do NOT complete the emitter so the client remains connected
                 emitter.send(SseEmitter.event()
                 .name("partida-start")
                 .data(partidaId));
-                emitter.complete();
             } catch (Exception e) {
                 // remove emitter on error
-            } finally {
                 emitters.remove(usuarioId);
             }
-        }
+            }
     }
+    
 
     public void notifyPartidaFinalizada(int usuarioId, int partidaId) {
         SseEmitter emitter = emitters.get(usuarioId);

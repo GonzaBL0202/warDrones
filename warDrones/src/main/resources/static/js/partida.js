@@ -1,7 +1,8 @@
 /* Referencias base para dibujar en el lienzo */
 const canvas = document.getElementById('mapCanvas');
 const ctx = canvas.getContext('2d');
-const API_URL = "http://localhost:8080";
+const api = window.PartidaApi;
+const gameState = new window.GameState();
 
 /* Configuracion visual principal del tablero */
 const grid = 32; /* Tamano de cada celda de la grilla del mapa */
@@ -23,32 +24,37 @@ const moveBtn = document.getElementById('moveBtn');
 const attackBtn = document.getElementById('attackBtn');
 const reloadBtn = document.getElementById('reloadBtn');
 
-/* Modos de acción activados por botones */
+/* Modos de acciÃ³n activados por botones */
 let isMoveMode = false;      // espera click para mover dron activo
 let isAttackMode = false;    // espera seleccionar objetivo para atacar
-// recarga no necesita modo separado, se lanza desde el botón
+// recarga no necesita modo separado, se lanza desde el botÃ³n
 
+/* Estado global de visibilidad de botones - una vez que cambio no vuelve a cambiar */
+let gameStarted = false;     // true cuando la partida estÃ¡ iniciada por el servidor
 
-/* Definicion de tipos de dron por bando */
-const DRONE_SETUP = {
-    NAVAL: { cantidad: 6, nombre: 'Dron Naval', moveRadius: 2, revealRadius: 2, color: '#4ec5ff' },
-    AEREO: { cantidad: 12, nombre: 'Dron Aereo', moveRadius: 2, revealRadius: 2, color: '#ffd166' }
-};
+/* Info de la partida obtenida del servidor */
+let currentUserId = null;    // ID del usuario actual
+let usuario1Id = null;       // ID del usuario 1
+let usuario2Id = null;       // ID del usuario 2
+let isUsuario1 = false;      // true si el usuario actual es el usuario 1
+let bandasAsignadas = false; // true si ya se asignaron bandos
+
 
 /* Lee el parametro "bando" desde la URL y lo normaliza */
 const query = new URLSearchParams(window.location.search);
-const bandoSeleccionado = ((query.get('bando') || 'aereo').toUpperCase() === 'NAVAL') ? 'NAVAL' : 'AEREO';
+let bandoSeleccionado = ((query.get('bando') || 'aereo').toUpperCase() === 'NAVAL') ? 'NAVAL' : 'AEREO';
 
 /* Estado global de la partida */
 let cols = 0; /* Cantidad de columnas del mapa */
 let rows = 0; /* Cantidad de filas del mapa */
 let discovered = []; /* Matriz que indica que celdas fueron descubiertas */
-let drones = []; /* Lista de drones del bando seleccionado */
-let activeDroneIndex = 0; /* Drone actualmente controlado */
+let drones = gameState.drones; /* Lista de drones del bando seleccionado */
+let activeDroneId = null; /* Drone actualmente controlado */
 let isPortaSelected = false; /* Controla si la unidad activa es el porta dron */
 let isDeployMode = false; /* Espera click en mapa para colocar dron */
 let isMoving = false; /* Evita iniciar otra animacion mientras el jugador se desplaza */
 const stepDelayMs = 90; /* Tiempo entre pasos para simular movimiento */
+let portadronesHydrated = false;
 
 /* Estado interno para animar el sprite por frames */
 let spriteReady = false;
@@ -61,7 +67,7 @@ let portaDronAereoReady = false;
 const portaDronNaval = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#4ec5ff', nombre: 'Porta Dron Naval' };
 const portaDronAereo = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#ffd166', nombre: 'Porta Dron Aereo' };
 
-/* Cuando carga la imagen, calcula tama�o y numero de frames */
+/* Cuando carga la imagen, calcula tamaï¿½o y numero de frames */
 droneSprite.onload = () => {
     /* Asume un sprite horizontal de frames cuadrados */
     spriteFrameSize = droneSprite.height;
@@ -79,34 +85,51 @@ portaDronAereoSprite.onload = () => {
 
 /* Devuelve el dron activo segun el indice seleccionado */
 function getActiveDrone() {
-    return drones[activeDroneIndex] || null;
+    return gameState.getActiveDrone();
 }
 
-/* Crea la flota completa segun el bando elegido */
-function buildFleet() {
-    const config = DRONE_SETUP[bandoSeleccionado];
-    const fleet = [];
-    let id = 1;
+function mapDroneFromServer(droneInfo) {
+    const isNaval = droneInfo.bando === 'NAVAL';
+    const nombre = isNaval ? 'Dron Naval' : 'Dron Aereo';
+    const color = isNaval ? '#4ec5ff' : '#ffd166';
+    const moveRadius = 2;
+    const revealRadius = 2;
+    const deployed = !(droneInfo.posicionX === 0 && droneInfo.posicionY === 0);
+    return {
+        id: droneInfo.id,
+        nombre,
+        moveRadius,
+        revealRadius,
+        color,
+        deployed,
+        x: droneInfo.posicionX,
+        y: droneInfo.posicionY
+    };
+}
 
-    if (!config) {
-        return fleet;
-    }
+function hydrateDronesFromServer(allDrones) {
+    const ownDrones = (allDrones || [])
+        .filter((d) => d.bando === bandoSeleccionado)
+        .map(mapDroneFromServer);
 
-    for (let i = 0; i < config.cantidad; i++) {
-        fleet.push({
-            id,
-            nombre: config.nombre,
-            moveRadius: config.moveRadius,
-            revealRadius: config.revealRadius,
-            color: config.color,
-            deployed: false,
-            x: null,
-            y: null
-        });
-        id += 1;
-    }
+    gameState.setDrones(ownDrones);
+    drones = gameState.drones;
+    activeDroneId = gameState.activeDroneId;
+}
 
-    return fleet;
+function hydratePortadronesFromServer(portadrones) {
+    (portadrones || []).forEach((porta) => {
+        const target = porta.tipo === 'NAVAL' ? portaDronNaval : portaDronAereo;
+        target.x = porta.posicionX;
+        target.y = porta.posicionY;
+    });
+    portadronesHydrated = true;
+}
+
+function applyBandoSprite() {
+    droneSprite.src = bandoSeleccionado === 'NAVAL'
+        ? '../img/dron_naval.png'
+        : '../img/dron_aereo.png';
 }
 
 /* Revela columnas iniciales segun bando */
@@ -205,6 +228,11 @@ function updateInfoPanel() {
         setupHint.textContent = 'Inicio sin piezas. Elige un dron y pulsa Desplegar.';
     }
 
+    /* Actualizar visibilidad de botones solo si la partida aÃºn no ha iniciado */
+    if (!gameStarted) {
+        updateButtonsVisibility();
+    }
+
     /* Limpia y vuelve a crear la lista para reflejar seleccion actual */
     fleetList.innerHTML = '';
     const portaItem = document.createElement('button');
@@ -235,13 +263,14 @@ function updateInfoPanel() {
         item.style.textAlign = 'left';
         item.style.padding = '4px 6px';
         item.style.border = '1px solid #6a4a1c';
-        item.style.background = i === activeDroneIndex ? 'rgba(242, 203, 103, 0.25)' : 'rgba(15, 25, 30, 0.55)';
+        item.style.background = d.id === activeDroneId ? 'rgba(242, 203, 103, 0.25)' : 'rgba(15, 25, 30, 0.55)';
         item.style.color = '#f7e7b2';
         item.style.cursor = 'pointer';
 
         /* Al hacer click en un dron de la lista, lo activa */
         item.addEventListener('click', () => {
-            activeDroneIndex = i;
+            gameState.setActiveDroneById(d.id);
+            activeDroneId = gameState.activeDroneId;
             isPortaSelected = false;
             isDeployMode = false;
             revealAroundActiveDrone();
@@ -250,6 +279,29 @@ function updateInfoPanel() {
         });
 
         fleetList.appendChild(item);
+    }
+}
+
+/* Actualiza la visibilidad de los botones en funciÃ³n de si la partida estÃ¡ iniciada */
+function updateButtonsVisibility(iniciada = false) {
+    /* Si la partida estÃ¡ iniciada por el servidor, mostrar botones de acciÃ³n */
+    if (iniciada) {
+        /* En fase de juego: ocultar "Desplegar Dron" y mostrar acciones */
+        deployDroneBtn.style.display = 'none';
+        nextDroneBtn.style.display = 'block';
+        moveBtn.style.display = 'block';
+        attackBtn.style.display = 'block';
+        reloadBtn.style.display = 'block';
+
+        /* Marcar que la partida ha iniciado para evitar cambios posteriores */
+        gameStarted = true;
+    } else {
+        /* En fase de despliegue: mostrar solo "Desplegar Dron" y "Cambiar Dron" */
+        deployDroneBtn.style.display = 'block';
+        nextDroneBtn.style.display = 'block';
+        moveBtn.style.display = 'none';
+        attackBtn.style.display = 'none';
+        reloadBtn.style.display = 'none';
     }
 }
 
@@ -265,12 +317,9 @@ function resizeCanvas() {
     rows = Math.max(1, Math.floor(canvas.height / grid));
     discovered = Array.from({ length: rows }, () => Array(cols).fill(false));
     revealStartColumnsByBando();
-    positionPortaDronNaval();
-    positionPortaDronAereo();
-
-    if (!drones.length) {
-        drones = buildFleet();
-        activeDroneIndex = 0;
+    if (!portadronesHydrated) {
+        positionPortaDronNaval();
+        positionPortaDronAereo();
     }
 
     revealAroundActiveDrone();
@@ -376,7 +425,23 @@ function drawFog() {
         }
     }
 
-    /* Centro y radio del l?mite de movimiento del dron activo */
+    /* Cubrir el resto del canvas que no alcanza perfectamente a ser una Ãºltima fila/columna completa */
+    const maxVisibleWidth = cols * grid;
+    const maxVisibleHeight = rows * grid;
+
+    /* Cubrir el Ã¡rea a la derecha si no alcanza a llenar toda la anchura */
+    if (maxVisibleWidth < canvas.width) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+        ctx.fillRect(maxVisibleWidth, 0, canvas.width - maxVisibleWidth, canvas.height);
+    }
+
+    /* Cubrir el Ã¡rea abajo si no alcanza a llenar toda la altura */
+    if (maxVisibleHeight < canvas.height) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+        ctx.fillRect(0, maxVisibleHeight, canvas.width, canvas.height - maxVisibleHeight);
+    }
+
+    /* Centro y radio del lÃ­mite de movimiento del dron activo */
     if (hasUnit) {
         const px = centerX * grid;
         const py = centerY * grid;
@@ -475,8 +540,8 @@ function drawDrones() {
 
         /* Borde blanco para el dron activo y color de bando para el resto */
         ctx.save();
-        ctx.lineWidth = i === activeDroneIndex ? 3 : 2;
-        ctx.strokeStyle = i === activeDroneIndex ? '#ffffff' : drone.color;
+        ctx.lineWidth = drone.id === activeDroneId ? 3 : 2;
+        ctx.strokeStyle = drone.id === activeDroneId ? '#ffffff' : drone.color;
         ctx.beginPath();
         ctx.arc(px, py, Math.max(12, Math.floor(grid * 0.42)), 0, Math.PI * 2);
         ctx.stroke();
@@ -552,593 +617,3 @@ function moveActiveDrone(dx, dy) {
     drawScene();
 }
 
-//-----------Modal Salir----------------
-function abrirModalSalir() {
-    document.getElementById('modalSalir').classList.add('active');
-}
-
-function cerrarModalSalir() {
-    document.getElementById('modalSalir').classList.remove('active');
-}
-
-async function abandonarPartida() {
-    const partidaId = localStorage.getItem("partidaId");
-    console.log("Abandonar partida. partidaId:", partidaId);
-    if (!partidaId) return;
-
-    try {
-        await fetch(`${API_URL}/partida/renunciar/${partidaId}`, { method: 'PUT' });
-    } catch (error) {
-        console.error("Error abandonando partida:", error);
-        return;
-    }
-
-    cerrarModalSalir();
-    window.location.href = 'menu.html';
-}
-
-async function guardarPartida() {
-    const partidaId = localStorage.getItem("partidaId");
-    console.log("Guardar partida. partidaId:", partidaId);
-    if (!partidaId) return;
-
-    try {
-        await fetch(`${API_URL}/partida/guardar/${partidaId}`, { method: 'PUT' });
-    } catch (error) {
-        console.error("Error guardando partida:", error);
-        return;
-    }
-
-    cerrarModalSalir();
-    window.location.href = 'menu.html';
-}
-
-//boton que abre el modal
-document.getElementById("btnSalir")?.addEventListener("click", abrirModalSalir);
-
-//Botones del modal
-document.getElementById("btnConfirmarSalir")?.addEventListener("click", abandonarPartida);
-
-document.getElementById("btnGuardar")?.addEventListener("click", guardarPartida);
-
-//Boton cancela/cerrar modal
-document.getElementById("btnCancelar")?.addEventListener("click", cerrarModalSalir);
-
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
-
-
-//------------Logica de notificaciones----------------
-const usuarioId = localStorage.getItem("userId");
-const currentPartidaId = localStorage.getItem("partidaId");
-
-if (usuarioId && currentPartidaId) {
-    const eventSource = new EventSource(
-        `${API_URL}/lobby/connect?usuarioId=${encodeURIComponent(usuarioId)}`
-    );
-
-    eventSource.addEventListener("partida-finalizada", (event) => {
-        const pid = String(event.data);
-        if (pid === String(currentPartidaId)) {
-            eventSource.close();
-            window.location.href = "menu.html";
-        }
-    });
-
-    eventSource.addEventListener("partida-guardada", (event) => {
-        const pid = String(event.data);
-        if (pid === String(currentPartidaId)) {
-            eventSource.close();
-            window.location.href = "menu.html";
-        }
-    });
-
-    eventSource.onerror = (error) => {
-        console.warn("SSE cerrado/error:", error);
-        eventSource.close();
-    };
-
-    /* Mueve al dron activo hacia una celda de destino (click).
-       Solo permite destinos dentro del radio de movimiento */
-    function moveActiveDroneTo(targetX, targetY) {
-        if (isMoving) {
-            return;
-        }
-
-        /* Doble guardia para bloquear movimiento simultaneo */
-        if (isMoving) {
-            return;
-        }
-
-        if (isPortaSelected) {
-            const ownPorta = getOwnPorta();
-            const enemyPorta = getEnemyPorta();
-            const newX = Math.min(cols - ownPorta.size, Math.max(0, targetX));
-            const newY = Math.min(rows - ownPorta.size, Math.max(0, targetY));
-            const centerX = ownPorta.x + (ownPorta.size / 2);
-            const centerY = ownPorta.y + (ownPorta.size / 2);
-            const targetCenterX = newX + (ownPorta.size / 2);
-            const targetCenterY = newY + (ownPorta.size / 2);
-            const dx = targetCenterX - centerX;
-            const dy = targetCenterY - centerY;
-            const moveRadius = ownPorta.moveRadius;
-            const isInsideCircle = (dx * dx) + (dy * dy) <= moveRadius * moveRadius;
-
-            if (!isInsideCircle) {
-                return;
-            }
-            if ((newX === ownPorta.x && newY === ownPorta.y)
-                || isDroneInPortaArea(newX, newY, ownPorta.size)
-                || overlapsPorta(newX, newY, ownPorta.size, enemyPorta)) {
-                return;
-            }
-
-            isMoving = true;
-            function animatePortaStep() {
-                if (ownPorta.x === newX && ownPorta.y === newY) {
-                    isMoving = false;
-                    return;
-                }
-
-                const stepX = Math.sign(newX - ownPorta.x);
-                const stepY = Math.sign(newY - ownPorta.y);
-                const nextX = ownPorta.x + stepX;
-                const nextY = ownPorta.y + stepY;
-                if (isDroneInPortaArea(nextX, nextY, ownPorta.size) || overlapsPorta(nextX, nextY, ownPorta.size, enemyPorta)) {
-                    isMoving = false;
-                    return;
-                }
-                ownPorta.x = nextX;
-                ownPorta.y = nextY;
-                revealAroundActiveDrone();
-                drawScene();
-                setTimeout(animatePortaStep, stepDelayMs);
-            }
-            animatePortaStep();
-            return;
-        }
-
-        const drone = getActiveDrone();
-        if (!drone || !drone.deployed) {
-            return;
-        }
-
-        const newX = Math.min(cols - 1, Math.max(0, targetX));
-        const newY = Math.min(rows - 1, Math.max(0, targetY));
-        const dx = newX - drone.x;
-        const dy = newY - drone.y;
-        const moveRadius = drone.moveRadius;
-        const isInsideCircle = (dx * dx) + (dy * dy) <= moveRadius * moveRadius;
-
-        if (!isInsideCircle) {
-            return;
-        }
-
-        if (newX === drone.x && newY === drone.y) {
-            return;
-        }
-        if (isInsideAnyPorta(newX, newY)) {
-            return;
-        }
-
-        isMoving = true;
-
-        /* Animacion por pasos hasta llegar al destino */
-        function animateStep() {
-            if (drone.x === newX && drone.y === newY) {
-                isMoving = false;
-                return;
-            }
-
-            const stepX = Math.sign(newX - drone.x);
-            const stepY = Math.sign(newY - drone.y);
-            drone.x += stepX;
-            drone.y += stepY;
-            revealAroundActiveDrone();
-            drawScene();
-
-            setTimeout(animateStep, stepDelayMs);
-        }
-
-        animateStep();
-    }
-
-    /* Click sobre canvas:
-       1) si haces click en un dron, lo selecciona
-       2) si haces click en una celda vacia, intenta mover al dron activo */
-    canvas.addEventListener('click', async (event) => {
-        const rect = canvas.getBoundingClientRect();
-        const x = Math.floor((event.clientX - rect.left) / grid);
-        const y = Math.floor((event.clientY - rect.top) / grid);
-
-        // si estamos en modo ataque, cualquier click intenta disparar
-        if (isAttackMode) {
-            let objetivoId = null;
-            const atacante = getActiveDrone(); // Ya validado en el listener del botón de ataque
-
-            // si se clickea en porta enemigo, objetivo 0 según backend
-            if (isInsidePortaArea(x, y, getEnemyPorta())) {
-                objetivoId = 0;
-            } else {
-                // NOTA: Esto actualmente solo permite seleccionar drones del propio bando como objetivos,
-                // ya que el array `drones` solo contiene la flota del jugador.
-                // Para atacar enemigos, se necesitará una lista de drones enemigos visibles.
-                const targetIndex = drones.findIndex(d => d.deployed && d.x === x && d.y === y);
-                if (targetIndex >= 0) {
-                    objetivoId = drones[targetIndex].id;
-                }
-            }
-
-            if (objetivoId !== null) {
-                try {
-                    const res = await fetch(`${API_URL}/partidas/atacarDronOPorta`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            partidaId: localStorage.getItem('partidaId'),
-                            jugadorId: getId(),
-                            dronAtacanteId: atacante.id,
-                            dronObjetivoId: objetivoId
-                        })
-                    });
-                    if (!res.ok) {
-                        const msg = await res.text();
-                        alert('Error al atacar: ' + msg);
-                    } else {
-                        setupHint.textContent = 'Ataque enviado. Esperando actualización del servidor.';
-                    }
-                } catch (err) {
-                    console.error('Error enviando ataque:', err);
-                    alert('Error de red al intentar atacar.');
-                }
-            } else {
-                setupHint.textContent = 'Seleccione un objetivo válido para atacar';
-            }
-            isAttackMode = false;
-            return;
-        }
-
-        let esSelec = false;
-
-        if (isDeployMode) {
-            const drone = getActiveDrone();
-            if (!drone) {
-                setupHint.textContent = 'No hay dron seleccionado para desplegar';
-                isDeployMode = false;
-                return;
-            }
-
-            if (x < 0 || y < 0 || x >= cols || y >= rows) {
-                setupHint.textContent = 'Celda fuera del mapa';
-                return;
-            }
-
-            if (!discovered[y][x]) {
-                setupHint.textContent = 'No puedes desplegar en zona con niebla';
-                return;
-            }
-
-            const occupied = drones.some((d) => d.deployed && d.x === x && d.y === y);
-            if (occupied || isInsideAnyPorta(x, y)) {
-                setupHint.textContent = 'Celda ocupada. Elige otra celda';
-                return;
-            }
-
-            drone.deployed = true;
-            drone.x = x;
-            drone.y = y;
-            isDeployMode = false;
-            revealAroundActiveDrone();
-            updateInfoPanel();
-            drawScene();
-
-            return;
-        }
-
-        const clickedDroneIndex = drones.findIndex((drone) => drone.deployed && drone.x === x && drone.y === y);
-        if (clickedDroneIndex >= 0) {
-            activeDroneIndex = clickedDroneIndex;
-            isPortaSelected = false;
-            revealAroundActiveDrone();
-            updateInfoPanel();
-            drawScene();
-            esSelec = true;
-            return;
-        }
-
-        if (isInsidePortaArea(x, y, getOwnPorta())) {
-            isPortaSelected = true;
-            isDeployMode = false;
-            revealAroundActiveDrone();
-            updateInfoPanel();
-            drawScene();
-            return;
-        }
-
-        if (isInsidePortaArea(x, y, getEnemyPorta())) {
-            return;
-        }
-
-        // Si no fue un click de selección y estamos en modo movimiento, procesar la acción.
-        if (!esSelec && isMoveMode) {
-            try {
-                let res;
-                if (isPortaSelected) {
-                    res = await fetch(`${API_URL}/partidas/moverPortaDron`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            partidaId: localStorage.getItem("partidaId"),
-                            jugadorId: getId(),
-                            x: x,
-                            y: y
-                        })
-                    });
-                } else {
-                    const drone = getActiveDrone();
-                    if (!drone || !drone.deployed) {
-                        setupHint.textContent = 'Selecciona un dron desplegado para moverlo.';
-                        isMoveMode = false;
-                        return;
-                    }
-                    res = await fetch(`${API_URL}/partidas/moverDron`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            partidaId: localStorage.getItem("partidaId"),
-                            jugadorId: getId(),
-                            dronId: drone.id,
-                            x: x,
-                            y: y
-                        })
-                    });
-                }
-
-                if (res.ok) {
-                    // Actualización optimista: Mueve la unidad en el cliente para dar feedback visual inmediato.
-                    // Lo ideal sería que el servidor envíe el nuevo estado del juego vía SSE.
-                    moveActiveDroneTo(x, y);
-                } else {
-                    const msg = await res.text();
-                    alert("Error al mover: " + msg);
-                }
-            } catch (err) {
-                console.error('Error en la petición de movimiento:', err);
-                alert('Error de red al intentar mover.');
-            } finally {
-                // Salir del modo movimiento y limpiar el hint después del intento.
-                isMoveMode = false;
-                setupHint.textContent = '';
-            }
-            return; // La acción de click ha sido manejada.
-        }
-
-        // Si se hizo click sin estar en modo movimiento, asegurarse de que el modo se desactive.
-        if (isMoveMode) isMoveMode = false;
-    });
-
-    function getId() {
-        const id = localStorage.getItem('userId');
-        return id ? parseInt(id) : null;
-    }
-
-    /* Boton del panel para avanzar al siguiente dron de la flota */
-    nextDroneBtn.addEventListener('click', () => {
-        if (!drones.length) {
-            return;
-        }
-
-        let nextIndex = activeDroneIndex;
-        let found = false;
-        for (let i = 0; i < drones.length; i++) {
-            nextIndex = (nextIndex + 1) % drones.length;
-            if (drones[nextIndex].deployed) {
-                found = true;
-                break;
-            }
-        }
-
-        if (!found) {
-            setupHint.textContent = 'No hay drones desplegados para cambiar';
-            return;
-        }
-
-        activeDroneIndex = nextIndex;
-        isPortaSelected = false;
-        isDeployMode = false;
-        isAttackMode = false;
-        isMoveMode = false;
-        revealAroundActiveDrone();
-        updateInfoPanel();
-        drawScene();
-    });
-
-    deployDroneBtn.addEventListener('click', () => {
-        const drone = getActiveDrone();
-        if (!drone) {
-            setupHint.textContent = 'No hay dron seleccionado';
-            return;
-        }
-        if (drone.deployed) {
-            setupHint.textContent = 'Ese dron ya esta desplegado';
-            return;
-        }
-
-        isDeployMode = true;
-        isAttackMode = false;
-        isMoveMode = false;
-        setupHint.textContent = `Despliegue activo: haz click en el mapa para colocar #${drone.id}`;
-    });
-
-    // nuevo botón movimiento
-    moveBtn.addEventListener('click', () => {
-        isMoveMode = true;
-        isAttackMode = false;
-        isDeployMode = false;
-        setupHint.textContent = 'Modo movimiento: haz click en la celda destino';
-    });
-
-    // nuevo botón atacar
-    attackBtn.addEventListener('click', () => {
-        const activeDrone = getActiveDrone();
-        if (!activeDrone || !activeDrone.deployed) {
-            setupHint.textContent = 'Selecciona un dron desplegado para atacar.';
-            return;
-        }
-        isAttackMode = true;
-        isMoveMode = false;
-        isDeployMode = false;
-        setupHint.textContent = 'Modo ataque: selecciona un objetivo (dron o porta enemigo)';
-    });
-
-    // nuevo botón recargar
-    reloadBtn.addEventListener('click', async () => {
-        const drone = getActiveDrone();
-        if (!drone || !drone.deployed) {
-            setupHint.textContent = 'No hay dron desplegado para recargar';
-            return;
-        }
-
-        try {
-            const res = await fetch(`${API_URL}/partidas/recargarDron`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    partidaId: localStorage.getItem('partidaId'),
-                    jugadorId: getId(),
-                    dronId: drone.id
-                })
-            });
-            if (!res.ok) {
-                const msg = await res.text();
-                alert('Error al recargar: ' + msg);
-            } else {
-                setupHint.textContent = 'Recarga enviada. Esperando actualización del servidor.';
-            }
-        } catch (err) {
-            console.error('Error recargando dron:', err);
-        }
-        // después de la acción vuelve al modo normal
-        isAttackMode = false;
-        isMoveMode = false;
-    });
-
-    /* Evento que se ejecuta cuando cambia el tama�o de la ventana.
-       Recalcula el canvas y redibuja el mapa para mantener la escala correcta */
-    window.addEventListener('resize', resizeCanvas);
-
-    class PartidaApp {
-        constructor(bandoEntrada) {
-            this.bandoSeleccionado = this.normalizarBando(bandoEntrada ?? bandoSeleccionado);
-        }
-
-        normalizarBando(valor) {
-            return String(valor || "AEREO").toUpperCase() === "NAVAL" ? "NAVAL" : "AEREO";
-        }
-
-        esNaval() {
-            return this.bandoSeleccionado === 'NAVAL';
-        }
-
-        esAereo() {
-            return this.bandoSeleccionado === 'AEREO';
-        }
-
-        cargarSpriteDronNaval() {
-            droneSprite.src = '../img/dron_naval.png';
-        }
-
-        cargarSpriteDronAereo() {
-            droneSprite.src = '../img/dron_aereo.png';
-        }
-
-        cargarSpritePortaNaval() {
-            portaDronNavalSprite.src = '../img/Porta_dron_naval.png';
-        }
-
-        cargarSpritePortaAereo() {
-            portaDronAereoSprite.src = '../img/Porta_dron_aereo.png';
-        }
-
-        ajustarCanvasBase() {
-            const rect = canvas.getBoundingClientRect();
-            canvas.width = Math.floor(rect.width);
-            canvas.height = Math.floor(rect.height);
-            cols = Math.max(1, Math.floor(canvas.width / grid));
-            rows = Math.max(1, Math.floor(canvas.height / grid));
-        }
-
-        reiniciarNiebla() {
-            discovered = Array.from({ length: rows }, () => Array(cols).fill(false));
-        }
-
-        revelarInicioNaval() {
-            const columnsToReveal = Math.min(3, cols);
-            for (let y = 0; y < rows; y++) {
-                for (let x = 0; x < columnsToReveal; x++) {
-                    discovered[y][x] = true;
-                }
-            }
-        }
-
-        revelarInicioAereo() {
-            const columnsToReveal = Math.min(3, cols);
-            for (let y = 0; y < rows; y++) {
-                for (let i = 0; i < columnsToReveal; i++) {
-                    discovered[y][cols - 1 - i] = true;
-                }
-            }
-        }
-
-        posicionarPortaNaval() {
-            positionPortaDronNaval();
-        }
-
-        posicionarPortaAereo() {
-            positionPortaDronAereo();
-        }
-
-        crearFlotaSegunBando() {
-            if (!drones.length) {
-                drones = buildFleet();
-                activeDroneIndex = 0;
-            }
-        }
-
-        menuNaval() {
-            isDeployMode = false;
-            updateInfoPanel();
-        }
-
-        menuAereo() {
-            isDeployMode = false;
-            updateInfoPanel();
-        }
-
-        desplegarDronesNaval() {
-            isDeployMode = false;
-        }
-
-        desplegarDronesAereo() {
-            isDeployMode = false;
-        }
-
-        aplicarVisionActiva() {
-            revealAroundActiveDrone();
-        }
-
-        renderizarEscena() {
-            drawScene();
-        }
-
-        iniciarLoop() {
-            requestAnimationFrame(gameLoop);
-        }
-
-
-
-    }
-
-    window.PartidaApp = PartidaApp;
-
-}

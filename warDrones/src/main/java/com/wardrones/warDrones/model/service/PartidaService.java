@@ -1,12 +1,17 @@
 package com.wardrones.warDrones.model.service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
 import com.wardrones.warDrones.game.session.GameSession;
 import com.wardrones.warDrones.game.session.GameSessionManager;
+import com.wardrones.warDrones.game.session.state.DronState;
+import com.wardrones.warDrones.game.session.state.PortadronState;
+import com.wardrones.warDrones.model.dto.response.ObtenerPartidaInfoResponse;
 import com.wardrones.warDrones.model.entity.Dron;
 import com.wardrones.warDrones.model.entity.Partida;
 import com.wardrones.warDrones.model.entity.Portadron;
@@ -56,6 +61,7 @@ public class PartidaService {
                 game.setUsuario2(u2);
                 game.setPartidaEstado(Estado.EN_CURSO);
                 gameSManager.crearSesion(game);                                 //Se crea en sesion solo cuando ya estan ambos usuarios
+                System.out.println("Partida guardada en sesion: " + game.getPartidaId());
                 if (game.getUsuarioId1() != null) {
                     try {
                         lobbyNotifier.notifyUser(game.getUsuarioId1().getId(), game.getPartidaId());
@@ -70,9 +76,12 @@ public class PartidaService {
     }
 
     public GameSession iniciarPartida(int partidaId) {
+        System.out.println("Intentando iniciar partida con ID: " + partidaId);
         Partida partida = pRepository.findById(partidaId).orElseThrow(() -> new RuntimeException("Partida not found"));
 
          try {
+            String mapa = gameSManager.toString();
+            System.out.println("GameSessionManager: " + mapa);
             GameSession gs = gameSManager.obtenerSesion(partidaId);
             if (gs == null) {
                 throw new RuntimeException("Sesion no encontrada");
@@ -80,7 +89,17 @@ public class PartidaService {
             gs.setBandosDesplegados(gs.getBandosDesplegados()+1);
             if(gs.getBandosDesplegados() == 2){
                 gs.setJugadorEnTurno(partida.getUsuarioId1().getId());   // El jugador 1 inicia la partida
-                //llamado sse a ambos usuarios para comenzar
+                // Notificar por SSE a ambos usuarios que la partida comienza (despliegue finalizado)
+                try {
+                    if (partida.getUsuarioId1() != null) {
+                        lobbyNotifier.notifyUser(partida.getUsuarioId1().getId(), partida.getPartidaId());
+                    }
+                } catch (Exception e) {}
+                try {
+                    if (partida.getUsuarioId2() != null) {
+                        lobbyNotifier.notifyUser(partida.getUsuarioId2().getId(), partida.getPartidaId());
+                    }
+                } catch (Exception e) {}
             }
             return gs; 
 
@@ -108,28 +127,49 @@ public class PartidaService {
             Portadron p2 = new Portadron(partida, b2);
             pdRepository.save(p2);
 
-            gs.setPortadrones(p1, p2);
-
+            // Pasar el portadron aéreo primero y el naval segundo (aereo, naval)
             Portadron aereo = (b1 == Bando.AEREO) ? p1 : p2;
             Portadron naval = (b1 == Bando.NAVAL) ? p1 : p2;
+            gs.setPortadrones(aereo, naval);
 
             List<Dron> drones = new ArrayList<>();
-           
+
+            // Crear 12 drones aéreos asociados al portadron aéreo
             for (int i = 0; i < 12; i++) {
-                Dron d1 = new Dron(aereo, b1);
+                Dron d1 = new Dron(aereo, aereo.getTipo());
                 dRepository.save(d1);
                 drones.add(d1);
             }
 
+            // Crear 6 drones navales asociados al portadron naval
             for (int i = 0; i < 6; i++) {
-                Dron d2 = new Dron(naval, b2);
+                Dron d2 = new Dron(naval, naval.getTipo());
                 dRepository.save(d2);
                 drones.add(d2);
             }
 
             gs.setDrones(drones);
-            
-            return gs; 
+
+            // Debugging: log created drones and association
+            try {
+                System.out.println("[PartidaService] Created drones count: " + drones.size());
+                System.out.println("[PartidaService] Aereo porta id: " + aereo.getId() + ", Naval porta id: " + naval.getId());
+            } catch (Exception e) {}
+
+            // Notificar a ambos usuarios que la partida puede comenzar (despliegue listo)
+            try {
+                if (partida.getUsuarioId1() != null) {
+                    lobbyNotifier.notifyUser(partida.getUsuarioId1().getId(), partida.getPartidaId());
+                }
+            } catch (Exception e) {}
+
+            try {
+                if (partida.getUsuarioId2() != null) {
+                    lobbyNotifier.notifyUser(partida.getUsuarioId2().getId(), partida.getPartidaId());
+                }
+            } catch (Exception e) {}
+
+            return gs;
 
         } catch (IllegalStateException e) {
             return null;
@@ -191,6 +231,12 @@ public class PartidaService {
         GameSession session = gameSManager.obtenerSesion(partidaId);
         session.recargarDron(dronId, jugadorId);
         session.cambiarTurno();
+    }
+
+    public void desplegarDron(int partidaId, int jugadorId, int dronId, int x, int y) {
+        GameSession session = gameSManager.obtenerSesion(partidaId);
+        if (session == null) throw new RuntimeException("Sesion no encontrada");
+        session.desplegarDron(dronId, x, y, jugadorId);
     }
 
     //ver si el del get tb va////
@@ -278,5 +324,113 @@ public class PartidaService {
 
     }
 
+    public ObtenerPartidaInfoResponse obtenerPartidaInfo(int partidaId) {
+        Partida partida = pRepository.findById(partidaId)
+            .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+        
+        GameSession gs = gameSManager.obtenerSesion(partidaId);
+        
+        if (gs == null) {
+            throw new RuntimeException("Sesión de partida no encontrada");
+        }
+        
+        int usuario1Id = gs.getJugador1Id();
+        int usuario2Id = gs.getJugador2Id();
+        
+        String bando1 = gs.getJugador1Bando() != null ? gs.getJugador1Bando().name() : null;
+        String bando2 = gs.getJugador2Bando() != null ? gs.getJugador2Bando().name() : null;
+        
+        boolean bandosAsignados = bando1 != null && bando2 != null;
+        int bandosDesplegados = gs.getBandosDesplegados();
+        Integer turnoActual = gs.getTurnoActual() > 0 ? gs.getTurnoActual() : null;
+
+        PortadronState portaNaval = gs.getPortadronNaval();
+        PortadronState portaAereo = gs.getPortadronAereo();
+
+        try {
+            System.out.println("[PartidaService] PortadronNaval IDs=" + (portaNaval != null ? portaNaval.getListadoDronesIds() : "null"));
+            System.out.println("[PartidaService] PortadronAereo IDs=" + (portaAereo != null ? portaAereo.getListadoDronesIds() : "null"));
+        } catch (Exception e) {}
+
+        List<ObtenerPartidaInfoResponse.PortadronInfo> portadrones = new ArrayList<>();
+        if (portaNaval != null) {
+            portadrones.add(new ObtenerPartidaInfoResponse.PortadronInfo(
+                portaNaval.getId(),
+                portaNaval.getTipoDePortadron().name(),
+                portaNaval.getPosicionX(),
+                portaNaval.getPosicionY(),
+                portaNaval.getVida(),
+                portaNaval.getEstado()
+            ));
+        }
+        if (portaAereo != null) {
+            portadrones.add(new ObtenerPartidaInfoResponse.PortadronInfo(
+                portaAereo.getId(),
+                portaAereo.getTipoDePortadron().name(),
+                portaAereo.getPosicionX(),
+                portaAereo.getPosicionY(),
+                portaAereo.getVida(),
+                portaAereo.getEstado()
+            ));
+        }
+
+        Map<Integer, DronState> dronesStateMap = gs.getDrones();
+        List<DronState> dronesState = new ArrayList<>();
+        if (dronesStateMap != null) {
+            dronesState.addAll(dronesStateMap.values());
+        }
+        dronesState.sort(Comparator.comparingInt(DronState::getId));
+
+        List<ObtenerPartidaInfoResponse.DronInfo> drones = new ArrayList<>();
+        for (DronState dron : dronesState) {
+            String bando = null;
+            // Primero, intentar por listado de ids (cuando está poblado)
+            if (portaNaval != null && portaNaval.getListadoDronesIds() != null
+                && portaNaval.getListadoDronesIds().contains(dron.getId())) {
+                bando = "NAVAL";
+            } else if (portaAereo != null && portaAereo.getListadoDronesIds() != null
+                && portaAereo.getListadoDronesIds().contains(dron.getId())) {
+                bando = "AEREO";
+            } else {
+                // Fallback: usar el portadronId del dron y compararlo con los ids de los portadrones
+                try {
+                    if (portaNaval != null && dron.getPortadronId() == portaNaval.getId()) {
+                        bando = "NAVAL";
+                    } else if (portaAereo != null && dron.getPortadronId() == portaAereo.getId()) {
+                        bando = "AEREO";
+                    }
+                } catch (Exception e) {
+                    // no-op
+                }
+            }
+
+            drones.add(new ObtenerPartidaInfoResponse.DronInfo(
+                dron.getId(),
+                dron.getPortadronId(),
+                bando,
+                dron.getPosicionX(),
+                dron.getPosicionY(),
+                dron.getVida(),
+                dron.getMunicion(),
+                dron.getRecargas(),
+                dron.getEstado()
+            ));
+        }
+        
+        return new ObtenerPartidaInfoResponse(
+            partidaId,
+            usuario1Id,
+            usuario2Id,
+            bando1,
+            bando2,
+            bandosAsignados,
+            bandosDesplegados,
+            turnoActual,
+            drones,
+            portadrones
+        );
+    }
+
     
 }
+
