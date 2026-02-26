@@ -35,9 +35,14 @@ async function asignarBandosAlServidor(bando1, bando2) {
         console.log('Respuesta asignarBandos:', res.status, res.statusText);
 
         if (!res.ok) {
-            const msg = await res.text();
-            console.error('Error en asignarBandos:', msg);
-            setupHint.textContent = "Error al asignar bandos: " + msg;
+            const raw = await res.text();
+            let display = raw;
+            try {
+                const parsed = JSON.parse(raw);
+                if (parsed && typeof parsed === 'object') display = parsed.error || parsed.message || parsed.msg || display;
+            } catch (e) { }
+            console.error('Error en asignarBandos:', display);
+            setupHint.textContent = display;
             return;
         }
 
@@ -73,6 +78,37 @@ async function obtenerPartidaInfo() {
     } catch (err) {
         console.error('Error obteniendo info de partida:', err);
         return null;
+    }
+}
+
+//-----------Actualizar Estado del Turno----------------
+function actualizarEstadoTurno() {
+    /* Solo mostrar turno si el despliegue ha terminado (ambos bandos desplegados) */
+    if (bandosDesplegados < 2) {
+        if (typeof turnHint !== 'undefined' && turnHint) {
+            turnHint.textContent = "Despliegue en progreso...";
+            turnHint.style.color = '#f7e7b2';
+        }
+        return;
+    }
+
+    if (turnoActual === null) {
+        if (typeof turnHint !== 'undefined' && turnHint) {
+            turnHint.textContent = "Esperando a que comience la partida...";
+        }
+        return;
+    }
+
+    if (turnoActual === currentUserId) {
+        if (typeof turnHint !== 'undefined' && turnHint) {
+            turnHint.textContent = "Tu turno";
+            turnHint.style.color = '#8cff8c';
+        }
+    } else {
+        if (typeof turnHint !== 'undefined' && turnHint) {
+            turnHint.textContent = "Turno rival";
+            turnHint.style.color = '#ff9a9a';
+        }
     }
 }
 
@@ -140,12 +176,34 @@ resizeCanvas();
 /* InicializaciÃ³n: obtener info de partida y validar si mostrar modal */
 async function inicializarPartida() {
     currentUserId = parseInt(localStorage.getItem('userId'));
+    if (!currentUserId || isNaN(currentUserId)) {
+        console.warn('No hay userId válido en localStorage:', localStorage.getItem('userId'));
+        setupHint.textContent = 'Error: usuario no identificado. Vuelve al menú e inicia sesión.';
+        return;
+    }
+    const partidaId = localStorage.getItem('partidaId');
+    if (!partidaId) {
+        console.warn('No hay partidaId en localStorage');
+        setupHint.textContent = 'No se encontró partida. Vuelve al menú y crea/carga una partida.';
+        return;
+    }
     const info = await obtenerPartidaInfo();
 
     if (info) {
         usuario1Id = info.usuarioId1;
         usuario2Id = info.usuarioId2;
         bandasAsignadas = info.bandosAsignados;
+        turnoActual = info.turnoActual;  // Extraer turnoActual del servidor
+        bandosDesplegados = info.bandosDesplegados || 0;  // Extraer bandosDesplegados del servidor
+
+        console.log('Info de partida devuelta por el servidor:', info);
+
+        // si la respuesta indica bandos asignados pero los valores son nulos/indefinidos,
+        // forzamos la bandera a false para que el usuario pueda volver a elegir.
+        if (bandasAsignadas && (!info.bando1 || !info.bando2)) {
+            console.warn('Servidor reportó bandosAsignados pero no hay bando1/bando2');
+            bandasAsignadas = false;
+        }
 
         isUsuario1 = (currentUserId === usuario1Id);
 
@@ -155,8 +213,8 @@ async function inicializarPartida() {
         console.log('Â¿Soy usuario 1?:', isUsuario1);
         console.log('Â¿Bandos asignados?:', bandasAsignadas);
 
-        /* Si soy usuario 1 y aÃºn no hay bandos asignados, mostrar modal */
-        if (isUsuario1 && !bandasAsignadas) {
+        /* Si soy usuario 1 y aÃºn no hay bandos asignados (o no se conocen), mostrar modal */
+        if (isUsuario1 && (!bandasAsignadas || !info.bando1 || !info.bando2)) {
             setTimeout(() => {
                 mostrarModalSeleccionarBando();
             }, 500); // PequeÃ±o delay para que se cargue todo primero
@@ -177,12 +235,31 @@ async function inicializarPartida() {
         if (Array.isArray(info.portadrones)) {
             hydratePortadronesFromServer(info.portadrones);
         }
+
+        /* Solo revelar columnas iniciales si los bandos estÃ¡n confirmados */
+        if (bandasAsignadas) {
+            discovered = Array.from({ length: rows }, () => Array(cols).fill(false));
+            revealStartColumnsByBando();
+            revealAroundActiveDrone();
+            updateInfoPanel();
+
+            /* Si la partida ya estÃ¡ iniciada (ambos bandos desplegados), mostrar botones de acciÃ³n */
+            if (info.bandosDesplegados === 2) {
+                updateButtonsVisibility(true);
+            }
+
+            drawScene();
+        } else {
+            /* Si aÃºn no hay bandos, dibujar canvas sin revelar nada */
+            drawScene();
+        }
+    } else {
+        /* Si no hay info, dibujar canvas vacÃ­o */
+        drawScene();
     }
 
-    revealStartColumnsByBando();
-    revealAroundActiveDrone();
-    updateInfoPanel();
-    drawScene();
+    /* Actualizar estado del turno al inicializar */
+    actualizarEstadoTurno();
 }
 
 inicializarPartida();
@@ -198,6 +275,7 @@ if (usuarioId && currentPartidaId) {
     eventSource.addEventListener("partida-finalizada", (event) => {
         const pid = String(event.data);
         if (pid === String(currentPartidaId)) {
+            detenerTurnoPolling();  // Detener polling al finalizar
             eventSource.close();
             window.location.href = "menu.html";
         }
@@ -212,16 +290,30 @@ if (usuarioId && currentPartidaId) {
                 // Recargar info y UI en caliente
                 obtenerPartidaInfo().then((info) => {
                     if (info) {
+                        turnoActual = info.turnoActual;  // Actualizar turnoActual
+                        bandosDesplegados = info.bandosDesplegados || 0;  // Actualizar bandosDesplegados
                         const miiBando = isUsuario1 ? info.bando1 : info.bando2;
                         bandoSeleccionado = miiBando || bandoSeleccionado;
+
+                        // Si eres usuario 2, recarga la página con el bando en la URL
+                        // para que si recargas manualmente, no pierdas el contexto
+                        if (!isUsuario1 && miiBando) {
+                            window.location.href = `partida.html?bando=${miiBando.toLowerCase()}`;
+                            return; // No continuar; la página se recargará
+                        }
+
                         applyBandoSprite();
                         if (Array.isArray(info.drones)) hydrateDronesFromServer(info.drones);
                         if (Array.isArray(info.portadrones)) hydratePortadronesFromServer(info.portadrones);
                         revealStartColumnsByBando();
                         revealAroundActiveDrone();
                         updateInfoPanel();
+                        updateButtonsVisibility(true);
+                        actualizarEstadoTurno();  // Actualizar estado del turno
                         drawScene();
+                        iniciarTurnoPolling();  // Iniciamos polling de turno
                     }
+
                 });
             }
         } catch (e) { console.warn('Error manejando partida-start', e); }
@@ -239,6 +331,40 @@ if (usuarioId && currentPartidaId) {
         console.warn("SSE cerrado/error:", error);
         eventSource.close();
     };
+
+    /* Polling periódico para actualizar turnoActual cada 2 segundos durante la partida */
+    let turnoPollingInterval = null;
+    function iniciarTurnoPolling() {
+        if (turnoPollingInterval) {
+            clearInterval(turnoPollingInterval);
+        }
+        turnoPollingInterval = setInterval(async () => {
+            const info = await obtenerPartidaInfo();
+            if (info) {
+                let changed = false;
+                if (info.turnoActual !== turnoActual) {
+                    turnoActual = info.turnoActual;
+                    console.log('Turno actualizado:', turnoActual);
+                    changed = true;
+                }
+                if (info.bandosDesplegados !== bandosDesplegados) {
+                    bandosDesplegados = info.bandosDesplegados || 0;
+                    console.log('Bandos desplegados actualizado:', bandosDesplegados);
+                    changed = true;
+                }
+                if (changed) {
+                    actualizarEstadoTurno();
+                }
+            }
+        }, 2000);
+    }
+
+    function detenerTurnoPolling() {
+        if (turnoPollingInterval) {
+            clearInterval(turnoPollingInterval);
+            turnoPollingInterval = null;
+        }
+    }
 
     /* Mueve al dron activo hacia una celda de destino (click).
        Solo permite destinos dentro del radio de movimiento */
@@ -350,8 +476,8 @@ if (usuarioId && currentPartidaId) {
        2) si haces click en una celda vacia, intenta mover al dron activo */
     canvas.addEventListener('click', async (event) => {
         const rect = canvas.getBoundingClientRect();
-        const x = Math.floor((event.clientX - rect.left) / grid);
-        const y = Math.floor((event.clientY - rect.top) / grid);
+        const x = Math.floor((event.clientX - rect.left) / cellSize);
+        const y = Math.floor((event.clientY - rect.top) / cellSize);
 
         // si estamos en modo ataque, cualquier click intenta disparar
         if (isAttackMode) {
@@ -381,19 +507,23 @@ if (usuarioId && currentPartidaId) {
                     });
                     console.log('Respuesta atacarDronOPorta:', res.status, res.statusText);
                     if (!res.ok) {
-                        const msg = await res.text();
-                        console.error('Error en atacarDronOPorta:', msg);
-                        setupHint.textContent = "Error al atacar: " + msg;
-                        //alert('Error al atacar: ' + msg);
+                        const raw = await res.text();
+                        let display = raw;
+                        try {
+                            const parsed = JSON.parse(raw);
+                            if (parsed && typeof parsed === 'object') display = parsed.error || parsed.message || parsed.msg || display;
+                        } catch (e) { }
+                        console.error('Error en atacarDronOPorta:', display);
+                        setupHint.textContent = display;
                     } else {
-                        setupHint.textContent = 'Ataque enviado. Esperando actualizaciÃ³n del servidor.';
+                        setupHint.textContent = 'Ataque enviado';
                     }
                 } catch (err) {
                     console.error('Error enviando ataque:', err);
                     alert('Error de red al intentar atacar.');
                 }
             } else {
-                setupHint.textContent = 'Seleccione un objetivo vÃ¡lido para atacar';
+                setupHint.textContent = 'Seleccione un objetivo valido para atacar';
             }
             isAttackMode = false;
             return;
@@ -435,9 +565,14 @@ if (usuarioId && currentPartidaId) {
                     y: y
                 });
                 if (!resDeploy.ok) {
-                    const msg = await resDeploy.text();
-                    console.error('Error desplegarDron:', msg);
-                    setupHint.textContent = 'Error al desplegar dron: ' + msg;
+                    const raw = await resDeploy.text();
+                    let display = raw;
+                    try {
+                        const parsed = JSON.parse(raw);
+                        if (parsed && typeof parsed === 'object') display = parsed.error || parsed.message || parsed.msg || display;
+                    } catch (e) { }
+                    console.error('Error desplegarDron:', display);
+                    setupHint.textContent = display;
                     isDeployMode = false;
                     return;
                 }
@@ -470,9 +605,14 @@ if (usuarioId && currentPartidaId) {
                     console.log('Respuesta iniciarPartida:', res.status, res.statusText);
 
                     if (!res.ok) {
-                        const msg = await res.text();
-                        console.error('Error en iniciarPartida:', msg);
-                        setupHint.textContent = "Error al iniciar partida: " + msg;
+                        const raw = await res.text();
+                        let display = raw;
+                        try {
+                            const parsed = JSON.parse(raw);
+                            if (parsed && typeof parsed === 'object') display = parsed.error || parsed.message || parsed.msg || display;
+                        } catch (e) { }
+                        console.error('Error en iniciarPartida:', display);
+                        setupHint.textContent = display;
                         return;
                     }
 
@@ -481,13 +621,21 @@ if (usuarioId && currentPartidaId) {
 
                     /* Si la partida estÃ¡ iniciada (ambos bandos desplegados), actualizar botones */
                     if (response.iniciada) {
+                        bandosDesplegados = response.bandosDesplegados || 2;  // Actualizar bandosDesplegados
                         console.log('Partida iniciada. Mostrando botones de acciÃ³n.');
                         updateButtonsVisibility(true);
-                        setupHint.textContent = 'Partida iniciada. Jugador en turno: ' + response.jugadorEnTurno;
-
+                        if (typeof turnHint !== 'undefined' && turnHint) {
+                            if (response.jugadorEnTurno === getId()) {
+                                turnHint.textContent = 'Tu turno';
+                                turnHint.style.color = '#8cff8c';
+                            } else {
+                                turnHint.textContent = 'Turno rival';
+                                turnHint.style.color = '#ff9a9a';
+                            }
+                        }
                     } else {
                         console.log('Esperando segundo jugador. Bandos desplegados:', response.bandosDesplegados);
-                        setupHint.textContent = 'Tu despliegue completado. Esperando al otro jugador.';
+                        setupHint.textContent = 'Despliegue completado. Esperando al bando rival.';
                     }
                 } catch (err) {
                     console.error('Error en la peticiÃ³n iniciarPartida:', err);
@@ -527,6 +675,7 @@ if (usuarioId && currentPartidaId) {
         if (!esSelec && isMoveMode) {
             try {
                 let res;
+                let hasError = false;
                 if (isPortaSelected) {
                     res = await api.moverPortadron({
                         partidaId: localStorage.getItem("partidaId"),
@@ -538,7 +687,7 @@ if (usuarioId && currentPartidaId) {
                 } else {
                     const drone = getActiveDrone();
                     if (!drone || !drone.deployed) {
-                        setupHint.textContent = 'Selecciona un dron desplegado para moverlo.';
+                        setupHint.textContent = 'Selecciona un dron para moverlo.';
                         isMoveMode = false;
                         return;
                     }
@@ -557,18 +706,28 @@ if (usuarioId && currentPartidaId) {
                     // Lo ideal serÃ­a que el servidor envÃ­e el nuevo estado del juego vÃ­a SSE.
                     moveActiveDroneTo(x, y);
                 } else {
-                    const msg = await res.text();
-                    console.error('Error en moverDron/moverPortadron:', msg);
-                    setupHint.textContent = "Error al mover: " + msg;
-                    // alert("Error al mover: " + msg);
+                    const raw = await res.text();
+                    let display = raw;
+                    try {
+                        const parsed = JSON.parse(raw);
+                        if (parsed && typeof parsed === 'object') {
+                            display = parsed.error || parsed.message || parsed.msg || display;
+                        }
+                    } catch (e) {
+                        // no-op: raw is not JSON
+                    }
+                    console.error('Error en moverDron/moverPortadron:', display);
+                    setupHint.textContent = display;  // Mostrar error limpio
+                    hasError = true;
+                    // alert("Error al mover: " + display);
                 }
             } catch (err) {
                 console.error('Error en la peticiÃ³n de movimiento:', err);
-                alert('Error de red al intentar mover.');
+                setupHint.textContent = 'Error de red al intentar mover.';
             } finally {
-                // Salir del modo movimiento y limpiar el hint despuÃ©s del intento.
+                // Salir del modo movimiento. Solo limpiar el hint si no hubo error.
                 isMoveMode = false;
-                setupHint.textContent = '';
+                // setupHint.textContent = '';  // No limpiar si hay error
             }
             return; // La acciÃ³n de click ha sido manejada.
         }
@@ -618,7 +777,7 @@ if (usuarioId && currentPartidaId) {
         isDeployMode = true;
         isAttackMode = false;
         isMoveMode = false;
-        setupHint.textContent = `Despliegue activo: haz click en el mapa para colocar #${drone.id}`;
+        setupHint.textContent = `Haz click en el mapa para colocar el dron`;
     });
 
     // nuevo botÃ³n movimiento
@@ -626,20 +785,20 @@ if (usuarioId && currentPartidaId) {
         isMoveMode = true;
         isAttackMode = false;
         isDeployMode = false;
-        setupHint.textContent = 'Modo movimiento: haz click en la celda destino';
+        setupHint.textContent = 'Haz click en la celda destino';
     });
 
     // nuevo botÃ³n atacar
     attackBtn.addEventListener('click', () => {
         const activeDrone = getActiveDrone();
         if (!activeDrone || !activeDrone.deployed) {
-            setupHint.textContent = 'Selecciona un dron desplegado para atacar.';
+            setupHint.textContent = 'Selecciona un dron rival para atacar.';
             return;
         }
         isAttackMode = true;
         isMoveMode = false;
         isDeployMode = false;
-        setupHint.textContent = 'Modo ataque: selecciona un objetivo (dron o porta enemigo)';
+        setupHint.textContent = 'Selecciona un objetivo';
     });
 
     // nuevo botÃ³n recargar
@@ -658,12 +817,17 @@ if (usuarioId && currentPartidaId) {
             });
             console.log('Respuesta recargarDron:', res.status, res.statusText);
             if (!res.ok) {
-                const msg = await res.text();
-                console.error('Error en recargarDron:', msg);
-                setupHint.textContent = "Error al recargar: " + msg;
+                const raw = await res.text();
+                let display = raw;
+                try {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && typeof parsed === 'object') display = parsed.error || parsed.message || parsed.msg || display;
+                } catch (e) { }
+                console.error('Error en recargarDron:', display);
+                setupHint.textContent = display;
                 // alert('Error al recargar: ' + msg);
             } else {
-                setupHint.textContent = 'Recarga enviada. Esperando actualizaciÃ³n del servidor.';
+                setupHint.textContent = 'Recarga exitosa';
             }
         } catch (err) {
             console.error('Error recargando dron:', err);
@@ -714,8 +878,11 @@ if (usuarioId && currentPartidaId) {
             const rect = canvas.getBoundingClientRect();
             canvas.width = Math.floor(rect.width);
             canvas.height = Math.floor(rect.height);
-            cols = Math.max(1, Math.floor(canvas.width / grid));
-            rows = Math.max(1, Math.floor(canvas.height / grid));
+            cols = Math.max(1, Math.floor(canvas.width / cellSize));
+            rows = Math.max(1, Math.floor(canvas.height / cellSize));
+
+            /* Recalcular cellSize para que encaje perfectamente */
+            cellSize = Math.min(canvas.width / cols, canvas.height / rows);
         }
 
         reiniciarNiebla() {

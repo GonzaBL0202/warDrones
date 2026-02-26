@@ -5,7 +5,7 @@ const api = window.PartidaApi;
 const gameState = new window.GameState();
 
 /* Configuracion visual principal del tablero */
-const grid = 32; /* Tamano de cada celda de la grilla del mapa */
+let cellSize = 32; /* Tamano dinamico de cada celda - se recalcula al ajustar canvas */
 const droneSprite = new Image(); /* Sprite sheet del dron */
 const portaDronNavalSprite = new Image(); /* Sprite del porta dron naval */
 const portaDronAereoSprite = new Image(); /* Sprite del porta dron aereo */
@@ -13,10 +13,9 @@ const spriteFps = 10; /* Velocidad de animacion del sprite */
 
 /* Referencias del panel lateral (HUD) */
 const bandoLabel = document.getElementById('bandoLabel');
-const droneTypeLabel = document.getElementById('droneTypeLabel');
-const droneRangeLabel = document.getElementById('droneRangeLabel');
-const droneVisionLabel = document.getElementById('droneVisionLabel');
+// HUD labels removed per user request (info shown on canvas).
 const setupHint = document.getElementById('setupHint');
+const turnHint = document.getElementById('turnHint');
 const deployDroneBtn = document.getElementById('deployDroneBtn');
 const fleetList = document.getElementById('fleetList');
 const nextDroneBtn = document.getElementById('nextDroneBtn');
@@ -38,6 +37,8 @@ let usuario1Id = null;       // ID del usuario 1
 let usuario2Id = null;       // ID del usuario 2
 let isUsuario1 = false;      // true si el usuario actual es el usuario 1
 let bandasAsignadas = false; // true si ya se asignaron bandos
+let turnoActual = null;      // ID del usuario que tiene el turno actualmente
+let bandosDesplegados = 0;   // Cantidad de bandos que han completado despliegue (0, 1, o 2)
 
 
 /* Lee el parametro "bando" desde la URL y lo normaliza */
@@ -108,8 +109,13 @@ function mapDroneFromServer(droneInfo) {
 }
 
 function hydrateDronesFromServer(allDrones) {
+    /* Si aún no hay bandos asignados en el servidor, algunos drones pueden
+       venir con bando nulo. Para que el jugador vea la lista de unidades y
+       pueda desplegarlas, aceptamos drones cuya propiedad `bando` no esté
+       definida. Una vez que se elige un bando, la propiedad se llenará y se
+       filtrará correctamente. */
     const ownDrones = (allDrones || [])
-        .filter((d) => d.bando === bandoSeleccionado)
+        .filter((d) => !d.bando || d.bando === bandoSeleccionado)
         .map(mapDroneFromServer);
 
     gameState.setDrones(ownDrones);
@@ -134,7 +140,8 @@ function applyBandoSprite() {
 
 /* Revela columnas iniciales segun bando */
 function revealStartColumnsByBando() {
-    const columnsToReveal = Math.min(3, cols);
+    // const columnsToReveal = Math.min(3, cols);
+    const columnsToReveal = cols / 3;
     for (let y = 0; y < rows; y++) {
         for (let i = 0; i < columnsToReveal; i++) {
             const x = bandoSeleccionado === 'NAVAL' ? i : (cols - 1 - i);
@@ -153,12 +160,14 @@ function getEnemyPorta() {
 
 function positionPortaDronNaval() {
     portaDronNaval.x = 0;
-    portaDronNaval.y = Math.max(0, Math.min(rows - portaDronNaval.size, Math.floor(rows / 2) - 1));
+    /* Centrar verticalmente teniendo en cuenta el tamaño del porta */
+    portaDronNaval.y = Math.max(0, Math.floor((rows - portaDronNaval.size) / 2));
 }
 
 function positionPortaDronAereo() {
     portaDronAereo.x = Math.max(0, cols - portaDronAereo.size);
-    portaDronAereo.y = Math.max(0, Math.min(rows - portaDronAereo.size, Math.floor(rows / 2) - 1));
+    /* Centrar verticalmente teniendo en cuenta el tamaño del porta */
+    portaDronAereo.y = Math.max(0, Math.floor((rows - portaDronAereo.size) / 2));
 }
 
 function isInsidePortaArea(cellX, cellY, porta) {
@@ -209,23 +218,10 @@ function updateInfoPanel() {
     const drone = getActiveDrone();
     const ownPorta = getOwnPorta();
     bandoLabel.textContent = `Bando: ${bandoSeleccionado}`;
-    if (isPortaSelected) {
-        droneTypeLabel.textContent = `${ownPorta.nombre} (En mapa)`;
-        droneRangeLabel.textContent = `Alcance: ${ownPorta.moveRadius} celdas`;
-        droneVisionLabel.textContent = `Vision: ${ownPorta.revealRadius} celdas`;
-    } else if (!drone) {
-        droneTypeLabel.textContent = 'Dron activo: -';
-        droneRangeLabel.textContent = 'Alcance: -';
-        droneVisionLabel.textContent = 'Vision: -';
-    } else {
-        const status = drone.deployed ? 'En mapa' : 'Sin desplegar';
-        droneTypeLabel.textContent = `Dron activo: #${drone.id} ${drone.nombre} (${status})`;
-        droneRangeLabel.textContent = `Alcance: ${drone.moveRadius} celdas`;
-        droneVisionLabel.textContent = `Vision: ${drone.revealRadius} celdas`;
-    }
+    // Info de dron desplegada directamente en canvas; no actualizar labels.
 
     if (!isDeployMode) {
-        setupHint.textContent = 'Inicio sin piezas. Elige un dron y pulsa Desplegar.';
+        setupHint.textContent = 'Elige un dron y pulsa Desplegar.';
     }
 
     /* Actualizar visibilidad de botones solo si la partida aÃºn no ha iniciado */
@@ -237,7 +233,7 @@ function updateInfoPanel() {
     fleetList.innerHTML = '';
     const portaItem = document.createElement('button');
     portaItem.type = 'button';
-    portaItem.textContent = `${ownPorta.nombre} | 2x2 | Mapa`;
+    portaItem.textContent = `${ownPorta.nombre}`;
     portaItem.style.width = '100%';
     portaItem.style.textAlign = 'left';
     portaItem.style.padding = '4px 6px';
@@ -258,7 +254,7 @@ function updateInfoPanel() {
         const d = drones[i];
         const item = document.createElement('button');
         item.type = 'button';
-        item.textContent = `#${d.id} ${d.nombre} | ${d.deployed ? 'Mapa' : 'Reserva'} | Alc ${d.moveRadius} | Vis ${d.revealRadius}`;
+        item.textContent = `#${i} ${d.nombre} | ${d.deployed ? 'Desplegado' : 'Reserva'}`;
         item.style.width = '100%';
         item.style.textAlign = 'left';
         item.style.padding = '4px 6px';
@@ -313,8 +309,11 @@ function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
     canvas.width = Math.floor(rect.width);
     canvas.height = Math.floor(rect.height);
-    cols = Math.max(1, Math.floor(canvas.width / grid));
-    rows = Math.max(1, Math.floor(canvas.height / grid));
+    cols = Math.max(1, Math.floor(canvas.width / cellSize));
+    rows = Math.max(1, Math.floor(canvas.height / cellSize));
+
+    /* Recalcular cellSize para que encaje perfectamente */
+    cellSize = Math.min(canvas.width / cols, canvas.height / rows);
     discovered = Array.from({ length: rows }, () => Array(cols).fill(false));
     revealStartColumnsByBando();
     if (!portadronesHydrated) {
@@ -336,16 +335,16 @@ function drawMap() {
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
     ctx.lineWidth = 1;
 
-    /* Dibuja las l?neas verticales de la grilla */
-    for (let x = 0; x <= canvas.width; x += grid) {
+    /* Dibuja las líneas verticales de la grilla */
+    for (let x = 0; x <= canvas.width; x += cellSize) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, canvas.height);
         ctx.stroke();
     }
 
-    /* Dibuja las l?neas horizontales de la grilla */
-    for (let y = 0; y <= canvas.height; y += grid) {
+    /* Dibuja las líneas horizontales de la grilla */
+    for (let y = 0; y <= canvas.height; y += cellSize) {
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(canvas.width, y);
@@ -421,13 +420,14 @@ function drawFog() {
 
             /* Celda ya vista = sombra suave; nunca vista = sombra fuerte */
             ctx.fillStyle = discovered[y][x] ? 'rgba(0, 0, 0, 0.35)' : 'rgba(0, 0, 0, 0.9)';
-            ctx.fillRect(x * grid, y * grid, grid, grid);
+
+            ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
         }
     }
 
     /* Cubrir el resto del canvas que no alcanza perfectamente a ser una Ãºltima fila/columna completa */
-    const maxVisibleWidth = cols * grid;
-    const maxVisibleHeight = rows * grid;
+    const maxVisibleWidth = cols * cellSize;
+    const maxVisibleHeight = rows * cellSize;
 
     /* Cubrir el Ã¡rea a la derecha si no alcanza a llenar toda la anchura */
     if (maxVisibleWidth < canvas.width) {
@@ -443,9 +443,9 @@ function drawFog() {
 
     /* Centro y radio del lÃ­mite de movimiento del dron activo */
     if (hasUnit) {
-        const px = centerX * grid;
-        const py = centerY * grid;
-        const outlineRadiusPx = moveRadius * grid;
+        const px = centerX * cellSize;
+        const py = centerY * cellSize;
+        const outlineRadiusPx = moveRadius * cellSize;
         ctx.save();
         ctx.strokeStyle = 'rgba(242, 203, 103, 0.7)';
         ctx.lineWidth = 2;
@@ -459,9 +459,9 @@ function drawFog() {
 /* Dibuja todos los drones en el tablero.
    Usa sprite animado si est? cargado, o un c?rculo de respaldo si no */
 function drawSinglePortaDron(porta, sprite, spriteReady, isSelected) {
-    const px = porta.x * grid;
-    const py = porta.y * grid;
-    const sizePx = porta.size * grid;
+    const px = porta.x * cellSize;
+    const py = porta.y * cellSize;
+    const sizePx = porta.size * cellSize;
 
     if (spriteReady) {
         /* Si la imagen es un sprite sheet horizontal, usa solo el primer frame cuadrado */
@@ -509,9 +509,9 @@ function drawDrones() {
         if (!drone.deployed) {
             continue;
         }
-        const px = (drone.x + 0.5) * grid;
-        const py = (drone.y + 0.5) * grid;
-        const size = Math.floor(grid * 1.05);
+        const px = (drone.x + 0.5) * cellSize;
+        const py = (drone.y + 0.5) * cellSize;
+        const size = Math.floor(cellSize * 1.05);
         const half = size / 2;
 
         if (spriteReady) {
@@ -534,7 +534,7 @@ function drawDrones() {
         } else {
             ctx.fillStyle = '#f2cb67';
             ctx.beginPath();
-            ctx.arc(px, py, Math.max(10, Math.floor(grid * 0.35)), 0, Math.PI * 2);
+            ctx.arc(px, py, Math.max(10, Math.floor(cellSize * 0.35)), 0, Math.PI * 2);
             ctx.fill();
         }
 
@@ -543,7 +543,7 @@ function drawDrones() {
         ctx.lineWidth = drone.id === activeDroneId ? 3 : 2;
         ctx.strokeStyle = drone.id === activeDroneId ? '#ffffff' : drone.color;
         ctx.beginPath();
-        ctx.arc(px, py, Math.max(12, Math.floor(grid * 0.42)), 0, Math.PI * 2);
+        ctx.arc(px, py, Math.max(12, Math.floor(cellSize * 0.42)), 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
     }

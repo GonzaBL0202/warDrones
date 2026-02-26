@@ -22,6 +22,7 @@ import com.wardrones.warDrones.model.dto.request.RecargarDronRequest;
 import com.wardrones.warDrones.model.dto.response.IniciarPartidaResponse;
 import com.wardrones.warDrones.model.dto.response.ObtenerPartidaInfoResponse;
 import com.wardrones.warDrones.model.entity.Partida;
+import com.wardrones.warDrones.model.enums.Bando;
 import com.wardrones.warDrones.model.service.PartidaService;
 
 @RestController
@@ -172,13 +173,10 @@ public class PartidaController {
             String bando1Str = request.getBando1().toUpperCase();
             String bando2Str = request.getBando2().toUpperCase();
             
-            com.wardrones.warDrones.model.enums.Bando bando1 = 
-                bando1Str.equals("NAVAL") ? com.wardrones.warDrones.model.enums.Bando.NAVAL : 
-                com.wardrones.warDrones.model.enums.Bando.AEREO;
+            Bando bando1 = 
+                bando1Str.equals("NAVAL") ? Bando.NAVAL : Bando.AEREO;
             
-            com.wardrones.warDrones.model.enums.Bando bando2 = 
-                bando2Str.equals("NAVAL") ? com.wardrones.warDrones.model.enums.Bando.NAVAL : 
-                com.wardrones.warDrones.model.enums.Bando.AEREO;
+            Bando bando2 = bando2Str.equals("NAVAL") ? Bando.NAVAL : Bando.AEREO;
             
             pService.asignarBandos(request.getPartidaId(), bando1, bando2);
             
