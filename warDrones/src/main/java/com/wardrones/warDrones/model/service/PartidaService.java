@@ -210,12 +210,18 @@ public class PartidaService {
         GameSession session = gameSManager.obtenerSesion(partidaId);
         session.moverDron(dronId, x, y, jugadorId);
         session.cambiarTurno();
+        System.out.println("Va a avisar accion a jugador: " + session.getJugadorEnTurno());
+        //Avisa a ambos jugadores, asi siempre tienen la info actualizada
+        lobbyNotifier.notifyAccion(session.getJugador1Id(), partidaId);
+        lobbyNotifier.notifyAccion(session.getJugador2Id(), partidaId);
     }
 
     public void moverPortadron(int partidaId, int jugadorId, int x, int y) {
         GameSession session = gameSManager.obtenerSesion(partidaId);
         session.moverPortadron(x, y, jugadorId);//
         session.cambiarTurno();
+        lobbyNotifier.notifyAccion(session.getJugador1Id(), partidaId);
+        lobbyNotifier.notifyAccion(session.getJugador2Id(), partidaId);
     }
 
     public void atacarDronOPorta(int partidaId, int jugadorId, int dronA, int obj) {
@@ -225,12 +231,16 @@ public class PartidaService {
         else
             session.atacarDron(dronA, obj, jugadorId);
         session.cambiarTurno();
+        lobbyNotifier.notifyAccion(session.getJugador1Id(), partidaId);
+        lobbyNotifier.notifyAccion(session.getJugador2Id(), partidaId);
     }
 
     public void recargarDron (int partidaId, int jugadorId, int dronId) {
         GameSession session = gameSManager.obtenerSesion(partidaId);
         session.recargarDron(dronId, jugadorId);
         session.cambiarTurno();
+        lobbyNotifier.notifyAccion(session.getJugador1Id(), partidaId);
+        lobbyNotifier.notifyAccion(session.getJugador2Id(), partidaId);
     }
 
     public void desplegarDron(int partidaId, int jugadorId, int dronId, int x, int y) {
@@ -325,10 +335,7 @@ public class PartidaService {
     }
 
     public ObtenerPartidaInfoResponse obtenerPartidaInfo(int partidaId) {
-        Partida partida = pRepository.findById(partidaId)
-            .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
-        
-        GameSession gs = gameSManager.obtenerSesion(partidaId);
+       GameSession gs = gameSManager.obtenerSesion(partidaId);
         
         if (gs == null) {
             throw new RuntimeException("Sesión de partida no encontrada");
@@ -346,11 +353,6 @@ public class PartidaService {
 
         PortadronState portaNaval = gs.getPortadronNaval();
         PortadronState portaAereo = gs.getPortadronAereo();
-
-        try {
-            System.out.println("[PartidaService] PortadronNaval IDs=" + (portaNaval != null ? portaNaval.getListadoDronesIds() : "null"));
-            System.out.println("[PartidaService] PortadronAereo IDs=" + (portaAereo != null ? portaAereo.getListadoDronesIds() : "null"));
-        } catch (Exception e) {}
 
         List<ObtenerPartidaInfoResponse.PortadronInfo> portadrones = new ArrayList<>();
         if (portaNaval != null) {

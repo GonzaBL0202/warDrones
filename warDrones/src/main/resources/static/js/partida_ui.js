@@ -213,16 +213,16 @@ async function inicializarPartida() {
         console.log('Â¿Soy usuario 1?:', isUsuario1);
         console.log('Â¿Bandos asignados?:', bandasAsignadas);
 
-        /* Si soy usuario 1 y aÃºn no hay bandos asignados (o no se conocen), mostrar modal */
+        /* Si soy usuario 1 y aun no hay bandos asignados (o no se conocen), mostrar modal */
         if (isUsuario1 && (!bandasAsignadas || !info.bando1 || !info.bando2)) {
             setTimeout(() => {
                 mostrarModalSeleccionarBando();
             }, 500); // PequeÃ±o delay para que se cargue todo primero
         } else if (!isUsuario1 && !bandasAsignadas) {
-            /* Si soy usuario 2 y aÃºn no hay bandos, esperar por SSE */
+            /* Si soy usuario 2 y aun no hay bandos, esperar por SSE */
             console.log('Esperando que usuario 1 seleccione bando...');
         } else if (bandasAsignadas) {
-            /* Si ya hay bandos asignados, cargar el mÃ­o */
+            /* Si ya hay bandos asignados, cargar el mi­o */
             const miiBando = isUsuario1 ? info.bando1 : info.bando2;
             console.log('Mi bando:', miiBando);
             bandoSeleccionado = miiBando;
@@ -275,7 +275,6 @@ if (usuarioId && currentPartidaId) {
     eventSource.addEventListener("partida-finalizada", (event) => {
         const pid = String(event.data);
         if (pid === String(currentPartidaId)) {
-            detenerTurnoPolling();  // Detener polling al finalizar
             eventSource.close();
             window.location.href = "menu.html";
         }
@@ -311,7 +310,6 @@ if (usuarioId && currentPartidaId) {
                         updateButtonsVisibility(true);
                         actualizarEstadoTurno();  // Actualizar estado del turno
                         drawScene();
-                        iniciarTurnoPolling();  // Iniciamos polling de turno
                     }
 
                 });
@@ -319,10 +317,22 @@ if (usuarioId && currentPartidaId) {
         } catch (e) { console.warn('Error manejando partida-start', e); }
     });
 
+    
+    /*Evento que se dispara al realizar una accion se le avisa al otro usuario para actualizar data*/
+    eventSource.addEventListener("accion-realizada", (event) => {
+        /*cargo partida id y usuarioid*/
+        const data = JSON.parse(event.data);
+        const uid = String(data.usuarioId);
+        const pid = String(data.partidaId);
+        if (pid === String(currentPartidaId) && uid !== String(getId())) {
+            console.log("Actualiza info");
+            actualizarInfo();
+        }
+    });
+
     eventSource.addEventListener("partida-guardada", (event) => {
         const pid = String(event.data);
         if (pid === String(currentPartidaId)) {
-            eventSource.close();
             window.location.href = "menu.html";
         }
     });
@@ -332,39 +342,39 @@ if (usuarioId && currentPartidaId) {
         eventSource.close();
     };
 
-    /* Polling periódico para actualizar turnoActual cada 2 segundos durante la partida */
-    let turnoPollingInterval = null;
-    function iniciarTurnoPolling() {
-        if (turnoPollingInterval) {
-            clearInterval(turnoPollingInterval);
-        }
-        turnoPollingInterval = setInterval(async () => {
-            const info = await obtenerPartidaInfo();
-            if (info) {
-                let changed = false;
-                if (info.turnoActual !== turnoActual) {
-                    turnoActual = info.turnoActual;
-                    console.log('Turno actualizado:', turnoActual);
-                    changed = true;
-                }
-                if (info.bandosDesplegados !== bandosDesplegados) {
-                    bandosDesplegados = info.bandosDesplegados || 0;
-                    console.log('Bandos desplegados actualizado:', bandosDesplegados);
-                    changed = true;
-                }
-                if (changed) {
-                    actualizarEstadoTurno();
-                }
-            }
-        }, 2000);
+    function getAllDrones(serverDrones) {
+        const allDrones = Array.isArray(serverDrones) ? serverDrones : [];
+        const ownDrones = (allDrones || [])
+            .filter((d) => !d.bando || d.bando === bandoSeleccionado)
+            .map(mapDroneFromServer);
+
+        const rivalDrones = (allDrones || [])
+            .filter((d) => d.bando && d.bando !== bandoSeleccionado)
+            .map(mapDroneFromServer);
+
+        gameState.setDrones(ownDrones);
+        gameState.setDronesRivales(rivalDrones);
+        drones = gameState.drones;
+        dronesRivales = gameState.dronesRivales;
+        activeDroneId = gameState.activeDroneId;
     }
 
-    function detenerTurnoPolling() {
-        if (turnoPollingInterval) {
-            clearInterval(turnoPollingInterval);
-            turnoPollingInterval = null;
+    /* Funcion para obtener info nueva de la partida y actualizar, se llama cada vez que se recibe nueva info del servidor 
+    (ej: por SSE) o se hace una accion que puede cambiar el estado de la partida (ej: mover dron) */
+    /*Cuando realizo una accion se avisa al otro usuario para que actualize*/
+
+    async function actualizarInfo() {
+        console.log('Actualizando info de partida desde servidor...');
+        const info = await obtenerPartidaInfo();
+        if (info) {
+            let changed = false;
+            getAllDrones(info.drones);
+            drawRivalDrones();
+            turnoActual = info.turnoActual;  // Actualizar turnoActual
+            actualizarEstadoTurno();
         }
     }
+
 
     /* Mueve al dron activo hacia una celda de destino (click).
        Solo permite destinos dentro del radio de movimiento */
@@ -471,6 +481,14 @@ if (usuarioId && currentPartidaId) {
         animateStep();
     }
 
+    function isInsideDeploymentZone(x, y) {
+        if (bandoSeleccionado === 'NAVAL') {
+            return x <= Math.floor(cols / 3);
+        } else {
+            return x >= Math.ceil(2 * cols / 3);
+        }
+    }
+
     /* Click sobre canvas:
        1) si haces click en un dron, lo selecciona
        2) si haces click en una celda vacia, intenta mover al dron activo */
@@ -488,12 +506,9 @@ if (usuarioId && currentPartidaId) {
             if (isInsidePortaArea(x, y, getEnemyPorta())) {
                 objetivoId = 0;
             } else {
-                // NOTA: Esto actualmente solo permite seleccionar drones del propio bando como objetivos,
-                // ya que el array `drones` solo contiene la flota del jugador.
-                // Para atacar enemigos, se necesitarÃ¡ una lista de drones enemigos visibles.
-                const targetIndex = drones.findIndex(d => d.deployed && d.x === x && d.y === y);
+                const targetIndex = dronesRivales.findIndex(d => d.deployed && d.x === x && d.y === y);
                 if (targetIndex >= 0) {
-                    objetivoId = drones[targetIndex].id;
+                    objetivoId = dronesRivales[targetIndex].id;
                 }
             }
 
@@ -549,8 +564,15 @@ if (usuarioId && currentPartidaId) {
                 return;
             }
 
+            if (!isInsideDeploymentZone(x, y)) {
+                setupHint.textContent = 'Debes desplegar dentro de tu zona de despliegue';
+                return;
+            }
+
+            //Validacion de posicion de drones propia y rival, y de portadrones
             const occupied = drones.some((d) => d.deployed && d.x === x && d.y === y);
-            if (occupied || isInsideAnyPorta(x, y)) {
+            const occupiedByRival = dronesRivales.some((d) => d.deployed && d.x === x && d.y === y);
+            if (occupied || occupiedByRival || isInsideAnyPorta(x, y)) {
                 setupHint.textContent = 'Celda ocupada. Elige otra celda';
                 return;
             }
@@ -592,7 +614,7 @@ if (usuarioId && currentPartidaId) {
                 return;
             }
 
-            /* Contar cuÃ¡ntos drones estÃ¡n desplegados */
+            /* Contar cuantos drones estan desplegados */
             const deployedCount = drones.filter(d => d.deployed).length;
             const totalDrones = drones.length;
 
@@ -619,7 +641,7 @@ if (usuarioId && currentPartidaId) {
                     const response = await res.json();
                     console.log('Datos de iniciarPartida:', response);
 
-                    /* Si la partida estÃ¡ iniciada (ambos bandos desplegados), actualizar botones */
+                    /* Si la partida esta iniciada (ambos bandos desplegados), actualizar botones */
                     if (response.iniciada) {
                         bandosDesplegados = response.bandosDesplegados || 2;  // Actualizar bandosDesplegados
                         console.log('Partida iniciada. Mostrando botones de acciÃ³n.');
@@ -671,7 +693,7 @@ if (usuarioId && currentPartidaId) {
             return;
         }
 
-        // Si no fue un click de selecciÃ³n y estamos en modo movimiento, procesar la acciÃ³n.
+        // Si no fue un click de seleccion y estamos en modo movimiento, procesar la acciÃ³n.
         if (!esSelec && isMoveMode) {
             try {
                 let res;
@@ -702,8 +724,8 @@ if (usuarioId && currentPartidaId) {
                 }
 
                 if (res.ok) {
-                    // ActualizaciÃ³n optimista: Mueve la unidad en el cliente para dar feedback visual inmediato.
-                    // Lo ideal serÃ­a que el servidor envÃ­e el nuevo estado del juego vÃ­a SSE.
+                    // Actualizacion optimista: Mueve la unidad en el cliente para dar feedback visual inmediato.
+                    // Lo ideal seri­a que el servidor envi­e el nuevo estado del juego vi­a SSE.
                     moveActiveDroneTo(x, y);
                 } else {
                     const raw = await res.text();
@@ -727,8 +749,11 @@ if (usuarioId && currentPartidaId) {
             } finally {
                 // Salir del modo movimiento. Solo limpiar el hint si no hubo error.
                 isMoveMode = false;
+
                 // setupHint.textContent = '';  // No limpiar si hay error
             }
+            //Avisarle al otro jugador por SSE para que actualice su vista con la nueva posicion del dron/portadron
+
             return; // La acciÃ³n de click ha sido manejada.
         }
 

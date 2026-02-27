@@ -43,18 +43,7 @@ public class PartidaController {
         return ResponseEntity.ok(partida);
     }
 
-    //Endpoints dentro de la partida:
-
-    // @PostMapping("/accion")
-    // public ResponseEntity<Boolean> realizarAccion(@RequestBody AccionRequest request){
-
-    //     boolean hecho = pService.cambiarTurno(
-    //             request.getPartidaId(),
-    //             request.getUsuarioId()
-    //     );
-
-    //     return ResponseEntity.ok(hecho);
-    // }
+    //Endpoints dentro de la partida
 
     @PostMapping("/moverDron")
     public ResponseEntity<?> moverDron(@RequestBody MovimientoDronRequest dto) {
@@ -133,10 +122,6 @@ public class PartidaController {
             return ResponseEntity.badRequest().body("{\"success\": false, \"error\": \"" + e.getMessage() + "\"}");
         }
     }
-
-    //get generico para todas las acciones
-
-
 
     //Endpoints generales:
 

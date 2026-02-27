@@ -7,6 +7,7 @@ const gameState = new window.GameState();
 /* Configuracion visual principal del tablero */
 let cellSize = 32; /* Tamano dinamico de cada celda - se recalcula al ajustar canvas */
 const droneSprite = new Image(); /* Sprite sheet del dron */
+const dronrivalSprite = new Image(); /* Sprite sheet del dron rival (mismo sprite pero con tintado diferente) */
 const portaDronNavalSprite = new Image(); /* Sprite del porta dron naval */
 const portaDronAereoSprite = new Image(); /* Sprite del porta dron aereo */
 const spriteFps = 10; /* Velocidad de animacion del sprite */
@@ -50,6 +51,7 @@ let cols = 0; /* Cantidad de columnas del mapa */
 let rows = 0; /* Cantidad de filas del mapa */
 let discovered = []; /* Matriz que indica que celdas fueron descubiertas */
 let drones = gameState.drones; /* Lista de drones del bando seleccionado */
+let dronesRivales = gameState.dronesRivales; /* Lista de drones del bando rival */
 let activeDroneId = null; /* Drone actualmente controlado */
 let isPortaSelected = false; /* Controla si la unidad activa es el porta dron */
 let isDeployMode = false; /* Espera click en mapa para colocar dron */
@@ -63,6 +65,10 @@ let spriteFrameIndex = 0;
 let spriteFrameCount = 1;
 let spriteFrameSize = 0;
 let lastSpriteFrameTime = 0;
+let rivalSpriteReady = false;
+let rivalSpriteFrameIndex = 0;
+let rivalSpriteFrameCount = 1;
+let rivalSpriteFrameSize = 0;
 let portaDronNavalReady = false;
 let portaDronAereoReady = false;
 const portaDronNaval = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#4ec5ff', nombre: 'Porta Dron Naval' };
@@ -74,6 +80,13 @@ droneSprite.onload = () => {
     spriteFrameSize = droneSprite.height;
     spriteFrameCount = Math.max(1, Math.floor(droneSprite.width / spriteFrameSize));
     spriteReady = true;
+};
+
+dronrivalSprite.onload = () => {
+    /* Asume un sprite horizontal de frames cuadrados */
+    rivalSpriteFrameSize = dronrivalSprite.height;
+    rivalSpriteFrameCount = Math.max(1, Math.floor(dronrivalSprite.width / rivalSpriteFrameSize));
+    rivalSpriteReady = true;
 };
 
 /* Carga de sprites */
@@ -109,17 +122,18 @@ function mapDroneFromServer(droneInfo) {
 }
 
 function hydrateDronesFromServer(allDrones) {
-    /* Si aún no hay bandos asignados en el servidor, algunos drones pueden
-       venir con bando nulo. Para que el jugador vea la lista de unidades y
-       pueda desplegarlas, aceptamos drones cuya propiedad `bando` no esté
-       definida. Una vez que se elige un bando, la propiedad se llenará y se
-       filtrará correctamente. */
     const ownDrones = (allDrones || [])
         .filter((d) => !d.bando || d.bando === bandoSeleccionado)
         .map(mapDroneFromServer);
 
+    const rivalDrones = (allDrones || [])
+        .filter((d) => d.bando && d.bando !== bandoSeleccionado)
+        .map(mapDroneFromServer);
+
     gameState.setDrones(ownDrones);
+    gameState.setDronesRivales(rivalDrones);
     drones = gameState.drones;
+    dronesRivales = gameState.dronesRivales;
     activeDroneId = gameState.activeDroneId;
 }
 
@@ -136,12 +150,15 @@ function applyBandoSprite() {
     droneSprite.src = bandoSeleccionado === 'NAVAL'
         ? '../img/dron_naval.png'
         : '../img/dron_aereo.png';
+
+    dronrivalSprite.src = bandoSeleccionado === 'NAVAL'
+        ? '../img/dron_aereo.png'
+        : '../img/dron_naval.png';
 }
 
 /* Revela columnas iniciales segun bando */
 function revealStartColumnsByBando() {
-    // const columnsToReveal = Math.min(3, cols);
-    const columnsToReveal = cols / 3;
+    const columnsToReveal = Math.max(1, Math.ceil(cols / 3));
     for (let y = 0; y < rows; y++) {
         for (let i = 0; i < columnsToReveal; i++) {
             const x = bandoSeleccionado === 'NAVAL' ? i : (cols - 1 - i);
@@ -549,12 +566,59 @@ function drawDrones() {
     }
 }
 
+function drawRivalDrones() {
+    for (let i = 0; i < dronesRivales.length; i++) {
+        const drone = dronesRivales[i];
+        if (!drone.deployed) {
+            continue;
+        }
+        const px = (drone.x + 0.5) * cellSize;
+        const py = (drone.y + 0.5) * cellSize;
+        const size = Math.floor(cellSize * 1.05);
+        const half = size / 2;
+
+        if (rivalSpriteReady) { // Asegúrate de usar una variable específica para los sprites rivales
+            const sx = rivalSpriteFrameIndex * rivalSpriteFrameSize;
+            const sy = 0;
+
+            /* Pixel-art: evita suavizado para que no se vea borroso */
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(
+                dronrivalSprite,
+                sx,
+                sy,
+                rivalSpriteFrameSize,
+                rivalSpriteFrameSize,
+                px - half,
+                py - half,
+                size,
+                size
+            );
+        } else {
+            ctx.fillStyle = '#f2cb67'; 
+            ctx.beginPath();
+            ctx.arc(px, py, Math.max(10, Math.floor(cellSize * 0.35)), 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        /* Para los drones rivales, quedan oculto bajo la niebla si no están dentro de discovered */
+        if (!discovered[drone.y][drone.x]) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.beginPath();
+            ctx.arc(px, py, Math.max(10, Math.floor(cellSize * 0.35)), 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+    }
+}
+
 /* Renderiza toda la escena en el orden correcto:
    primero el mapa, luego la niebla de guerra y finalmente los drones */
 function drawScene() {
     drawMap();
     drawPortaDrones();
     drawDrones();
+    drawRivalDrones();
     drawFog();
 }
 

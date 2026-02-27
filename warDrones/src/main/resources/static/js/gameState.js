@@ -1,12 +1,17 @@
 class GameState {
     constructor() {
         this.drones = [];
+        this.dronesRivales = [];
         this.activeDroneId = null;
     }
 
     setDrones(drones) {
         this.drones = Array.isArray(drones) ? drones : [];
         this.activeDroneId = this.drones[0]?.id ?? null;
+    }
+
+    setDronesRivales(drones) {
+        this.dronesRivales = Array.isArray(drones) ? drones : [];
     }
 
     getActiveDrone() {
