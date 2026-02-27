@@ -1,5 +1,6 @@
 package com.wardrones.warDrones.game.session;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,12 +42,13 @@ public class GameSession {
         partidaId = par.getPartidaId();
         jugador1Id = par.getUsuarioId1().getId();
         jugador2Id = par.getUsuarioId2().getId();
+        jugadorEnTurno = par.getUsuarioId1().getId();
         estado = par.getPartidaEstado();
     }
 
     //funciones
     public void validarTurno(int usuarioId) {
-        if (usuarioId != jugadorEnTurno && jugadorEnTurno > 0) {
+        if (usuarioId != jugadorEnTurno) {
             throw new IllegalStateException("No es tu turno");
         }
     }
@@ -257,7 +259,31 @@ public class GameSession {
                 dron.aumentarMunicion();
             }
         }
+        
+    }
 
+    // Desplegar dron en sesion (sin validar turno). Valida que el jugador despliegue sus propios drones.
+    public void desplegarDron(int dronId, int x, int y, int jugadorId) {
+        DronState dron = drones.get(dronId);
+        if (dron == null) {
+            throw new IllegalArgumentException("Dron inexistente");
+        }
+
+        boolean perteneceAereo = PortadronAereo != null && PortadronAereo.getListadoDronesIds() != null && PortadronAereo.getListadoDronesIds().contains(dronId);
+        boolean perteneceNaval = PortadronNaval != null && PortadronNaval.getListadoDronesIds() != null && PortadronNaval.getListadoDronesIds().contains(dronId);
+
+        if (!perteneceAereo && !perteneceNaval) {
+            throw new IllegalArgumentException("El dron no pertenece a ningún portadron");
+        }
+
+        Bando bandoDron = perteneceAereo ? Bando.AEREO : Bando.NAVAL;
+        // validar que jugador corresponde al bando del dron
+        if ((jugadorId == jugador1Id && jugador1Bando != bandoDron) || (jugadorId == jugador2Id && jugador2Bando != bandoDron)) {
+            throw new IllegalArgumentException("No puedes desplegar drones de otro bando");
+        }
+
+        dron.setX(x);
+        dron.setY(y);
     }
 
 
@@ -271,6 +297,22 @@ public class GameSession {
         return partidaId;
     }
 
+    public int getJugador1Id() {
+        return jugador1Id;
+    }
+
+    public int getJugador2Id() {
+        return jugador2Id;
+    }
+
+    public Bando getJugador1Bando() {
+        return jugador1Bando;
+    }
+
+    public Bando getJugador2Bando() {
+        return jugador2Bando;
+    }
+
     public int getJugadorEnTurno(){
         return jugadorEnTurno;
     }
@@ -282,6 +324,18 @@ public class GameSession {
     public Estado getEstado() {
         return estado;
     }
+
+    public PortadronState getPortadronNaval() {
+        return PortadronNaval;
+    }
+
+    public PortadronState getPortadronAereo() {
+        return PortadronAereo;
+    }
+
+    public Map<Integer, DronState> getDrones() {
+        return drones;
+    }   
 
     public void setJugadorEnTurno(int jugadorEnTurno) {
         this.jugadorEnTurno = jugadorEnTurno;
@@ -303,19 +357,51 @@ public class GameSession {
 
         this.PortadronAereo = ps1;
         this.PortadronNaval = ps2;
+
+        // Si no existen posiciones asignadas en las entidades (0,0), ubicar por defecto:
+        int defaultY = Math.max(0, Math.min(largoMapa - 2, (largoMapa / 2) - 1));
+
+        if (this.PortadronNaval != null) {
+            if (this.PortadronNaval.getPosicionX() == 0 && this.PortadronNaval.getPosicionY() == 0) {
+                this.PortadronNaval.setPosicionX(0);
+                this.PortadronNaval.setPosicionY(defaultY);
+            }
+        }
+
+        if (this.PortadronAereo != null) {
+            if (this.PortadronAereo.getPosicionX() == 0 && this.PortadronAereo.getPosicionY() == 0) {
+                this.PortadronAereo.setPosicionX(Math.max(0, anchoMapa - 2));
+                this.PortadronAereo.setPosicionY(defaultY);
+            }
+        }
     }
 
     //Se carga la lista de dronesstate y listado de id's en portadrones a travez de una lista de drones
     public void setDrones(List<Dron> listaDrones) {
+        List<Integer> idsAereo = new ArrayList<>();
+        List<Integer> idsNaval = new ArrayList<>();
+
         for (Dron dron : listaDrones) {
             DronState ds = new DronState(dron);
             drones.put(dron.getId(), ds);
             
             if(dron.getPortadronId().getTipo() == Bando.AEREO){
-                PortadronAereo.getListadoDronesIds().add(dron.getId());
+                //No puedo usar get ya que viene en null, uso lista auxiliar de ids en portadronstate para agregar los ids de los drones a cada portadron
+                idsAereo.add(dron.getId());
             } else {
-                PortadronNaval.getListadoDronesIds().add(dron.getId());
+                idsNaval.add(dron.getId());
             }       
+        }
+        PortadronAereo.setListadoDronesIds(idsAereo);
+        PortadronNaval.setListadoDronesIds(idsNaval);
+
+        // Debugging: print assigned ids for each portadron
+        try {
+            System.out.println("[GameSession] Portadron Aereo IDs: " + idsAereo);
+            System.out.println("[GameSession] Portadron Naval IDs: " + idsNaval);
+            System.out.println("[GameSession] Total drones in map: " + drones.size());
+        } catch (Exception e) {
+            // no-op
         }
     }
 }

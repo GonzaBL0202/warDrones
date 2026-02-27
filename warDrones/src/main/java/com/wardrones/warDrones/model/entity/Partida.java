@@ -88,50 +88,6 @@ public class Partida {
         this.partidaEstado = estado;
     }
 
-    //funciones temporales para hardcordear y probar en postman
-    
-    
-    // public void setPartidaId(int id){
-    //     this.partidaId = id;
-    // }
-
-    // public void setUsuario1(int id,String nombre){
-    //     Usuario u = new Usuario(nombre);
-    //     u.setId(id);
-    //     this.partidaUsuarioId1 = u;
-    // }
-
-    // // public void setUsuario2(int id,String nombre){
-    // //     Usuario u = new Usuario(nombre);
-    // //     u.setId(id);
-    // //     this.partidaUsuarioId2 = u;
-    // // }
-
-    // public void setActiva(){
-    //     this.partidaActiva = true;
-    // }
-
-    // public void setBando1(){
-    //     this.partidaBando1 = Bando.AEREO;
-    // }
-
-    // public void setBando2(){
-    //     this.partidaBando2 = Bando.NAVAL;
-    // }
-    
-    // public void setTurno(){
-    //     this.partidaTurno = 3;
-    // }
-
-    // public void partidaHard(){
-    //     this.setPartidaId(4);
-    //     this.setUsuario1(1,"Gonzalo");
-    //     this.setUsuario2(3,"Franco");
-    //     this.setTurno();
-    //     this.setActiva();
-    //     this.setBando1();
-    //     this.setBando2();
-    // }
 }
 
 
