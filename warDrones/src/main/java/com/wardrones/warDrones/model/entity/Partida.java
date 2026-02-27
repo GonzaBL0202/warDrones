@@ -38,7 +38,7 @@ public class Partida {
     @Enumerated(EnumType.STRING)
     private Estado partidaEstado;
 
-    //fog of war matrix serialized as JSON (rows×cols boolean grid)
+    //matriz de niebla de guerra serialized as JSON (rows×cols boolean grid) 
     @jakarta.persistence.Column(columnDefinition = "TEXT")
     private String discovered;
 
