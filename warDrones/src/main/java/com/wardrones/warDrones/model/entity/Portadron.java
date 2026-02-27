@@ -14,6 +14,8 @@ import jakarta.persistence.ManyToOne;
 @Entity
 public class Portadron {
 
+    protected Portadron(){} //JPA requiere un constructor sin argumentos para crear instancias de la entidad.   
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int portadronId;
@@ -29,6 +31,19 @@ public class Portadron {
     private int portadronPosicionY;
     private boolean portadronEstado;
     private int portadronVida;
+
+    public Portadron(Partida partida, Bando tipo){
+        this.portadronPartidaId = partida;
+        this.portadronTipo = tipo;
+        this.portadronPosicionX = 0;
+        this.portadronPosicionY = 0;
+        this.portadronEstado = true;
+        if(tipo == Bando.NAVAL){
+            this.portadronVida = 3;
+        } else {
+            this.portadronVida = 6;
+        }
+    }
 
 
     // Getters

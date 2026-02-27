@@ -1,0 +1,93 @@
+package com.wardrones.warDrones.model.service;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import com.wardrones.warDrones.model.dto.request.AccionData;
+
+@Component
+public class LobbyNotifier {
+
+    private final Map<Integer, SseEmitter> emitters = new ConcurrentHashMap<>();
+    
+    public SseEmitter register(int usuarioId) {
+        SseEmitter emitter = new SseEmitter(0L); // no timeout
+        emitters.put(usuarioId, emitter);
+
+        emitter.onCompletion(() -> emitters.remove(usuarioId));
+        emitter.onTimeout(() -> emitters.remove(usuarioId));
+        emitter.onError((ex) -> emitters.remove(usuarioId));
+
+        try {
+            emitter.send(SseEmitter.event().name("connected").data("ok"));
+        } catch (Exception e) {
+            // ignore
+        }
+
+        return emitter;
+    }
+
+    public void notifyUser(int usuarioId, int partidaId) {
+        SseEmitter emitter = emitters.get(usuarioId);
+        if (emitter != null) {
+            try {
+                // Send event but do NOT complete the emitter so the client remains connected
+                emitter.send(SseEmitter.event()
+                .name("partida-start")
+                .data(partidaId));
+            } catch (Exception e) {
+                System.out.println("Conexion cerrada para usuario: " + usuarioId);
+                emitter.complete();
+                emitters.remove(usuarioId);
+            }
+            }
+    }
+    
+
+    public void notifyPartidaFinalizada(int usuarioId, int partidaId) {
+        SseEmitter emitter = emitters.get(usuarioId);
+        if (emitter != null) {
+            try {
+                emitter.send(SseEmitter.event()
+                .name("partida-finalizada")
+                .data(partidaId));
+            } catch (IOException e) {
+                emitters.remove(usuarioId);
+            }
+        }
+    }
+
+    public void notifyPartidaGuardada(int usuarioId, int partidaId) {
+        SseEmitter emitter = emitters.get(usuarioId);
+        if (emitter != null) {
+            try {
+                emitter.send(
+                    SseEmitter.event()
+                    .name("partida-guardada")
+                    .data(partidaId));
+            } catch (IOException e) {
+                emitters.remove(usuarioId);
+            }
+        }
+    }
+
+    public void notifyAccion(int usuarioId, int partidaId){
+        SseEmitter emitter = emitters.get(usuarioId);
+        if (emitter != null) {
+            try {
+                emitter.send(
+                    SseEmitter.event()
+                    .name("accion-realizada")
+                    .data(new AccionData(usuarioId, partidaId), MediaType.APPLICATION_JSON));
+                    System.out.println("Notificando accion a usuario: " + usuarioId + " para partida: " + partidaId);
+            } catch (IOException e) {
+                emitters.remove(usuarioId);
+            }
+        }
+    }
+}

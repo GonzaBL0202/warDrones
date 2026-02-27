@@ -1,0 +1,29 @@
+const API_URL = "http://localhost:8080";
+
+async function postJson(path, payload) {
+    const res = await fetch(`${API_URL}${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    return res;
+}
+
+async function put(path) {
+    const res = await fetch(`${API_URL}${path}`, { method: 'PUT' });
+    return res;
+}
+
+window.PartidaApi = {
+    partidaInfo: (partidaId) => fetch(`${API_URL}/obtenerPartidaInfo/${partidaId}`),
+    asignarBandos: (payload) => postJson('/asignarBandos', payload),
+    iniciarPartida: (partidaId) => postJson(`/iniciarPartida/${partidaId}`, {}),
+    moverDron: (payload) => postJson('/moverDron', payload),
+    desplegarDron: (payload) => postJson('/desplegarDron', payload),
+    moverPortadron: (payload) => postJson('/moverPortadron', payload),
+    atacarDronOPorta: (payload) => postJson('/atacarDronOPorta', payload),
+    recargarDron: (payload) => postJson('/recargarDron', payload),
+    renunciarPartida: (partidaId) => put(`/partida/renunciar/${partidaId}`),
+    guardarPartida: (partidaId) => put(`/partida/guardar/${partidaId}`),
+    lobbyEventSource: (usuarioId) => new EventSource(`${API_URL}/lobby/connect?usuarioId=${encodeURIComponent(usuarioId)}`)
+};
