@@ -203,9 +203,13 @@ public class PartidaController {
     }
 
     //-----------Guardado de partida -----------
+    // the request body should contain the fog-of-war matrix serialized as JSON
     @PutMapping("/partida/guardar/{partidaId}")
-    public ResponseEntity<?> guardar(@PathVariable int partidaId) {
-        pService.guardarPartida(partidaId);
+    public ResponseEntity<?> guardar(
+            @PathVariable int partidaId,
+            @org.springframework.web.bind.annotation.RequestBody
+                    com.wardrones.warDrones.model.dto.request.NieblaDescubiertaRequest body) {
+        pService.guardarPartida(partidaId, body.getNieblaDescubierta());
         return ResponseEntity.ok().build();
     }
 
@@ -219,6 +223,12 @@ public class PartidaController {
     public ResponseEntity<?> reanudar(@PathVariable int partidaId){
         pService.marcarReanudando(partidaId);
         return ResponseEntity.ok().build();
+    }
+
+    // expose stored fog string so client can reconstruct without touching session
+    @GetMapping("/partida/fog/{partidaId}")
+    public String fog(@PathVariable int partidaId) {
+        return pService.obtenerNieblaDescubierta(partidaId);
     }
     
     @PutMapping("/partida/reanudar/unirse/{partidaId}")

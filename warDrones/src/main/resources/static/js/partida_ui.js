@@ -81,6 +81,22 @@ async function obtenerPartidaInfo() {
     }
 }
 
+async function cargarNieblaDescubierta() {
+    try {
+        const partidaId = localStorage.getItem('partidaId');
+        const res = await fetch(`${API_URL}/partida/fog/${partidaId}`);
+        if (res.ok) {
+            const fog = await res.json();
+            if (fog) {
+                discovered = JSON.parse(fog);
+                drawScene(); // update display
+            }
+        }
+    } catch (err) {
+        console.error('Error cargando niebla descubierta:', err);
+    }
+}
+
 //-----------Actualizar Estado del Turno----------------
 function actualizarEstadoTurno() {
     /* Solo mostrar turno si el despliegue ha terminado (ambos bandos desplegados) */
@@ -144,7 +160,9 @@ async function guardarPartida() {
     if (!partidaId) return;
 
     try {
-        const res = await api.guardarPartida(partidaId);
+        // convert the booleans matrix to JSON string; the API will store it directly
+        const fogJson = JSON.stringify(discovered);
+        const res = await api.guardarPartida(partidaId, fogJson);
         console.log('Respuesta guardar:', res.status, res.statusText);
     } catch (error) {
         console.error("Error guardando partida:", error);
@@ -197,6 +215,9 @@ async function inicializarPartida() {
         bandosDesplegados = info.bandosDesplegados || 0;  // Extraer bandosDesplegados del servidor
 
         console.log('Info de partida devuelta por el servidor:', info);
+
+        // cargar niebla previamente guardada (si existe)
+        await cargarNieblaDescubierta();
 
         // si la respuesta indica bandos asignados pero los valores son nulos/indefinidos,
         // forzamos la bandera a false para que el usuario pueda volver a elegir.

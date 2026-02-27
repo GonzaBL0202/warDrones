@@ -14,6 +14,15 @@ async function put(path) {
     return res;
 }
 
+async function putJson(path, payload) {
+    const res = await fetch(`${API_URL}${path}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    return res;
+}
+
 window.PartidaApi = {
     partidaInfo: (partidaId) => fetch(`${API_URL}/obtenerPartidaInfo/${partidaId}`),
     asignarBandos: (payload) => postJson('/asignarBandos', payload),
@@ -24,6 +33,6 @@ window.PartidaApi = {
     atacarDronOPorta: (payload) => postJson('/atacarDronOPorta', payload),
     recargarDron: (payload) => postJson('/recargarDron', payload),
     renunciarPartida: (partidaId) => put(`/partida/renunciar/${partidaId}`),
-    guardarPartida: (partidaId) => put(`/partida/guardar/${partidaId}`),
+    guardarPartida: (partidaId, discovered) => putJson(`/partida/guardar/${partidaId}`, { discovered }),
     lobbyEventSource: (usuarioId) => new EventSource(`${API_URL}/lobby/connect?usuarioId=${encodeURIComponent(usuarioId)}`)
 };

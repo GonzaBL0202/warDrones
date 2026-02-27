@@ -38,6 +38,10 @@ public class Partida {
     @Enumerated(EnumType.STRING)
     private Estado partidaEstado;
 
+    //fog of war matrix serialized as JSON (rows×cols boolean grid)
+    @jakarta.persistence.Column(columnDefinition = "TEXT")
+    private String discovered;
+
     //private boolean partidaActiva;
 
     //Constructora
@@ -77,6 +81,15 @@ public class Partida {
 
     public Estado getPartidaEstado() {
         return partidaEstado;
+    }
+
+    // getter / setter for fog string
+    public String getNieblaDescubierta() {
+        return discovered;
+    }
+
+    public void setNieblaDescubierta(String discovered) {
+        this.discovered = discovered;
     }
 
     //Setters

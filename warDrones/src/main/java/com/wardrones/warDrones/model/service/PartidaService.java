@@ -281,10 +281,11 @@ public class PartidaService {
     }
 
     @Transactional
-    public void guardarPartida(int partidaId) {
+    public void guardarPartida(int partidaId, String discoveredJson) {
         Partida partida = pRepository.findById(partidaId).orElseThrow(
                 () -> new RuntimeException("Partida no encontrada")
         );
+        partida.setNieblaDescubierta(discoveredJson);
         partida.setPartidaEstado(Estado.GUARDADA);
         pRepository.save(partida);
 
@@ -305,6 +306,15 @@ public class PartidaService {
     
     public List<Partida> obtenerPartidasReanudables(int usuarioId){
         return pRepository.buscarPartidasReanudables(usuarioId);
+    }
+
+    /**
+     * Returns the serialized fog-of-war matrix previously saved, or null if none.
+     */
+    public String obtenerNieblaDescubierta(int partidaId) {
+        return pRepository.findById(partidaId)
+                .map(Partida::getNieblaDescubierta)
+                .orElse(null);
     }
 
     @Transactional

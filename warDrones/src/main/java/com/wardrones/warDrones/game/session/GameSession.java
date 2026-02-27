@@ -13,7 +13,7 @@ import com.wardrones.warDrones.model.entity.Portadron;
 import com.wardrones.warDrones.model.enums.Bando;
 import com.wardrones.warDrones.model.enums.Estado;  
 
-//GameSession: Es utilizado para manejar en mememoria el estado de la partida (turnos,estado,drones,etc...)
+//GameSession: Es utilizado para manejar en memoria el estado de la partida (turnos,estado,drones,etc...)
 
 public class GameSession {
 

@@ -125,6 +125,7 @@ public class ObtenerPartidaInfoResponse {
         private int municion;
         private int recargas;
         private boolean estado;
+        
 
         public DronInfo() {}
 
