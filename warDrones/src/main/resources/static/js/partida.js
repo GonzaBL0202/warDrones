@@ -318,6 +318,16 @@ function updateButtonsVisibility(iniciada = false) {
     }
 }
 
+function updateButtonByChosen(esPorta){
+    if(esPorta){
+        attackBtn.style.display = 'none';
+        reloadBtn.style.display = 'none';
+    } else {
+        attackBtn.style.display = 'block';
+        reloadBtn.style.display = 'block';
+    }
+}
+
 /* Ajusta el tamano interno del canvas al tamano visual,
    calcula filas y columnas segun la grilla,
    reinicia la niebla de guerra, centra al jugador
@@ -406,6 +416,43 @@ function revealAroundActiveDrone() {
             }
         }
     }
+}
+
+/* Crear una funcion que utilice la misma logica que revelsa el mapa al rededor del dron, pero para validar su rango de movimiento con respecto a un x,y dado
+Esta funcion se puede llamar desde el click del mapa para validar si la celda seleccionada esta dentro del rango de movimiento del dron activo, y mostrar un mensaje de error si no lo esta */
+function validaPosicion(x, y) {
+    const drone = getActiveDrone();
+    if (!drone || !drone.deployed) {
+        return false;
+    }
+
+    const centerX = drone.x + 0.5;
+    const centerY = drone.y + 0.5;
+    const dx = (x + 0.5) - centerX;
+    const dy = (y + 0.5) - centerY;
+
+    /* Distancia circular (sin ra?z) para rendimiento */
+    if ((dx * dx) + (dy * dy) <= drone.moveRadius * drone.moveRadius) {
+        return true;
+    }
+    return false;
+}
+
+function validaPosicionPorta(x,y){
+      const ownPorta = getOwnPorta();
+      const centerX = ownPorta.x + (ownPorta.size / 2);
+      const centerY = ownPorta.y + (ownPorta.size / 2);
+      const dx = (x + 0.5) - centerX;
+      const dy = (y + 0.5) - centerY;
+      const isInsideCircle = (dx * dx) + (dy * dy) <= ownPorta.moveRadius * ownPorta.moveRadius;
+      return isInsideCircle;
+}
+
+function isPosicionOcupada(x, y) {
+    const occupiedByOwnDrones = drones.some((d) => d.deployed && d.x === x && d.y === y);
+    const occupiedByRivalDrones = dronesRivales.some((d) => d.deployed && d.x === x && d.y === y);
+    const occupiedByPorta = isInsideAnyPorta(x, y);
+    return occupiedByOwnDrones || occupiedByRivalDrones || occupiedByPorta;
 }
 
 /* Dibuja la niebla de guerra sobre el mapa.

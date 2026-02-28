@@ -502,11 +502,26 @@ if (usuarioId && currentPartidaId) {
         animateStep();
     }
 
+    // function isInsideDeploymentZone(x, y) {
+    //     if (bandoSeleccionado === 'NAVAL') {
+    //         return x <= Math.floor(cols / 3);
+    //     } else {
+    //         return x >= Math.ceil(2 * cols / 3);
+    //     }
+    // }
+
+    //************SOLUCION TEMPORAL PARA QUE PERMITA ELEGIR LA ULTIMA COLUMNA, HAY QUE CORREGIR DIRECTAMENTE COMO SE ARMA EL CANVAS ****************************/
     function isInsideDeploymentZone(x, y) {
+        const firstThirdEnd = Math.floor(cols / 3);
+        const secondThirdStart = cols - firstThirdEnd;
+
+        console.log("NAVAL límite:", Math.floor(cols / 3));
+        console.log("AEREO límite:", Math.ceil(2 * cols / 3));
+
         if (bandoSeleccionado === 'NAVAL') {
-            return x <= Math.floor(cols / 3);
+            return x < firstThirdEnd + 1;
         } else {
-            return x >= Math.ceil(2 * cols / 3);
+            return x >= secondThirdStart - 1;
         }
     }
 
@@ -518,10 +533,25 @@ if (usuarioId && currentPartidaId) {
         const x = Math.floor((event.clientX - rect.left) / cellSize);
         const y = Math.floor((event.clientY - rect.top) / cellSize);
 
+
+        if(isInsidePortaArea(x, y, getOwnPorta())) {
+            updateButtonByChosen(true);
+        }
+        const droneIndex = drones.findIndex((drone) => drone.deployed && drone.x === x && drone.y === y);
+        if (droneIndex >= 0) {
+            updateButtonByChosen(false);
+        }
+
         // si estamos en modo ataque, cualquier click intenta disparar
         if (isAttackMode) {
             let objetivoId = null;
             const atacante = getActiveDrone(); // Ya validado en el listener del botÃ³n de ataque
+
+            if(!validaPosicion(x, y)) {
+                setupHint.textContent = 'Celda fuera del rango de ataque.';
+                isAttackMode = false;
+                return;
+            }
 
             // si se clickea en porta enemigo, objetivo 0 segÃºn backend
             if (isInsidePortaArea(x, y, getEnemyPorta())) {
@@ -590,11 +620,9 @@ if (usuarioId && currentPartidaId) {
                 return;
             }
 
-            //Validacion de posicion de drones propia y rival, y de portadrones
-            const occupied = drones.some((d) => d.deployed && d.x === x && d.y === y);
-            const occupiedByRival = dronesRivales.some((d) => d.deployed && d.x === x && d.y === y);
-            if (occupied || occupiedByRival || isInsideAnyPorta(x, y)) {
+            if(isPosicionOcupada(x,y)){
                 setupHint.textContent = 'Celda ocupada. Elige otra celda';
+                isMoveMode = false;
                 return;
             }
 
@@ -716,10 +744,24 @@ if (usuarioId && currentPartidaId) {
 
         // Si no fue un click de seleccion y estamos en modo movimiento, procesar la acciÃ³n.
         if (!esSelec && isMoveMode) {
+
+            if(isPosicionOcupada(x,y)){
+                setupHint.textContent = 'Celda ocupada. Elige otra celda';
+                isMoveMode = false;
+                return;
+            }
+
             try {
                 let res;
                 let hasError = false;
                 if (isPortaSelected) {
+                    
+                    if(!validaPosicionPorta(x, y)) {
+                        setupHint.textContent = 'Celda fuera del rango de movimiento.';
+                        isMoveMode = false;
+                        return;
+                    }
+                    
                     res = await api.moverPortadron({
                         partidaId: localStorage.getItem("partidaId"),
                         jugadorId: getId(),
@@ -727,13 +769,21 @@ if (usuarioId && currentPartidaId) {
                         y: y
                     });
                     console.log('Respuesta moverPortadron:', res.status, res.statusText);
+                    
                 } else {
                     const drone = getActiveDrone();
+                    if(!validaPosicion(x, y)) {
+                        setupHint.textContent = 'Celda fuera del rango de movimiento.';
+                        isMoveMode = false;
+                        return;
+                    }
+
                     if (!drone || !drone.deployed) {
                         setupHint.textContent = 'Selecciona un dron para moverlo.';
                         isMoveMode = false;
                         return;
                     }
+
                     res = await api.moverDron({
                         partidaId: localStorage.getItem("partidaId"),
                         jugadorId: getId(),
@@ -748,6 +798,7 @@ if (usuarioId && currentPartidaId) {
                     // Actualizacion optimista: Mueve la unidad en el cliente para dar feedback visual inmediato.
                     // Lo ideal seri­a que el servidor envi­e el nuevo estado del juego vi­a SSE.
                     moveActiveDroneTo(x, y);
+
                 } else {
                     const raw = await res.text();
                     let display = raw;
@@ -765,16 +816,12 @@ if (usuarioId && currentPartidaId) {
                     // alert("Error al mover: " + display);
                 }
             } catch (err) {
-                console.error('Error en la peticiÃ³n de movimiento:', err);
+                console.error('Error en la peticion de movimiento:', err);
                 setupHint.textContent = 'Error de red al intentar mover.';
             } finally {
-                // Salir del modo movimiento. Solo limpiar el hint si no hubo error.
                 isMoveMode = false;
 
-                // setupHint.textContent = '';  // No limpiar si hay error
             }
-            //Avisarle al otro jugador por SSE para que actualice su vista con la nueva posicion del dron/portadron
-
             return; // La acciÃ³n de click ha sido manejada.
         }
 

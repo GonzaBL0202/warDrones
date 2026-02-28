@@ -289,6 +289,11 @@ public class PartidaService {
         partida.setPartidaEstado(Estado.GUARDADA);
         pRepository.save(partida);
 
+        GameSession session = gameSManager.obtenerSesion(partidaId);
+        if (session != null) {
+            //Para cada portadron y dron de la partida actualizar en bd
+        }
+
         //Sacar ambos al menu principal al guardar la partida
         try {
             lobbyNotifier.notifyPartidaGuardada(
