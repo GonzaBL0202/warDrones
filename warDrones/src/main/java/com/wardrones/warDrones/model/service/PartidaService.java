@@ -114,6 +114,12 @@ public class PartidaService {
             () -> new RuntimeException("Partida no encontrada")
         );
 
+        //seteamos los bandos recientemente recibidos por parametro en la eleccion del usuario
+        partida.setBando1(b1);
+        partida.setBando2(b2);
+
+        pRepository.save(partida);
+
          try {
             GameSession gs = gameSManager.obtenerSesion(partidaId);
             if (gs == null) {
@@ -291,7 +297,44 @@ public class PartidaService {
 
         GameSession session = gameSManager.obtenerSesion(partidaId);
         if (session != null) {
-            //Para cada portadron y dron de la partida actualizar en bd
+            //Actualizar portadrones
+            PortadronState nav = session.getPortadronNaval();
+            PortadronState aer = session.getPortadronAereo();
+
+            if (nav != null) {
+                pdRepository.findById(nav.getId()).ifPresent(p -> {
+                    p.setPosicionX(nav.getPosicionX());
+                    p.setPosicionY(nav.getPosicionY());
+                    p.setVida(nav.getVida());
+                    p.setEstado(nav.getEstado());
+                    pdRepository.save(p);
+                });
+            }
+            if (aer != null) {
+                pdRepository.findById(aer.getId()).ifPresent(p -> {
+                    p.setPosicionX(aer.getPosicionX());
+                    p.setPosicionY(aer.getPosicionY());
+                    p.setVida(aer.getVida());
+                    p.setEstado(aer.getEstado());
+                    pdRepository.save(p);
+                });
+            }
+
+            //Actualizar drones
+            Map<Integer, DronState> dronesMap = session.getDrones();
+            if (dronesMap != null) {
+                for (DronState ds : dronesMap.values()) {
+                    dRepository.findById(ds.getId()).ifPresent(d -> {
+                        d.setPosicionX(ds.getPosicionX());
+                        d.setPosicionY(ds.getPosicionY());
+                        d.setVida(ds.getVida());
+                        d.setEstado(ds.getEstado());
+                        d.setMunicion(ds.getMunicion());
+                        d.setRecargas(ds.getRecargas());
+                        dRepository.save(d);
+                    });
+                }
+            }
         }
 
         //Sacar ambos al menu principal al guardar la partida

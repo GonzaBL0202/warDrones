@@ -74,4 +74,21 @@ public class Portadron {
     public int getVida(){
         return portadronVida;
     }
+
+    //Setters
+    public void setPosicionX(int x) {
+        this.portadronPosicionX = x;
+    }
+
+    public void setPosicionY(int y) {
+        this.portadronPosicionY = y;
+    }
+
+    public void setEstado(boolean estado) {
+        this.portadronEstado = estado;
+    }
+
+    public void setVida(int vida) {
+        this.portadronVida = vida;
+    }
 }

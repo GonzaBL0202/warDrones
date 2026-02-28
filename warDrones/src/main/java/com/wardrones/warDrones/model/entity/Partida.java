@@ -101,6 +101,14 @@ public class Partida {
         this.partidaEstado = estado;
     }
 
+    public void setBando1(Bando bando) {
+        this.partidaBando1 = bando;
+    }
+
+    public void setBando2(Bando bando) {
+        this.partidaBando2 = bando;
+    }
+
 }
 
 
