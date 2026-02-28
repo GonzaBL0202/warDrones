@@ -217,7 +217,7 @@ async function inicializarPartida() {
         console.log('Info de partida devuelta por el servidor:', info);
 
         // cargar niebla previamente guardada (si existe)
-        await cargarNieblaDescubierta();
+        /* await cargarNieblaDescubierta();*/
 
         // si la respuesta indica bandos asignados pero los valores son nulos/indefinidos,
         // forzamos la bandera a false para que el usuario pueda volver a elegir.
@@ -717,11 +717,13 @@ if (usuarioId && currentPartidaId) {
             return;
         }
 
-        const clickedDroneIndex = drones.findIndex((drone) => drone.deployed && drone.x === x && drone.y === y);
+        const clickedDroneIndex = drones.findIndex((drone) => drone.deployed && drone.vida > 0 
+        && drone.x === x && drone.y === y);
         if (clickedDroneIndex >= 0) {
             gameState.setActiveDroneById(drones[clickedDroneIndex].id);
             activeDroneId = gameState.activeDroneId;
             isPortaSelected = false;
+            drone = getActiveDrone();
             revealAroundActiveDrone();
             updateInfoPanel();
             drawScene();
