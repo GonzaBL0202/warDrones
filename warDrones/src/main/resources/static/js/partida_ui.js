@@ -127,7 +127,9 @@ async function abandonarPartida() {
     if (!partidaId) return;
 
     try {
-        const res = await api.renunciarPartida(partidaId);
+        const userId = localStorage.getItem("userId");
+if (!userId) return;
+        const res = await api.renunciarPartida(partidaId, userId);
         console.log('Respuesta renunciar:', res.status, res.statusText);
     } catch (error) {
         console.error("Error abandonando partida:", error);

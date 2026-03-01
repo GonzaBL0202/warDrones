@@ -1,0 +1,34 @@
+.modal-overlay{
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+
+  background: rgba(0,0,0,0.75);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 99999;
+}
+
+.modal-box{
+  width: min(420px, 90vw);
+  padding: 18px;
+
+  background: #24323d;
+  border: 4px solid #6a4a1c;
+  border-radius: 10px;
+
+  text-align: center;
+  color: #fff;
+}
+
+.modal-buttons{
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.oculto{ display: none !important; }

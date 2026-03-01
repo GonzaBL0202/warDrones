@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,7 +35,7 @@ public class PartidaController {
     public PartidaController(PartidaService partidaService) {
         this.pService = partidaService;
     }
-    
+
     @PostMapping("/partidas")
     public ResponseEntity<Partida> crearPartida(@RequestBody CrearPartidaRequest request) {
 
@@ -43,8 +44,7 @@ public class PartidaController {
         return ResponseEntity.ok(partida);
     }
 
-    //Endpoints dentro de la partida
-
+    // Endpoints dentro de la partida
     @PostMapping("/moverDron")
     public ResponseEntity<?> moverDron(@RequestBody MovimientoDronRequest dto) {
         try {
@@ -53,8 +53,7 @@ public class PartidaController {
                     dto.getJugadorId(),
                     dto.getDronId(),
                     dto.getX(),
-                    dto.getY()
-            );
+                    dto.getY());
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             System.err.println("Error moverDron: " + e.getMessage());
@@ -64,7 +63,8 @@ public class PartidaController {
     }
 
     @PostMapping("/desplegarDron")
-    public ResponseEntity<?> desplegarDron(@RequestBody com.wardrones.warDrones.model.dto.request.DesplegarDronRequest dto) {
+    public ResponseEntity<?> desplegarDron(
+            @RequestBody com.wardrones.warDrones.model.dto.request.DesplegarDronRequest dto) {
         try {
             pService.desplegarDron(dto.getPartidaId(), dto.getJugadorId(), dto.getDronId(), dto.getX(), dto.getY());
             return ResponseEntity.ok().build();
@@ -81,8 +81,7 @@ public class PartidaController {
                     dto.getPartidaId(),
                     dto.getJugadorId(),
                     dto.getX(),
-                    dto.getY()
-            );
+                    dto.getY());
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             System.err.println("Error moverPortadron: " + e.getMessage());
@@ -90,16 +89,15 @@ public class PartidaController {
         }
     }
 
-    //post de atacar
+    // post de atacar
     @PostMapping("/atacarDronOPorta")
     public ResponseEntity<?> atacarDronOPorta(@RequestBody AtacarDronOPortaRequest dto) {
         try {
             pService.atacarDronOPorta(
-                dto.getPartidaId(),
-                dto.getJugadorId(),
-                dto.getDronAtacanteId(),
-                dto.getDronObjetivoId()
-            );
+                    dto.getPartidaId(),
+                    dto.getJugadorId(),
+                    dto.getDronAtacanteId(),
+                    dto.getDronObjetivoId());
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             System.err.println("Error atacarDronOPorta: " + e.getMessage());
@@ -107,15 +105,14 @@ public class PartidaController {
         }
     }
 
-    //post de recargar
+    // post de recargar
     @PostMapping("/recargarDron")
     public ResponseEntity<?> recargarDron(@RequestBody RecargarDronRequest dto) {
         try {
             pService.recargarDron(
-                dto.getPartidaId(),
-                dto.getJugadorId(),
-                dto.getDronId()
-            );
+                    dto.getPartidaId(),
+                    dto.getJugadorId(),
+                    dto.getDronId());
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             System.err.println("Error recargarDron: " + e.getMessage());
@@ -123,52 +120,48 @@ public class PartidaController {
         }
     }
 
-    //Endpoints generales:
-
+    // Endpoints generales:
     @PostMapping("/iniciarPartida/{partidaId}")
     public ResponseEntity<IniciarPartidaResponse> iniciarPartida(@PathVariable int partidaId) {
         System.out.println("Iniciando partida con ID: " + partidaId);
         GameSession gs = pService.iniciarPartida(partidaId);
-        
+
         if (gs == null) {
             IniciarPartidaResponse response = new IniciarPartidaResponse(false, 0, null, "Error al iniciar partida");
             return ResponseEntity.ok(response);
         }
-        
+
         int bandosDesplegados = gs.getBandosDesplegados();
         boolean iniciada = bandosDesplegados == 2;
         Integer jugadorEnTurno = iniciada ? gs.getJugadorEnTurno() : null;
-        
+
         IniciarPartidaResponse response = new IniciarPartidaResponse(
-            iniciada,
-            bandosDesplegados,
-            jugadorEnTurno,
-            iniciada ? "Partida iniciada" : "Esperando segundo jugador"
-        );
-        
+                iniciada,
+                bandosDesplegados,
+                jugadorEnTurno,
+                iniciada ? "Partida iniciada" : "Esperando segundo jugador");
+
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/asignarBandos")
     public ResponseEntity<?> asignarBandos(@RequestBody AsignarBandosRequest request) {
-        System.out.println("Asignando bandos: Partida=" + request.getPartidaId() + 
-                         ", Bando1=" + request.getBando1() + ", Bando2=" + request.getBando2());
-        
+        System.out.println("Asignando bandos: Partida=" + request.getPartidaId()
+                + ", Bando1=" + request.getBando1() + ", Bando2=" + request.getBando2());
+
         try {
             String bando1Str = request.getBando1().toUpperCase();
             String bando2Str = request.getBando2().toUpperCase();
-            
-            Bando bando1 = 
-                bando1Str.equals("NAVAL") ? Bando.NAVAL : Bando.AEREO;
-            
+
+            Bando bando1 = bando1Str.equals("NAVAL") ? Bando.NAVAL : Bando.AEREO;
+
             Bando bando2 = bando2Str.equals("NAVAL") ? Bando.NAVAL : Bando.AEREO;
-            
+
             pService.asignarBandos(request.getPartidaId(), bando1, bando2);
-            
+
             return ResponseEntity.ok().body("{\"success\": true, \"mensaje\": \"Bandos asignados correctamente\"}");
         } catch (Exception e) {
             System.err.println("Error asignando bandos: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.badRequest().body("{\"success\": false, \"error\": \"" + e.getMessage() + "\"}");
         }
     }
@@ -180,7 +173,6 @@ public class PartidaController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             System.err.println("Error obteniendo info de partida: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.badRequest().build();
         }
     }
@@ -195,41 +187,60 @@ public class PartidaController {
         return pService.obtenerPartidasGuardadas(usuarioId);
     }
 
-    //----------- Abandono de partida -----------
+    // ----------- Abandono de partida -----------
     @PutMapping("/partida/renunciar/{partidaId}")
-    public ResponseEntity<?> renunciar(@PathVariable int partidaId) {
-        pService.renunciarPartida(partidaId);
+    public ResponseEntity<?> renunciar(@PathVariable int partidaId, @RequestParam int usuarioId) {
+        pService.renunciarPartida(partidaId, usuarioId);
         return ResponseEntity.ok().build();
     }
 
-    //-----------Guardado de partida -----------
+    // -----------Guardado de partida -----------
     @PutMapping("/partida/guardar/{partidaId}")
     public ResponseEntity<?> guardar(@PathVariable int partidaId) {
         pService.guardarPartida(partidaId);
         return ResponseEntity.ok().build();
     }
 
-    //-------------Carga de partidas guardadas --------
+    // -------------Carga de partidas guardadas --------
     @GetMapping("/partida/reanudables/{usuarioId}")
-    public List<Partida> reanudables(@PathVariable int usuarioId){
+    public List<Partida> reanudables(@PathVariable int usuarioId) {
         return pService.obtenerPartidasReanudables(usuarioId);
     }
 
     @PutMapping("/partida/reanudar/{partidaId}")
-    public ResponseEntity<?> reanudar(@PathVariable int partidaId){
+    public ResponseEntity<?> reanudar(@PathVariable int partidaId) {
         pService.marcarReanudando(partidaId);
         return ResponseEntity.ok().build();
     }
-    
+
     @PutMapping("/partida/reanudar/unirse/{partidaId}")
     public ResponseEntity<?> unirseReanudando(
-        @PathVariable int partidaId,
-        @RequestParam int usuarioId)
-        {
-            pService.unirseReanudando(partidaId, usuarioId);
-            return ResponseEntity.ok().build();
-        }
-    
-}
-    
+            @PathVariable int partidaId,
+            @RequestParam int usuarioId) {
+        pService.unirseReanudando(partidaId, usuarioId);
+        return ResponseEntity.ok().build();
+    }
 
+    @DeleteMapping("/partida/cancelar/{partidaId}")
+    public ResponseEntity<?> cancelar(@PathVariable int partidaId, @RequestParam int usuarioId) {
+        pService.cancelarPartida(partidaId, usuarioId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/partida/reanudar/cancelar/{partidaId}")
+    public ResponseEntity<?> cancelarReanudacion(
+            @PathVariable int partidaId,
+            @RequestParam int usuarioId) {
+        pService.cancelarReanudacion(partidaId, usuarioId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/partida/guardada/{partidaId}")
+    public ResponseEntity<?> eliminarGuardada(
+            @PathVariable int partidaId,
+            @RequestParam int usuarioId) {
+        pService.eliminarPartidaGuardada(partidaId, usuarioId);
+        return ResponseEntity.ok().build();
+    }
+
+}

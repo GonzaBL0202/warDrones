@@ -1,7 +1,98 @@
+/* fuente.css
+  Global: Consolas Bold para títulos/botones + Montserrat para texto común
+  No define tamaños para respetar los que ya tenés en cada página.
+*/
 
-.jacquard-12-regular {
-  font-family: "Jacquard 12", system-ui;
+/* (Opcional pero recomendado) Import Montserrat desde Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --font-display: "Consolas", "Cascadia Mono", "Courier New", monospace;
+  --font-text: "Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+/* Base */
+html,
+body {
+  font-family: var(--font-text);
   font-weight: 400;
-  font-style: normal;
+}
 
+/* Clases utilitarias para aplicar donde corresponda */
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  /* Bold */
+}
+
+.font-text {
+  font-family: var(--font-text);
+  font-weight: 400;
+}
+
+/* Atajos típicos (por si tus HTML ya usan estas etiquetas) */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+/* Botones y elementos clickeables comunes */
+button,
+.btn,
+.button,
+input[type="button"],
+input[type="submit"] {
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+/* Inputs/labels/placeholder suelen ser "texto común" */
+input,
+textarea,
+select,
+label {
+  font-family: var(--font-text);
+  font-weight: 400;
+}
+
+/* Centrar texto dentro de inputs */
+input[type="text"],
+input[type="password"],
+textarea {
+    text-align: center;
+}
+
+/* BOTONES BASE */
+button,
+.btn,
+.boton,
+input[type="submit"],
+input[type="button"] {
+    cursor: pointer;
+    transition: filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Hover */
+button:hover,
+.btn:hover,
+.boton:hover,
+input[type="submit"]:hover,
+input[type="button"]:hover {
+
+    filter: brightness(1.2);
+}
+
+/* Click (opcional pero MUY lindo) */
+button:active,
+.btn:active,
+.boton:active,
+input[type="submit"]:active,
+input[type="button"]:active {
+
+    filter: brightness(0.9);
 }

@@ -26,7 +26,6 @@ import com.wardrones.warDrones.model.repository.UsuarioRepository;
 import jakarta.transaction.Transactional;
 
 //Service decide si los datos recibidos desde el controller deben destinarse hacia la persistencia de bd (Repository), hacia el juego en memoria (Gamesession) o ambas opciones
-
 @Service
 public class PartidaService {
 
@@ -37,91 +36,103 @@ public class PartidaService {
     private final GameSessionManager gameSManager;
     private final LobbyNotifier lobbyNotifier;
 
-    public PartidaService(PartidaRepository ppRepository,UsuarioRepository puRepository, PortaDronRepository pdRepository, DronRepository dRepository,  GameSessionManager gsm, LobbyNotifier lobbyNotifier ) {
+    public PartidaService(PartidaRepository ppRepository, UsuarioRepository puRepository,
+            PortaDronRepository pdRepository, DronRepository dRepository, GameSessionManager gsm,
+            LobbyNotifier lobbyNotifier) {
         this.pRepository = ppRepository;
         this.uRepository = puRepository;
         this.pdRepository = pdRepository;
-        this.dRepository = dRepository; 
+        this.dRepository = dRepository;
         this.gameSManager = gsm;
         this.lobbyNotifier = lobbyNotifier;
     }
 
     public Partida crearPartida(int usuarioId) {
         Usuario creador = uRepository.findById(usuarioId).orElseThrow(
-                () -> new RuntimeException("Usuario no encontrado")
-        );
+                () -> new RuntimeException("Usuario no encontrado"));
 
-        Partida game = pRepository.buscarPartidaAbierta().orElse(null);  //Busca una partida activa sin jugador 2, sino encuentra asigna null
+        Partida game = pRepository.buscarPartidaAbierta().orElse(null);
 
         if (game == null) {
-            game = new Partida(creador, Estado.CREADA);                           //Si esta en null, crea una nueva
-        }else {
-            Usuario u2 = uRepository.findById(usuarioId).orElse(null);
-            if (u2 != null) {
-                game.setUsuario2(u2);
-                game.setPartidaEstado(Estado.EN_CURSO);
-                gameSManager.crearSesion(game);                                 //Se crea en sesion solo cuando ya estan ambos usuarios
-                System.out.println("Partida guardada en sesion: " + game.getPartidaId());
-                if (game.getUsuarioId1() != null) {
-                    try {
-                        lobbyNotifier.notifyUser(game.getUsuarioId1().getId(), game.getPartidaId());
-                    } catch (Exception e) {
-                        // no interrumpir el flujo principal si la notificación falla
-                    }
+            game = new Partida(creador, Estado.CREADA);
+
+        } else {
+            // EVITAR PARTIDA CONTRA SÍ MISMO
+            if (game.getUsuarioId1() != null && game.getUsuarioId1().getId() == usuarioId) {
+
+                game = new Partida(creador, Estado.CREADA);
+                return pRepository.save(game);
+            }
+
+            // Unirse como usuario2 (acá ya sabemos que no es el mismo)
+            game.setUsuario2(creador);
+            game.setPartidaEstado(Estado.EN_CURSO);
+
+            gameSManager.crearSesion(game);
+            System.out.println("Partida guardada en sesion: " + game.getPartidaId());
+
+            if (game.getUsuarioId1() != null) {
+                try {
+                    lobbyNotifier.notifyUser(game.getUsuarioId1().getId(), game.getPartidaId());
+                } catch (Exception e) {
+                    // no interrumpir el flujo principal si la notificación falla
                 }
             }
         }
-        
-        return pRepository.save(game);    //Aca se persiste en bd
+
+        return pRepository.save(game);
     }
 
     public GameSession iniciarPartida(int partidaId) {
         System.out.println("Intentando iniciar partida con ID: " + partidaId);
         Partida partida = pRepository.findById(partidaId).orElseThrow(() -> new RuntimeException("Partida not found"));
 
-         try {
+        try {
             String mapa = gameSManager.toString();
             System.out.println("GameSessionManager: " + mapa);
             GameSession gs = gameSManager.obtenerSesion(partidaId);
             if (gs == null) {
                 throw new RuntimeException("Sesion no encontrada");
             }
-            gs.setBandosDesplegados(gs.getBandosDesplegados()+1);
-            if(gs.getBandosDesplegados() == 2){
-                gs.setJugadorEnTurno(partida.getUsuarioId1().getId());   // El jugador 1 inicia la partida
-                // Notificar por SSE a ambos usuarios que la partida comienza (despliegue finalizado)
+            gs.setBandosDesplegados(gs.getBandosDesplegados() + 1);
+            if (gs.getBandosDesplegados() == 2) {
+                gs.setJugadorEnTurno(partida.getUsuarioId1().getId()); // El jugador 1 inicia la partida
+                // Notificar por SSE a ambos usuarios que la partida comienza (despliegue
+                // finalizado)
                 try {
                     if (partida.getUsuarioId1() != null) {
                         lobbyNotifier.notifyUser(partida.getUsuarioId1().getId(), partida.getPartidaId());
                     }
-                } catch (Exception e) {}
+                } catch (Exception e) {
+                }
                 try {
                     if (partida.getUsuarioId2() != null) {
                         lobbyNotifier.notifyUser(partida.getUsuarioId2().getId(), partida.getPartidaId());
                     }
-                } catch (Exception e) {}
+                } catch (Exception e) {
+                }
             }
-            return gs; 
+            return gs;
 
         } catch (IllegalStateException e) {
             return null;
         }
     }
 
-    //Ya confirmado los bandos tenemos toda la info necesario y cargamos todos los valores de GameSession
+    // Ya confirmado los bandos tenemos toda la info necesario y cargamos todos los
+    // valores de GameSession
     public GameSession asignarBandos(int partidaId, Bando b1, Bando b2) {
         Partida partida = pRepository.findById(partidaId).orElseThrow(
-            () -> new RuntimeException("Partida no encontrada")
-        );
+                () -> new RuntimeException("Partida no encontrada"));
 
-         try {
+        try {
             GameSession gs = gameSManager.obtenerSesion(partidaId);
             if (gs == null) {
                 throw new RuntimeException("Sesion no encontrada");
             }
 
             gs.setBandos(b1, b2);
-        
+
             Portadron p1 = new Portadron(partida, b1);
             pdRepository.save(p1);
             Portadron p2 = new Portadron(partida, b2);
@@ -153,21 +164,25 @@ public class PartidaService {
             // Debugging: log created drones and association
             try {
                 System.out.println("[PartidaService] Created drones count: " + drones.size());
-                System.out.println("[PartidaService] Aereo porta id: " + aereo.getId() + ", Naval porta id: " + naval.getId());
-            } catch (Exception e) {}
+                System.out.println(
+                        "[PartidaService] Aereo porta id: " + aereo.getId() + ", Naval porta id: " + naval.getId());
+            } catch (Exception e) {
+            }
 
             // Notificar a ambos usuarios que la partida puede comenzar (despliegue listo)
             try {
                 if (partida.getUsuarioId1() != null) {
                     lobbyNotifier.notifyUser(partida.getUsuarioId1().getId(), partida.getPartidaId());
                 }
-            } catch (Exception e) {}
+            } catch (Exception e) {
+            }
 
             try {
                 if (partida.getUsuarioId2() != null) {
                     lobbyNotifier.notifyUser(partida.getUsuarioId2().getId(), partida.getPartidaId());
                 }
-            } catch (Exception e) {}
+            } catch (Exception e) {
+            }
 
             return gs;
 
@@ -175,12 +190,10 @@ public class PartidaService {
             return null;
         }
     }
-    
-    
+
     public Partida obtenerPartida(int id) {
         return pRepository.findById(id).orElseThrow(
-                () -> new RuntimeException("Partida no encontrada")
-        );
+                () -> new RuntimeException("Partida no encontrada"));
     }
 
     public boolean cambiarTurno(int partidaId, int usuarioId) {
@@ -191,8 +204,8 @@ public class PartidaService {
                 throw new RuntimeException("Sesion no encontrada");
             }
 
-            gs.validarTurno(usuarioId);   // valida que sea su turno
-            gs.cambiarTurno();            // alterna internamente
+            gs.validarTurno(usuarioId); // valida que sea su turno
+            gs.cambiarTurno(); // alterna internamente
 
             return true;
 
@@ -201,17 +214,14 @@ public class PartidaService {
         }
     }
 
-  
-
-    //Acciones dentro de la partida
-
+    // Acciones dentro de la partida
     public void moverDron(int partidaId, int jugadorId, int dronId, int x, int y) {
 
         GameSession session = gameSManager.obtenerSesion(partidaId);
         session.moverDron(dronId, x, y, jugadorId);
         session.cambiarTurno();
         System.out.println("Va a avisar accion a jugador: " + session.getJugadorEnTurno());
-        //Avisa a ambos jugadores, asi siempre tienen la info actualizada
+        // Avisa a ambos jugadores, asi siempre tienen la info actualizada
         lobbyNotifier.notifyAccion(session.getJugador1Id(), partidaId);
         lobbyNotifier.notifyAccion(session.getJugador2Id(), partidaId);
     }
@@ -226,16 +236,17 @@ public class PartidaService {
 
     public void atacarDronOPorta(int partidaId, int jugadorId, int dronA, int obj) {
         GameSession session = gameSManager.obtenerSesion(partidaId);
-        if(obj == 0)
+        if (obj == 0) {
             session.atacarPortadron(dronA, jugadorId);
-        else
+        } else {
             session.atacarDron(dronA, obj, jugadorId);
+        }
         session.cambiarTurno();
         lobbyNotifier.notifyAccion(session.getJugador1Id(), partidaId);
         lobbyNotifier.notifyAccion(session.getJugador2Id(), partidaId);
     }
 
-    public void recargarDron (int partidaId, int jugadorId, int dronId) {
+    public void recargarDron(int partidaId, int jugadorId, int dronId) {
         GameSession session = gameSManager.obtenerSesion(partidaId);
         session.recargarDron(dronId, jugadorId);
         session.cambiarTurno();
@@ -245,37 +256,65 @@ public class PartidaService {
 
     public void desplegarDron(int partidaId, int jugadorId, int dronId, int x, int y) {
         GameSession session = gameSManager.obtenerSesion(partidaId);
-        if (session == null) throw new RuntimeException("Sesion no encontrada");
+        if (session == null) {
+            throw new RuntimeException("Sesion no encontrada");
+        }
         session.desplegarDron(dronId, x, y, jugadorId);
     }
 
-    //ver si el del get tb va////
-
+    // ver si el del get tb va////
     public List<Partida> obtenerPartidasGuardadas(int usuarioId) {
         return pRepository.buscarPartidasGuardadas(usuarioId);
     }
 
-//------------Abandono de partida -----------
+    // ------------Abandono de partida -----------
     @Transactional
-    public void renunciarPartida(int partidaId) {
+    public void renunciarPartida(int partidaId, int usuarioId) {
         Partida partida = pRepository.findById(partidaId).orElseThrow(
-                () -> new RuntimeException("Partida no encontrada")
-        );
+                () -> new RuntimeException("Partida no encontrada"));
+
+        // Si ya está finalizada, no hacemos nada
+        if (partida.getPartidaEstado() == Estado.FINALIZADA) {
+            return;
+        }
+
+        Usuario u1 = partida.getUsuarioId1();
+        Usuario u2 = partida.getUsuarioId2();
+
+        // Validar que el usuario pertenezca a la partida y detectar ganador
+        Usuario ganador = null;
+
+        if (u1 != null && u1.getId() == usuarioId) {
+            // Renunció u1 => gana u2 (si existe)
+            ganador = u2;
+        } else if (u2 != null && u2.getId() == usuarioId) {
+            // Renunció u2 => gana u1
+            ganador = u1;
+        } else {
+            throw new RuntimeException("El usuario no pertenece a la partida");
+        }
+
+        // Sumar victoria al ganador (si hay rival)
+        if (ganador != null) {
+            ganador.sumarVictoria();
+            uRepository.save(ganador);
+        }
+
+        // Finalizar partida
         partida.setPartidaEstado(Estado.FINALIZADA);
         pRepository.save(partida);
 
-        //Aviso a ambos jugadores que la partida ha finalizado al renunciar uno
+        // Cerrar sesión en memoria
+        gameSManager.cerrarSesion(partidaId);
+
+        // Aviso a ambos jugadores que la partida ha finalizado al renunciar uno
         try {
-            lobbyNotifier.notifyPartidaFinalizada(
-                    partida.getUsuarioId1().getId(),
-                    partidaId);
+            lobbyNotifier.notifyPartidaFinalizada(partida.getUsuarioId1().getId(), partidaId);
         } catch (Exception e) {
         }
 
         try {
-            lobbyNotifier.notifyPartidaFinalizada(
-                    partida.getUsuarioId2().getId(),
-                    partidaId);
+            lobbyNotifier.notifyPartidaFinalizada(partida.getUsuarioId2().getId(), partidaId);
         } catch (Exception e) {
         }
     }
@@ -283,12 +322,11 @@ public class PartidaService {
     @Transactional
     public void guardarPartida(int partidaId) {
         Partida partida = pRepository.findById(partidaId).orElseThrow(
-                () -> new RuntimeException("Partida no encontrada")
-        );
+                () -> new RuntimeException("Partida no encontrada"));
         partida.setPartidaEstado(Estado.GUARDADA);
         pRepository.save(partida);
 
-        //Sacar ambos al menu principal al guardar la partida
+        // Sacar ambos al menu principal al guardar la partida
         try {
             lobbyNotifier.notifyPartidaGuardada(
                     partida.getUsuarioId1().getId(),
@@ -302,14 +340,15 @@ public class PartidaService {
         } catch (Exception e) {
         }
     }
-    
-    public List<Partida> obtenerPartidasReanudables(int usuarioId){
+
+    public List<Partida> obtenerPartidasReanudables(int usuarioId) {
         return pRepository.buscarPartidasReanudables(usuarioId);
     }
 
     @Transactional
-    public void marcarReanudando(int partidaId){
-        Partida partida = pRepository.findById(partidaId).orElseThrow(()-> new RuntimeException("Partida no encontrada."));
+    public void marcarReanudando(int partidaId) {
+        Partida partida = pRepository.findById(partidaId)
+                .orElseThrow(() -> new RuntimeException("Partida no encontrada."));
         partida.setPartidaEstado(Estado.REANUDANDO);
         pRepository.save(partida);
     }
@@ -317,36 +356,38 @@ public class PartidaService {
     @Transactional
     public void unirseReanudando(int partidaId, int usuarioId) {
         Partida partida = pRepository.findById(partidaId)
-        .orElseThrow(() -> new RuntimeException("Partida no encontrada."));
+                .orElseThrow(() -> new RuntimeException("Partida no encontrada."));
 
         partida.setPartidaEstado(Estado.EN_CURSO);
         pRepository.save(partida);
 
         gameSManager.crearSesion(partida);
-        
-        try{
+
+        try {
             lobbyNotifier.notifyUser(partida.getUsuarioId1().getId(), partidaId);
-        }catch(Exception e){}
-        
+        } catch (Exception e) {
+        }
+
         try {
             lobbyNotifier.notifyUser(partida.getUsuarioId2().getId(), partidaId);
-        }catch (Exception e) {}
+        } catch (Exception e) {
+        }
 
     }
 
     public ObtenerPartidaInfoResponse obtenerPartidaInfo(int partidaId) {
-       GameSession gs = gameSManager.obtenerSesion(partidaId);
-        
+        GameSession gs = gameSManager.obtenerSesion(partidaId);
+
         if (gs == null) {
             throw new RuntimeException("Sesión de partida no encontrada");
         }
-        
+
         int usuario1Id = gs.getJugador1Id();
         int usuario2Id = gs.getJugador2Id();
-        
+
         String bando1 = gs.getJugador1Bando() != null ? gs.getJugador1Bando().name() : null;
         String bando2 = gs.getJugador2Bando() != null ? gs.getJugador2Bando().name() : null;
-        
+
         boolean bandosAsignados = bando1 != null && bando2 != null;
         int bandosDesplegados = gs.getBandosDesplegados();
         Integer turnoActual = gs.getTurnoActual() > 0 ? gs.getTurnoActual() : null;
@@ -357,23 +398,21 @@ public class PartidaService {
         List<ObtenerPartidaInfoResponse.PortadronInfo> portadrones = new ArrayList<>();
         if (portaNaval != null) {
             portadrones.add(new ObtenerPartidaInfoResponse.PortadronInfo(
-                portaNaval.getId(),
-                portaNaval.getTipoDePortadron().name(),
-                portaNaval.getPosicionX(),
-                portaNaval.getPosicionY(),
-                portaNaval.getVida(),
-                portaNaval.getEstado()
-            ));
+                    portaNaval.getId(),
+                    portaNaval.getTipoDePortadron().name(),
+                    portaNaval.getPosicionX(),
+                    portaNaval.getPosicionY(),
+                    portaNaval.getVida(),
+                    portaNaval.getEstado()));
         }
         if (portaAereo != null) {
             portadrones.add(new ObtenerPartidaInfoResponse.PortadronInfo(
-                portaAereo.getId(),
-                portaAereo.getTipoDePortadron().name(),
-                portaAereo.getPosicionX(),
-                portaAereo.getPosicionY(),
-                portaAereo.getVida(),
-                portaAereo.getEstado()
-            ));
+                    portaAereo.getId(),
+                    portaAereo.getTipoDePortadron().name(),
+                    portaAereo.getPosicionX(),
+                    portaAereo.getPosicionY(),
+                    portaAereo.getVida(),
+                    portaAereo.getEstado()));
         }
 
         Map<Integer, DronState> dronesStateMap = gs.getDrones();
@@ -388,13 +427,14 @@ public class PartidaService {
             String bando = null;
             // Primero, intentar por listado de ids (cuando está poblado)
             if (portaNaval != null && portaNaval.getListadoDronesIds() != null
-                && portaNaval.getListadoDronesIds().contains(dron.getId())) {
+                    && portaNaval.getListadoDronesIds().contains(dron.getId())) {
                 bando = "NAVAL";
             } else if (portaAereo != null && portaAereo.getListadoDronesIds() != null
-                && portaAereo.getListadoDronesIds().contains(dron.getId())) {
+                    && portaAereo.getListadoDronesIds().contains(dron.getId())) {
                 bando = "AEREO";
             } else {
-                // Fallback: usar el portadronId del dron y compararlo con los ids de los portadrones
+                // Fallback: usar el portadronId del dron y compararlo con los ids de los
+                // portadrones
                 try {
                     if (portaNaval != null && dron.getPortadronId() == portaNaval.getId()) {
                         bando = "NAVAL";
@@ -407,32 +447,114 @@ public class PartidaService {
             }
 
             drones.add(new ObtenerPartidaInfoResponse.DronInfo(
-                dron.getId(),
-                dron.getPortadronId(),
-                bando,
-                dron.getPosicionX(),
-                dron.getPosicionY(),
-                dron.getVida(),
-                dron.getMunicion(),
-                dron.getRecargas(),
-                dron.getEstado()
-            ));
+                    dron.getId(),
+                    dron.getPortadronId(),
+                    bando,
+                    dron.getPosicionX(),
+                    dron.getPosicionY(),
+                    dron.getVida(),
+                    dron.getMunicion(),
+                    dron.getRecargas(),
+                    dron.getEstado()));
         }
-        
+
         return new ObtenerPartidaInfoResponse(
-            partidaId,
-            usuario1Id,
-            usuario2Id,
-            bando1,
-            bando2,
-            bandosAsignados,
-            bandosDesplegados,
-            turnoActual,
-            drones,
-            portadrones
-        );
+                partidaId,
+                usuario1Id,
+                usuario2Id,
+                bando1,
+                bando2,
+                bandosAsignados,
+                bandosDesplegados,
+                turnoActual,
+                drones,
+                portadrones);
     }
 
-    
-}
+    @Transactional
+    public void cancelarPartida(int partidaId, int usuarioId) {
+        Partida partida = pRepository.findById(partidaId)
+                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
 
+        if (partida.getUsuarioId1() == null || partida.getUsuarioId1().getId() != usuarioId) {
+            throw new RuntimeException("Solo el creador puede cancelar la partida");
+        }
+        if (partida.getUsuarioId2() != null) {
+            throw new RuntimeException("No se puede cancelar: ya tiene rival");
+        }
+        if (partida.getPartidaEstado() != Estado.CREADA) {
+            throw new RuntimeException("No se puede cancelar: no está en estado CREADA");
+        }
+
+        try {
+            gameSManager.cerrarSesion(partidaId);
+        } catch (Exception ignored) {
+        }
+
+        // borrar hijos primero
+        dRepository.deleteByPartidaId(partidaId);
+        pdRepository.deleteByPartidaId(partidaId);
+
+        // borrar la partida
+        pRepository.deleteById(partidaId);
+
+        // forzar ejecución ya
+        pRepository.flush();
+    }
+
+    @Transactional
+    public void cancelarReanudacion(int partidaId, int usuarioId) {
+        Partida partida = pRepository.findById(partidaId)
+                .orElseThrow(() -> new RuntimeException("Partida no encontrada."));
+
+        // siempre el que va al lobby es el usuario 1
+        if (partida.getUsuarioId1() == null || partida.getUsuarioId1().getId() != usuarioId) {
+            throw new RuntimeException("Solo el jugador 1 puede cancelar la reanudación.");
+        }
+
+        // si no está en REANUDANDO, no tiene sentido
+        if (partida.getPartidaEstado() != Estado.REANUDANDO) {
+            return;
+        }
+
+        partida.setPartidaEstado(Estado.GUARDADA);
+        pRepository.save(partida);
+    }
+
+    @Transactional
+    public void eliminarPartidaGuardada(int partidaId, int usuarioId) {
+        Partida partida = pRepository.findById(partidaId)
+                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+
+        // permitir borrar si el usuario es parte de la partida (u1 o u2)
+        boolean esU1 = partida.getUsuarioId1() != null && partida.getUsuarioId1().getId() == usuarioId;
+        boolean esU2 = partida.getUsuarioId2() != null && partida.getUsuarioId2().getId() == usuarioId;
+
+        if (!esU1 && !esU2) {
+            throw new RuntimeException("El usuario no pertenece a la partida");
+        }
+
+        // solo borrar partidas guardadas (evitamos borrar una que esté reanudándose/en
+        // curso)
+        if (partida.getPartidaEstado() != Estado.GUARDADA) {
+            throw new RuntimeException("Solo se pueden eliminar partidas en estado GUARDADA");
+        }
+
+        // cerrar sesión si existiera (normalmente en guardada no debería, pero por
+        // seguridad)
+        try {
+            gameSManager.cerrarSesion(partidaId);
+        } catch (Exception ignored) {
+        }
+
+        // borrar hijos primero
+        dRepository.deleteByPartidaId(partidaId);
+        pdRepository.deleteByPartidaId(partidaId);
+
+        // borrar la partida
+        pRepository.deleteById(partidaId);
+
+        // forzar ejecución ya
+        pRepository.flush();
+    }
+}
