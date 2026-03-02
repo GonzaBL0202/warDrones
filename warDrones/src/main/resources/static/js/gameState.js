@@ -7,7 +7,9 @@ class GameState {
 
     setDrones(drones) {
         this.drones = Array.isArray(drones) ? drones : [];
-        this.activeDroneId = this.drones[0]?.id ?? null;
+        //Validar que el dron activo siga existiendo, sino asignar el primero disponible
+        if (this.activeDroneId === null || !drones.some(d => d.id === this.activeDroneId && d.vida > 0)) 
+            this.activeDroneId = this.drones[0]?.id ?? null;
     }
 
     setDronesRivales(drones) {

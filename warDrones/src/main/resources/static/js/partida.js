@@ -24,6 +24,8 @@ const moveBtn = document.getElementById('moveBtn');
 const attackBtn = document.getElementById('attackBtn');
 const reloadBtn = document.getElementById('reloadBtn');
 
+const bandoGanador = document.getElementById('lblGanador');
+
 /* Modos de acciÃ³n activados por botones */
 let isMoveMode = false;      // espera click para mover dron activo
 let isAttackMode = false;    // espera seleccionar objetivo para atacar
@@ -45,6 +47,9 @@ let bandosDesplegados = 0;   // Cantidad de bandos que han completado despliegue
 /* Lee el parametro "bando" desde la URL y lo normaliza */
 const query = new URLSearchParams(window.location.search);
 let bandoSeleccionado = ((query.get('bando') || 'aereo').toUpperCase() === 'NAVAL') ? 'NAVAL' : 'AEREO';
+
+let ganador = null;
+let fin = null;
 
 /* Estado global de la partida */
 let cols = 0; /* Cantidad de columnas del mapa */
@@ -71,8 +76,8 @@ let rivalSpriteFrameCount = 1;
 let rivalSpriteFrameSize = 0;
 let portaDronNavalReady = false;
 let portaDronAereoReady = false;
-const portaDronNaval = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#4ec5ff', nombre: 'Porta Dron Naval' };
-const portaDronAereo = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#ffd166', nombre: 'Porta Dron Aereo' };
+const portaDronNaval = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#4ec5ff', nombre: 'Porta Dron Naval', estado: true };
+const portaDronAereo = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#ffd166', nombre: 'Porta Dron Aereo', estado: true };
 
 /* Cuando carga la imagen, calcula tamaï¿½o y numero de frames */
 droneSprite.onload = () => {
@@ -88,6 +93,7 @@ dronrivalSprite.onload = () => {
     rivalSpriteFrameCount = Math.max(1, Math.floor(dronrivalSprite.width / rivalSpriteFrameSize));
     rivalSpriteReady = true;
 };
+
 
 /* Carga de sprites */
 portaDronNavalSprite.onload = () => {
@@ -123,21 +129,6 @@ function mapDroneFromServer(droneInfo) {
     };
 }
 
-// function hydrateDronesFromServer(allDrones) {
-//     const ownDrones = (allDrones || [])
-//         .filter((d) => !d.bando || d.bando === bandoSeleccionado)
-//         .map(mapDroneFromServer);
-
-//     const rivalDrones = (allDrones || [])
-//         .filter((d) => d.bando && d.bando !== bandoSeleccionado)
-//         .map(mapDroneFromServer);
-
-//     gameState.setDrones(ownDrones);
-//     gameState.setDronesRivales(rivalDrones);
-//     drones = gameState.drones;
-//     dronesRivales = gameState.dronesRivales;
-//     activeDroneId = gameState.activeDroneId;
-// }
 
 function hydrateDronesFromServer(allDrones) {
     /* conservar copia previa para detectar cambios de vida*/
@@ -180,6 +171,7 @@ function hydratePortadronesFromServer(portadrones) {
         const target = porta.tipo === 'NAVAL' ? portaDronNaval : portaDronAereo;
         target.x = porta.posicionX;
         target.y = porta.posicionY;
+        target.estado = porta.estado; 
     });
     portadronesHydrated = true;
 }
@@ -266,6 +258,21 @@ function positionFleet() {
         drones[i].x = Math.max(0, Math.min(cols - 1, x));
         drones[i].y = Math.max(0, Math.min(rows - 1, y));
     }
+}
+
+function mostrarGanador(ganadorId) {
+    const lbl = document.getElementById('lblGanador');
+    if (!lbl) return; // evita error si aún no existe en DOM
+
+    let bando;
+
+    if (ganadorId === currentUserId) {
+        bando = bandoSeleccionado;
+    } else {
+        bando = (bandoSeleccionado === "NAVAL") ? "AEREO" : "NAVAL";
+    }
+
+    lbl.textContent = `BANDO: ${bando}`;
 }
 
 /* Actualiza textos del panel y reconstruye la lista de drones clickeables */
@@ -358,8 +365,8 @@ function updateButtonsVisibility(iniciada = false) {
     }
 }
 
-function updateButtonByChosen(esPorta){
-    if(esPorta){
+function updateButtonByChosen(esPorta) {
+    if (esPorta) {
         attackBtn.style.display = 'none';
         reloadBtn.style.display = 'none';
     } else {
@@ -372,15 +379,22 @@ function updateButtonByChosen(esPorta){
    calcula filas y columnas segun la grilla,
    reinicia la niebla de guerra, centra al jugador
    y redibuja toda la escena */
+
 function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
     canvas.width = Math.floor(rect.width);
     canvas.height = Math.floor(rect.height);
-    cols = Math.max(1, Math.floor(canvas.width / cellSize));
-    rows = Math.max(1, Math.floor(canvas.height / cellSize));
 
-    /* Recalcular cellSize para que encaje perfectamente */
+    // Fijar número de columnas y filas (por ejemplo, 20x20)
+    const FIXED_COLS = 35;
+    const FIXED_ROWS = 20;
+    cols = FIXED_COLS;
+    rows = FIXED_ROWS;
+
+    // Ajustar cellSize para que la grilla ocupe todo el canvas
     cellSize = Math.min(canvas.width / cols, canvas.height / rows);
+
+    // La matriz discovered debe tener el tamaño fijo
     discovered = Array.from({ length: rows }, () => Array(cols).fill(false));
     revealStartColumnsByBando();
     if (!portadronesHydrated) {
@@ -478,14 +492,14 @@ function validaPosicion(x, y) {
     return false;
 }
 
-function validaPosicionPorta(x,y){
-      const ownPorta = getOwnPorta();
-      const centerX = ownPorta.x + (ownPorta.size / 2);
-      const centerY = ownPorta.y + (ownPorta.size / 2);
-      const dx = (x + 0.5) - centerX;
-      const dy = (y + 0.5) - centerY;
-      const isInsideCircle = (dx * dx) + (dy * dy) <= ownPorta.moveRadius * ownPorta.moveRadius;
-      return isInsideCircle;
+function validaPosicionPorta(x, y) {
+    const ownPorta = getOwnPorta();
+    const centerX = ownPorta.x + (ownPorta.size / 2);
+    const centerY = ownPorta.y + (ownPorta.size / 2);
+    const dx = (x + 0.5) - centerX;
+    const dy = (y + 0.5) - centerY;
+    const isInsideCircle = (dx * dx) + (dy * dy) <= ownPorta.moveRadius * ownPorta.moveRadius;
+    return isInsideCircle;
 }
 
 function isPosicionOcupada(x, y) {
@@ -502,7 +516,7 @@ function drawFog() {
     const hasDeployedDrone = !!(drone && drone.deployed);
     const hasSelectedPorta = isPortaSelected;
     const ownPorta = getOwnPorta();
-    const   hasUnit = hasSelectedPorta || hasDeployedDrone;
+    const hasUnit = hasSelectedPorta || hasDeployedDrone;
     const centerX = hasSelectedPorta
         ? (ownPorta.x + (ownPorta.size / 2))
         : (hasDeployedDrone ? (drone.x + 0.5) : 0);
@@ -567,6 +581,14 @@ function drawSinglePortaDron(porta, sprite, spriteReady, isSelected) {
     const py = porta.y * cellSize;
     const sizePx = porta.size * cellSize;
 
+     // si está muerto no se dibuja
+    if (porta.estado = false) {
+        markCellDiscovered(porta.x, porta.y);
+        markCellDiscovered(porta.x+1, porta.y);
+        markCellDiscovered(porta.x, porta.y+1);
+        markCellDiscovered(porta.x+1, porta.y+1);
+    }
+
     if (spriteReady) {
         /* Si la imagen es un sprite sheet horizontal, usa solo el primer frame cuadrado */
         const frameSize = sprite.height;
@@ -613,120 +635,6 @@ function markCellDiscovered(x, y) {
     }
 }
 
-// function drawDrones() {
-//     for (let i = 0; i < drones.length; i++) {
-//         const drone = drones[i];
-//         if (!drone.deployed && (drone.vida > 0)) {
-//             continue;
-//         }
-//         const px = (drone.x + 0.5) * cellSize;
-//         const py = (drone.y + 0.5) * cellSize;
-//         const size = Math.floor(cellSize * 1.05);
-//         const half = size / 2;
-
-
-//         if (spriteReady) {
-//             const sx = spriteFrameIndex * spriteFrameSize;
-//             const sy = 0;
-
-//             /* Pixel-art: evita suavizado para que no se vea borroso */
-//             ctx.imageSmoothingEnabled = false;
-//             ctx.drawImage(
-//                 droneSprite,
-//                 sx,
-//                 sy,
-//                 spriteFrameSize,
-//                 spriteFrameSize,
-//                 px - half,
-//                 py - half,
-//                 size,
-//                 size
-//             );
-//         } else {
-//             ctx.fillStyle = '#f2cb67';
-//             ctx.beginPath();
-//             ctx.arc(px, py, Math.max(10, Math.floor(cellSize * 0.35)), 0, Math.PI * 2);
-//             ctx.fill();
-//         }
-
-//         /*Me deja todo el mapa descubierto, solo debe dejar descubierto la celda del dron y luego el draw fog se ocupa de dibujar la niebla*/
-//         if(drone.vida <= 0){
-//             ctx.fillStyle = rgba(0, 0, 0, 0.35) ;
-//             ctx.beginPath();
-//             ctx.arc(px, py, Math.max(10, Math.floor(cellSize * 0.35)), 0, Math.PI * 2);
-//             ctx.fill();
-//         }
-
-//         /* Borde blanco para el dron activo y color de bando para el resto */
-//         ctx.save();
-//         ctx.lineWidth = drone.id === activeDroneId ? 3 : 2;
-//         ctx.strokeStyle = drone.id === activeDroneId ? '#ffffff' : drone.color;
-//         ctx.beginPath();
-//         ctx.arc(px, py, Math.max(12, Math.floor(cellSize * 0.42)), 0, Math.PI * 2);
-//         ctx.stroke();
-//         ctx.restore();
-//     }
-// }
-
-// function drawRivalDrones() {
-//     for (let i = 0; i < dronesRivales.length; i++) {
-//         const drone = dronesRivales[i];
-//         if (!drone.deployed) {
-//             continue;
-//         }
-//         const px = (drone.x + 0.5) * cellSize;
-//         const py = (drone.y + 0.5) * cellSize;
-//         const size = Math.floor(cellSize * 1.05);
-//         const half = size / 2;
-
-//         if(drone.vida <= 0){
-//             ctx.fillStyle = rgba(0, 0, 0, 0.35) ;
-//             ctx.fillRect(drone.x * cellSize, drone.y * cellSize, cellSize, cellSize);
-//             continue;
-//         }
-        
-//         if (rivalSpriteReady) { // Asegúrate de usar una variable específica para los sprites rivales
-//             const sx = rivalSpriteFrameIndex * rivalSpriteFrameSize;
-//             const sy = 0;
-
-//             /* Pixel-art: evita suavizado para que no se vea borroso */
-//             ctx.imageSmoothingEnabled = false;
-//             ctx.drawImage(
-//                 dronrivalSprite,
-//                 sx,
-//                 sy,
-//                 rivalSpriteFrameSize,
-//                 rivalSpriteFrameSize,
-//                 px - half,
-//                 py - half,
-//                 size,
-//                 size
-//             );
-//         } else {
-//             ctx.fillStyle = '#f2cb67'; 
-//             ctx.beginPath();
-//             ctx.arc(px, py, Math.max(10, Math.floor(cellSize * 0.35)), 0, Math.PI * 2);
-//             ctx.fill();
-//         }
-
-//         /*Me deja todo el mapa descubierto, solo debe dejar descubierto la celda del dron y luego el draw fog se ocupa de dibujar la niebla*/
-//         if(drone.vida <= 0){
-//             ctx.fillStyle = rgba(0, 0, 0, 0.35) ;
-//             ctx.beginPath();
-//             ctx.arc(px, py, Math.max(10, Math.floor(cellSize * 0.35)), 0, Math.PI * 2);
-//             ctx.fill();
-//         }
-
-//         /* Para los drones rivales, quedan oculto bajo la niebla si no están dentro de discovered */
-//         if (!discovered[drone.y][drone.x]) {
-//             ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-//             ctx.beginPath();
-//             ctx.arc(px, py, Math.max(10, Math.floor(cellSize * 0.35)), 0, Math.PI * 2);
-//             ctx.fill();
-//         }
-
-//     }
-// }
 
 function drawDrones() {
     for (let i = 0; i < drones.length; i++) {

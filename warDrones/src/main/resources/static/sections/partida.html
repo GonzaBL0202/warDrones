@@ -1,16 +1,15 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Partida</title>
+
     <link rel="stylesheet" href="../css/fondo.css">
     <link rel="stylesheet" href="../css/botom.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Jacquard+12&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/fuente.css">
+    <link rel="stylesheet" href="../css/fuente.css">
+
     <style>
         .modal {
             display: none;
@@ -58,42 +57,58 @@
         style="width: 25vw; min-width: 260px; max-width: 380px; position: relative; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
         <img src="../img/gold_panel_8x.png" alt="Panel"
             style="position: absolute; inset: 16px; width: calc(100% - 32px); height: calc(100% - 32px); image-rendering: pixelated;">
+
         <div
             style="position: relative; z-index: 1; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px;">
-            <h1 class="jacquard-12-regular" style="margin: 0 0 6px; font-size: 46px; text-align: center;">Partida</h1>
-            <button id="btnSalir" class="boton boton-menu" type="button" style="font-size: 18px;">
-                <span class="jacquard-12-regular">Salir</span>
+
+            <h1 class="font-display" style="margin: 0 0 6px; font-size: 46px; text-align: center;">Partida</h1>
+
+            <button id="btnSalir" class="boton boton-menu font-display" type="button" style="font-size: 18px;">
+                Salir
             </button>
+
             <!-- El botón 'Volver al Menu' fue removido porque ahora hay un submenu con opciones abandon/guardar -->
             <section
                 style="width: 100%; max-width: 280px; background: rgba(19, 31, 38, 0.75); border: 2px solid #f2cb67; padding: 10px; box-sizing: border-box; color: #f7e7b2;">
-                <p id="bandoLabel" class="jacquard-12-regular" style="margin: 0 0 4px; font-size: 24px;">Bando: -</p>
+
+                <p id="bandoLabel" class="font-display" style="margin: 0 0 4px; font-size: 24px;">Bando: -</p>
+
                 <!-- HUD drone labels removed (info shown on canvas) -->
-                <p id="turnHint" class="jacquard-12-regular" style="margin: 0 0 6px; font-size: 16px; color: #f7e7b2;">
-                    Esperando partida...</p>
-                <p id="setupHint" class="jacquard-12-regular" style="margin: 0 0 6px; font-size: 16px;">
-                    Elige un dron y pulsa Desplegar.</p>
-                <button id="deployDroneBtn" class="boton" type="button"
+                <p id="turnHint" class="font-text" style="margin: 0 0 6px; font-size: 16px; color: #f7e7b2;">
+                    Esperando partida...
+                </p>
+
+                <p id="setupHint" class="font-text" style="margin: 0 0 6px; font-size: 16px;">
+                    Elige un dron y pulsa Desplegar.
+                </p>
+
+                <button id="deployDroneBtn" class="boton font-display" type="button"
                     style="font-size: 16px; width: 100%; height: 34px; margin-bottom: 8px;">
-                    <span class="jacquard-12-regular">Desplegar Dron</span>
+                    Desplegar Dron
                 </button>
-                <button id="nextDroneBtn" class="boton" type="button"
+
+                <button id="nextDroneBtn" class="boton font-display" type="button"
                     style="font-size: 16px; width: 100%; height: 34px; margin-bottom: 8px;">
-                    <span class="jacquard-12-regular">Cambiar Dron</span>
+                    Cambiar Dron
                 </button>
+
                 <!-- nuevos botones de acción - ocultos inicialmente hasta desplegar todos los drones -->
-                <button id="moveBtn" class="boton" type="button"
+                <button id="moveBtn" class="boton font-display" type="button"
                     style="font-size: 16px; width: 100%; height: 34px; margin-bottom: 8px; display: none;">
-                    <span class="jacquard-12-regular">Movimiento</span>
+                    Movimiento
                 </button>
-                <button id="attackBtn" class="boton" type="button"
+
+                <button id="attackBtn" class="boton font-display" type="button"
                     style="font-size: 16px; width: 100%; height: 34px; margin-bottom: 8px; display: none;">
-                    <span class="jacquard-12-regular">Atacar</span>
+                    Atacar
                 </button>
-                <button id="reloadBtn" class="boton" type="button"
+
+                <button id="reloadBtn" class="boton font-display" type="button"
                     style="font-size: 16px; width: 100%; height: 34px; margin-bottom: 8px; display: none;">
-                    <span class="jacquard-12-regular">Recargar</span>
+                    Recargar
                 </button>
+
+                <!-- NO TOCAR (tabla/lista que aparece) -->
                 <div id="fleetList"
                     style="max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;"></div>
             </section>
@@ -107,16 +122,28 @@
 
     <div id="modalSalir" class="modal">
         <div class="modal-content">
-            <h2 class="jacquard-12-regular">¿Deseas salir?</h2>
+            <h2 class="font-display">¿Deseas salir?</h2>
             <div class="modal-buttons">
-                <button id="btnConfirmarSalir" class="boton boton-menu" style="font-size: 16px;">
-                    <span class="jacquard-12-regular">Abandonar</span>
+                <button id="btnConfirmarSalir" class="boton boton-menu font-display" style="font-size: 16px;">
+                    Abandonar
                 </button>
-                <button id="btnGuardar" class="boton boton-menu" style="font-size: 16px;">
-                    <span class="jacquard-12-regular">Guardar</span>
+                <button id="btnGuardar" class="boton boton-menu font-display" style="font-size: 16px;">
+                    Guardar
                 </button>
-                <button id="btnCancelar" class="boton boton-menu" style="font-size: 16px;">
-                    <span class="jacquard-12-regular">Cancelar</span>
+                <button id="btnCancelar" class="boton boton-menu font-display" style="font-size: 16px;">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalVictoria" class="modal">
+        <div class="modal-content">
+            <h2 class="font-display">Partida finalizada</h2>
+            <h3 id= "lblGanador" class="font-display"></h3>
+            <div class="modal-buttons">
+                <button id="btnCerrarPartida" class="boton boton-menu font-display" style="font-size: 16px;">
+                    Salir
                 </button>
             </div>
         </div>
@@ -125,13 +152,13 @@
     <!-- Modal para seleccionar bando (solo usuario 1) -->
     <div id="modalSeleccionarBando" class="modal">
         <div class="modal-content">
-            <h2 class="jacquard-12-regular">Selecciona tu Bando</h2>
+            <h2 class="font-display">Selecciona tu Bando</h2>
             <div class="modal-buttons">
-                <button id="btnBandoNaval" class="boton boton-menu" style="font-size: 16px;">
-                    <span class="jacquard-12-regular">Dron Naval</span>
+                <button id="btnBandoNaval" class="boton boton-menu font-display" style="font-size: 16px;">
+                    Dron Naval
                 </button>
-                <button id="btnBandoAereo" class="boton boton-menu" style="font-size: 16px;">
-                    <span class="jacquard-12-regular">Dron Aéreo</span>
+                <button id="btnBandoAereo" class="boton boton-menu font-display" style="font-size: 16px;">
+                    Dron Aéreo
                 </button>
             </div>
         </div>

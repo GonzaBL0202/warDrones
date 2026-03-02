@@ -137,13 +137,23 @@ function cerrarModalSalir() {
     document.getElementById('modalSalir').classList.remove('active');
 }
 
+function abrirModalVictoria(){
+    document.getElementById('modalVictoria').classList.add('active');
+}
+
+function cerrarMensajeVictoria() {
+    document.getElementById('modalVictoria').classList.remove('active');
+}
+
 async function abandonarPartida() {
     const partidaId = localStorage.getItem("partidaId");
     console.log("Abandonar partida. partidaId:", partidaId);
     if (!partidaId) return;
 
     try {
-        const res = await api.renunciarPartida(partidaId);
+        const userId = localStorage.getItem("userId");
+if (!userId) return;
+        const res = await api.renunciarPartida(partidaId, userId);
         console.log('Respuesta renunciar:', res.status, res.statusText);
     } catch (error) {
         console.error("Error abandonando partida:", error);
@@ -151,6 +161,15 @@ async function abandonarPartida() {
     }
 
     cerrarModalSalir();
+    window.location.href = 'menu.html';
+}
+
+async function cerrarPartida() {
+    const partidaId = localStorage.getItem("partidaId");
+    console.log("Cerrar partida. partidaId:", partidaId);
+    if (!partidaId) return;
+
+    cerrarMensajeVictoria();
     window.location.href = 'menu.html';
 }
 
@@ -178,6 +197,8 @@ document.getElementById("btnSalir")?.addEventListener("click", abrirModalSalir);
 
 //Botones del modal
 document.getElementById("btnConfirmarSalir")?.addEventListener("click", abandonarPartida);
+document.getElementById("btnCerrarPartida")?.addEventListener("click", cerrarPartida);
+
 
 document.getElementById("btnGuardar")?.addEventListener("click", guardarPartida);
 
@@ -301,6 +322,17 @@ if (usuarioId && currentPartidaId) {
         }
     });
 
+     eventSource.addEventListener("partida-ganada", (event) => {
+        const data = JSON.parse(event.data);
+        const gid = String(data.usuarioId);
+        const pid = String(data.partidaId);
+        if (pid === String(currentPartidaId)) {
+           abrirModalVictoria();
+           mostrarGanador(gid);
+        }
+    });
+
+
     // Si el servidor emite 'partida-start' mientras el cliente ya está en partida.html,
     // actualizar la vista recargando la información desde el servidor y activar la UI de juego.
     eventSource.addEventListener("partida-start", (event) => {
@@ -314,6 +346,8 @@ if (usuarioId && currentPartidaId) {
                         bandosDesplegados = info.bandosDesplegados || 0;  // Actualizar bandosDesplegados
                         const miiBando = isUsuario1 ? info.bando1 : info.bando2;
                         bandoSeleccionado = miiBando || bandoSeleccionado;
+                        fin = info.finalizada;
+                        ganador = info.ganadorId;
 
                         // Si eres usuario 2, recarga la página con el bando en la URL
                         // para que si recargas manualmente, no pierdas el contexto
@@ -331,6 +365,7 @@ if (usuarioId && currentPartidaId) {
                         updateButtonsVisibility(true);
                         actualizarEstadoTurno();  // Actualizar estado del turno
                         drawScene();
+
                     }
 
                 });
@@ -502,14 +537,6 @@ if (usuarioId && currentPartidaId) {
         animateStep();
     }
 
-    // function isInsideDeploymentZone(x, y) {
-    //     if (bandoSeleccionado === 'NAVAL') {
-    //         return x <= Math.floor(cols / 3);
-    //     } else {
-    //         return x >= Math.ceil(2 * cols / 3);
-    //     }
-    // }
-
     //************SOLUCION TEMPORAL PARA QUE PERMITA ELEGIR LA ULTIMA COLUMNA, HAY QUE CORREGIR DIRECTAMENTE COMO SE ARMA EL CANVAS ****************************/
     function isInsideDeploymentZone(x, y) {
         const firstThirdEnd = Math.floor(cols / 3);
@@ -559,7 +586,8 @@ if (usuarioId && currentPartidaId) {
             } else {
                 const targetIndex = dronesRivales.findIndex(d => d.deployed && d.x === x && d.y === y);
                 if (targetIndex >= 0) {
-                    objetivoId = dronesRivales[targetIndex].id;
+                    if (dronesRivales[targetIndex].vida > 0) 
+                        objetivoId = dronesRivales[targetIndex].id;
                 }
             }
 

@@ -32,7 +32,8 @@ window.PartidaApi = {
     moverPortadron: (payload) => postJson('/moverPortadron', payload),
     atacarDronOPorta: (payload) => postJson('/atacarDronOPorta', payload),
     recargarDron: (payload) => postJson('/recargarDron', payload),
-    renunciarPartida: (partidaId) => put(`/partida/renunciar/${partidaId}`),
+    renunciarPartida: (partidaId, usuarioId) =>
+  put(`/partida/renunciar/${partidaId}?usuarioId=${encodeURIComponent(usuarioId)}`),
     guardarPartida: (partidaId, discovered) => putJson(`/partida/guardar/${partidaId}`, { discovered }),
     lobbyEventSource: (usuarioId) => new EventSource(`${API_URL}/lobby/connect?usuarioId=${encodeURIComponent(usuarioId)}`)
 };

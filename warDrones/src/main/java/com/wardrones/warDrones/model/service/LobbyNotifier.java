@@ -25,7 +25,7 @@ public class LobbyNotifier {
 
         try {
             emitter.send(SseEmitter.event().name("connected").data("ok"));
-        } catch (Exception e) {
+        } catch (IOException e) {
             // ignore
         }
 
@@ -40,7 +40,7 @@ public class LobbyNotifier {
                 emitter.send(SseEmitter.event()
                 .name("partida-start")
                 .data(partidaId));
-            } catch (Exception e) {
+            } catch (IOException e) {
                 System.out.println("Conexion cerrada para usuario: " + usuarioId);
                 emitter.complete();
                 emitters.remove(usuarioId);
@@ -56,6 +56,19 @@ public class LobbyNotifier {
                 emitter.send(SseEmitter.event()
                 .name("partida-finalizada")
                 .data(partidaId));
+            } catch (IOException e) {
+                emitters.remove(usuarioId);
+            }
+        }
+    }
+
+    public void notifyPartidaGanada(int usuarioId, int partidaId, int ganadorId) {
+        SseEmitter emitter = emitters.get(usuarioId);
+        if (emitter != null) {
+            try {
+                emitter.send(SseEmitter.event()
+                .name("partida-ganada")
+                .data(new AccionData(ganadorId, partidaId), MediaType.APPLICATION_JSON));
             } catch (IOException e) {
                 emitters.remove(usuarioId);
             }

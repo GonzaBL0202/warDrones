@@ -1,6 +1,6 @@
 package com.wardrones.warDrones.model.entity;
 
-import org.hibernate.annotations.CompositeType;
+//import org.hibernate.annotations.CompositeType;
 
 import com.wardrones.warDrones.model.enums.Bando;
 

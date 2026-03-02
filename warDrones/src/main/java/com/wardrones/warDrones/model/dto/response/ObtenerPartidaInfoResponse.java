@@ -15,13 +15,15 @@ public class ObtenerPartidaInfoResponse {
     private Integer turnoActual;
     private List<DronInfo> drones = new ArrayList<>();
     private List<PortadronInfo> portadrones = new ArrayList<>();
+    private boolean partidaFinalizada;
+    private Integer ganadorId; // null si no terminó
 
     public ObtenerPartidaInfoResponse() {
     }
 
     public ObtenerPartidaInfoResponse(int partidaId, int usuarioId1, int usuarioId2,
                                       String bando1, String bando2, boolean bandosAsignados,
-                                      int bandosDesplegados, Integer turnoActual,
+                                      int bandosDesplegados, Integer turnoActual, boolean fin, Integer ganador,
                                       List<DronInfo> drones, List<PortadronInfo> portadrones) {
         this.partidaId = partidaId;
         this.usuarioId1 = usuarioId1;
@@ -33,6 +35,8 @@ public class ObtenerPartidaInfoResponse {
         this.turnoActual = turnoActual;
         this.drones = drones;
         this.portadrones = portadrones;
+        this.partidaFinalizada = fin;
+        this.ganadorId = ganador;
     }
 
     public int getPartidaId() {
@@ -115,6 +119,21 @@ public class ObtenerPartidaInfoResponse {
         this.portadrones = portadrones;
     }
 
+    public boolean getPartidaFinalizada(){
+        return partidaFinalizada;
+    }
+
+    public void setPartidaFinalizada(boolean fin){
+        this.partidaFinalizada = fin;
+    }
+
+    public int getGanadorId(){
+        return ganadorId;
+    }
+
+    public void setGanadorId(int g){
+        this.ganadorId = g;
+    }
     public static class DronInfo {
         private int id;
         private int portadronId;

@@ -24,6 +24,7 @@ public class GameSession {
     private Bando jugador2Bando;
     private int jugadorEnTurno;
     private Estado estado;
+    private int ganadorId;
 
     //asignacion de portadrones
     private PortadronState PortadronNaval;
@@ -125,6 +126,7 @@ public class GameSession {
         DronState dronA = drones.get(dronAtaId);
         DronState dronB = drones.get(dronObjId);
 
+
         if (dronA ==null) 
             throw new IllegalArgumentException("Dron atacante inexistente");
         else if (dronB==null)
@@ -135,6 +137,30 @@ public class GameSession {
         else if (!PortadronNaval.getListadoDronesIds().contains(dronObjId) && !PortadronAereo.getListadoDronesIds().contains(dronObjId))
             throw new IllegalArgumentException("El dron objetivo no pertenece a ningún portadron");
 
+        boolean vivo = false;
+        if(PortadronAereo.getListadoDronesIds().contains(dronObjId)){
+            for(int id : PortadronAereo.getListadoDronesIds()){
+               DronState dron = drones.get(id);
+               if (dron.getVida() > 0){
+                    vivo = true;
+                    break;
+               }
+            }
+        }
+        else{
+             for(int id : PortadronNaval.getListadoDronesIds()){
+               DronState dron = drones.get(id);
+               if (dron.getVida() > 0){
+                    vivo = true;
+                    break;
+               }
+            }
+        }
+
+        if (!vivo){
+            this.estado = Estado.FINALIZADA;
+            this.ganadorId = usuarioId;
+        }
 
         //reduce la municion del dron atacante
         if(dronA.getMunicion()==0)
@@ -206,8 +232,11 @@ public class GameSession {
                 throw new IllegalArgumentException("Portadron objetivo estaba muerto");
             else {
                 PortadronNaval.reducirVida();
-            if (PortadronNaval.getVida()==0)
-                PortadronNaval.setEstado(false);
+                if (PortadronNaval.getVida()==0){
+                    PortadronNaval.setEstado(false);
+                    this.estado =  Estado.FINALIZADA;
+                    this.ganadorId = usuarioId;
+                }
             }
 
         } else if (objPorta == 2) {//es aereo
@@ -215,8 +244,11 @@ public class GameSession {
                 throw new IllegalArgumentException("Portadron objetivo estaba muerto");
             else {
                 PortadronAereo.reducirVida();
-            if (PortadronAereo.getVida()==0)
-                PortadronAereo.setEstado(false);
+                if (PortadronAereo.getVida()==0){
+                    PortadronAereo.setEstado(false);
+                    this.estado =  Estado.FINALIZADA;
+                    this.ganadorId = usuarioId;
+                }
             }
 
         } else
@@ -404,5 +436,19 @@ public class GameSession {
             // no-op
         }
     }
+
+    public void setEstado(Estado est){
+        this.estado = est;
+    }
+
+    public void setGanadorId(int gan){
+        this.ganadorId = gan;
+    }
+
+    public int getGanadorId(){
+        return ganadorId;
+    }
+
+
 }
 

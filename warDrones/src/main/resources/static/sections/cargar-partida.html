@@ -1,63 +1,95 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
-    <title>Cargar Partida</title>
-    <link rel="stylesheet" href="../css/fondo.css">
-    <link rel="stylesheet" href="../css/botom.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Jacquard+12&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/fuente.css">
+  <meta charset="UTF-8">
+  <title>Cargar Partida</title>
+
+  <link rel="stylesheet" href="../css/fondo.css">
+  <link rel="stylesheet" href="../css/botom.css">
+  <link rel="stylesheet" href="../css/help.css">
+  <link rel="stylesheet" href="../css/fuente.css">
+
+  <!-- TU modal.css -->
+  <link rel="stylesheet" href="../css/modal.css">
 </head>
 
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0;">
-    <section
-        style="position: relative; width: 420px; height: 420px; display: flex; align-items: center; justify-content: center;">
-        <img src="../img/gold_panel_8x.png" alt="Panel"
-            style="position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated;">
 
-        <div
-            style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; width: 80%;">
-            <h1 class="jacquard-12-regular" style="margin: 0 0 12px; font-size: 50px;">
-                Cargar Partida
-            </h1>
+  <section style="position: relative; width: 420px; height: 420px; display: flex; align-items: center; justify-content: center;">
+    <img src="../img/gold_panel_8x.png" alt="Panel"
+      style="position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated;">
 
-            <p class="jacquard-12-regular" style="margin: 0 0 8px; font-size: 20px; text-align:center;">
-                Selecciona una partida guardada:
-            </p>
+    <div style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; padding-top: 30px; width: 80%;">
 
-            <!-- Lista con scroll -->
-            <div style="width: 100%; max-height: 180px; overflow-y: auto; border: 1px solid rgba(255,215,0,0.3); background: rgba(0,0,0,0.2);">
-    <table style="width: 100%; border-collapse: collapse; color: white; font-family: 'Jacquard 12', sans-serif;">
-        <thead style="position: sticky; top: 0; background: #2a2a2a; font-size: 18px; color: #ffd700;">
+      <h1 class="font-display" style="margin: 0 0 12px; font-size: 36px;">
+        Cargar Partida
+      </h1>
+
+      <p class="font-text" style="margin: 0 0 8px; font-size: 16px; text-align:center;">
+        Selecciona una partida guardada:
+      </p>
+
+      <div style="width: 100%; max-height: 180px; overflow-y: auto; border: 1px solid rgba(255,215,0,0.3); background: rgba(0,0,0,0.2);">
+        <table class="font-text" style="width: 100%; border-collapse: collapse; color: white;">
+          <thead style="position: sticky; top: 0; background: #2a2a2a; font-size: 14px; color: #ffd700;">
             <tr>
-                <th style="padding: 8px; border-bottom: 1px solid #ffd700;">PartidaID</th>
-                <th style="padding: 8px; border-bottom: 1px solid #ffd700;">IdJugador 1</th>
-                <th style="padding: 8px; border-bottom: 1px solid #ffd700;">IdJugador 2</th>
+              <th class="font-display" style="padding: 8px; border-bottom: 1px solid #ffd700;">PartidaID</th>
+              <th class="font-display" style="padding: 8px; border-bottom: 1px solid #ffd700;">IdJugador 1</th>
+              <th class="font-display" style="padding: 8px; border-bottom: 1px solid #ffd700;">IdJugador 2</th>
             </tr>
-        </thead>
-        <tbody id="listaPartidas" style="text-align: center; font-size: 18px; cursor: pointer;">
-            </tbody>
-    </table>
-</div>
+          </thead>
 
-            <!-- Botón Cargar -->
-            <button id="btnCargar" class="boton" type="button"
-                style="font-size: 20px; width: 190px; height: 42px; opacity: 0.6;" disabled>
-                <span class="jacquard-12-regular">Cargar</span>
-            </button>
+          <tbody id="listaPartidas" class="font-text" style="text-align: center; font-size: 14px; cursor: pointer;">
+          </tbody>
+        </table>
+      </div>
 
-            <form action="menu.html" method="get" style="margin:0;">
-                <button class="boton" type="submit" style="font-size: 20px; width: 190px; height: 42px;">
-                    <span class="jacquard-12-regular">Volver al Menu</span>
-                </button>
-            </form>
-        </div>
-    </section>
+      <button id="btnCargar" class="boton font-display" type="button"
+        style="font-size: 14px; width: 190px; height: 42px; opacity: 0.6;" disabled>
+        Cargar
+      </button>
 
-    <script src="../js/cargar_partida.js"></script>
-    
+      <button id="btnEliminar" class="boton font-display" type="button"
+        style="font-size: 14px; width: 190px; height: 42px; opacity: 0.6;" disabled>
+        Eliminar
+      </button>
+
+      <form action="menu.html" method="get" style="margin:0;">
+        <button class="boton font-display" type="submit" style="font-size: 14px; width: 190px; height: 42px;">
+          Volver al Menu
+        </button>
+      </form>
+
+    </div>
+  </section>
+
+  <!-- ===== MODAL ELIMINAR (afuera del section, al final del body) ===== -->
+  <div id="modalEliminar" class="modal-overlay oculto">
+    <div class="modal-box">
+      <h2 id="modalEliminarTexto">¿Desea eliminar la partida?</h2>
+
+      <div class="modal-buttons">
+        <button id="btnEliminarSi" class="boton font-display">SI</button>
+        <button id="btnEliminarNo" class="boton font-display">NO</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/help.js"></script>
+  <script>
+    Help.init({
+      title: "Ayuda - Cargar Partida",
+      items: [
+        "Selecciona la partida que quieras cargar.",
+        "Espera a que el otro jugador también cargue la partida.",
+        "Recuerda que aparecen partidas previamente guardadas.",
+        "Puedes eliminar partidas guardadas."
+      ]
+    });
+  </script>
+
+  <script src="../js/cargar_partida.js"></script>
 </body>
 
 </html>
