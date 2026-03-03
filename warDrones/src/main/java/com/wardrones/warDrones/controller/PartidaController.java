@@ -253,4 +253,14 @@ public class PartidaController {
         return ResponseEntity.ok().build();
     }
 
+     @PostMapping("/cerrarPartida/{partidaId}")
+    public ResponseEntity<?> cerrarPartida(@PathVariable int partidaId) {
+        System.out.println("Cerrando partida con ID: " + partidaId);
+        GameSession gs = pService.cerrarPartida(partidaId);
+
+        if (gs == null) {
+            return ResponseEntity.badRequest().body("{\"success\": false, \"error\": \"No se pudo obtener la sesion\"}");
+        }
+        return ResponseEntity.ok().body("{\"success\": true, \"mensaje\": \"Partida cerrada correctamente\"}");
+    }
 }

@@ -69,6 +69,7 @@ public class LobbyNotifier {
                 emitter.send(SseEmitter.event()
                 .name("partida-ganada")
                 .data(new AccionData(ganadorId, partidaId), MediaType.APPLICATION_JSON));
+                System.out.println("gandorId: " + ganadorId);
             } catch (IOException e) {
                 emitters.remove(usuarioId);
             }

@@ -169,6 +169,13 @@ async function cerrarPartida() {
     console.log("Cerrar partida. partidaId:", partidaId);
     if (!partidaId) return;
 
+    try{
+        const res = await api.cerrarPartida(partidaId);
+        console.log('Respuesta cerrar:', res.status, res.statusText)
+    }catch(error){
+        console.error("Error cerrando la partida.", error);
+    }
+
     cerrarMensajeVictoria();
     window.location.href = 'menu.html';
 }
@@ -322,10 +329,12 @@ if (usuarioId && currentPartidaId) {
         }
     });
 
-     eventSource.addEventListener("partida-ganada", (event) => {
+    eventSource.addEventListener("partida-ganada", (event) => {
         const data = JSON.parse(event.data);
-        const gid = String(data.usuarioId);
+        const gid = String(data.jugadorId);
         const pid = String(data.partidaId);
+
+        console.log("gid: " + gid)
         if (pid === String(currentPartidaId)) {
            abrirModalVictoria();
            mostrarGanador(gid);
@@ -425,7 +434,9 @@ if (usuarioId && currentPartidaId) {
         if (info) {
             let changed = false;
             getAllDrones(info.drones);
+            hydratePortadronesFromServer(info.portadrones)
             drawRivalDrones();
+            drawPortaDrones();
             turnoActual = info.turnoActual;  // Actualizar turnoActual
             actualizarEstadoTurno();
         }
@@ -584,7 +595,7 @@ if (usuarioId && currentPartidaId) {
             if (isInsidePortaArea(x, y, getEnemyPorta())) {
                 objetivoId = 0;
             } else {
-                const targetIndex = dronesRivales.findIndex(d => d.deployed && d.x === x && d.y === y);
+                const targetIndex = dronesRivales.findIndex(d => d.deployed && d.x === x && d.y === y && d.vida > 0);
                 if (targetIndex >= 0) {
                     if (dronesRivales[targetIndex].vida > 0) 
                         objetivoId = dronesRivales[targetIndex].id;

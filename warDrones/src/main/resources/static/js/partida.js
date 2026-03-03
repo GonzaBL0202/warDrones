@@ -76,8 +76,8 @@ let rivalSpriteFrameCount = 1;
 let rivalSpriteFrameSize = 0;
 let portaDronNavalReady = false;
 let portaDronAereoReady = false;
-const portaDronNaval = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#4ec5ff', nombre: 'Porta Dron Naval', estado: true };
-const portaDronAereo = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#ffd166', nombre: 'Porta Dron Aereo', estado: true };
+const portaDronNaval = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#4ec5ff', nombre: 'Porta Dron Naval', vida: 3, estado: true };
+const portaDronAereo = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#ffd166', nombre: 'Porta Dron Aereo', vida: 6, estado: true };
 
 /* Cuando carga la imagen, calcula tamaï¿½o y numero de frames */
 droneSprite.onload = () => {
@@ -171,7 +171,8 @@ function hydratePortadronesFromServer(portadrones) {
         const target = porta.tipo === 'NAVAL' ? portaDronNaval : portaDronAereo;
         target.x = porta.posicionX;
         target.y = porta.posicionY;
-        target.estado = porta.estado; 
+        target.vida = porta.vida
+        target.estado = porta.vida > 0 ? true : false; 
     });
     portadronesHydrated = true;
 }
@@ -265,14 +266,25 @@ function mostrarGanador(ganadorId) {
     if (!lbl) return; // evita error si aún no existe en DOM
 
     let bando;
+    console.log("GanadorId: " + ganadorId);
+    console.log("Usuario actual: " + getId());
+    console.log("Bando: " + bandoSeleccionado)
 
-    if (ganadorId === currentUserId) {
+    if (ganadorId == getId()) {
         bando = bandoSeleccionado;
+        console.log("Soy usuario ganador, se carga mi bando: " + bando);
     } else {
         bando = (bandoSeleccionado === "NAVAL") ? "AEREO" : "NAVAL";
+        console.log("Soy usuario perdedor, se carga el bando rival: " + bando + ", mi bando era:" + bandoSeleccionado);
     }
 
-    lbl.textContent = `BANDO: ${bando}`;
+    lbl.textContent = `BANDO GANADOR: ${bando}`;
+    console.log("Bando ganador final: " + bando);
+}
+
+ function getId() {
+    const id = localStorage.getItem('userId');
+    return id ? parseInt(id) : null;
 }
 
 /* Actualiza textos del panel y reconstruye la lista de drones clickeables */
@@ -503,8 +515,8 @@ function validaPosicionPorta(x, y) {
 }
 
 function isPosicionOcupada(x, y) {
-    const occupiedByOwnDrones = drones.some((d) => d.deployed && d.x === x && d.y === y);
-    const occupiedByRivalDrones = dronesRivales.some((d) => d.deployed && d.x === x && d.y === y);
+    const occupiedByOwnDrones = drones.some((d) => d.deployed && d.x === x && d.y === y && d.vida > 0);
+    const occupiedByRivalDrones = dronesRivales.some((d) => d.deployed && d.x === x && d.y === y && d.vida > 0);
     const occupiedByPorta = isInsideAnyPorta(x, y);
     return occupiedByOwnDrones || occupiedByRivalDrones || occupiedByPorta;
 }
@@ -582,7 +594,7 @@ function drawSinglePortaDron(porta, sprite, spriteReady, isSelected) {
     const sizePx = porta.size * cellSize;
 
      // si está muerto no se dibuja
-    if (porta.estado = false) {
+    if (!porta.estado) {
         markCellDiscovered(porta.x, porta.y);
         markCellDiscovered(porta.x+1, porta.y);
         markCellDiscovered(porta.x, porta.y+1);

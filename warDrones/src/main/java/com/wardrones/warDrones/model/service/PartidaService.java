@@ -83,6 +83,26 @@ public class PartidaService {
         return pRepository.save(game);
     }
 
+    public GameSession cerrarPartida(int partidaId){
+         try {
+            GameSession gs = gameSManager.obtenerSesion(partidaId);
+            if (gs == null) {
+                throw new RuntimeException("Sesion no encontrada");
+            }
+            gs.setUsuariosCerrados(gs.getUsuariosCerrados()+1);
+
+            if(gs.getUsuariosCerrados() == 2){
+                // Cerrar sesión en memoria
+                System.out.println("Cerramos la sesion de la partida en memoria");
+                gameSManager.cerrarSesion(partidaId);
+            }
+            return gs;
+
+         } catch (IllegalStateException e) {
+            return null;
+        }
+    }
+
     public GameSession iniciarPartida(int partidaId) {
         System.out.println("Intentando iniciar partida con ID: " + partidaId);
         Partida partida = pRepository.findById(partidaId).orElseThrow(() -> new RuntimeException("Partida not found"));
@@ -331,7 +351,7 @@ public class PartidaService {
         }
     }
 
-      // ------------Abandono de partida -----------
+      // ------------Victoria de partida -----------
     @Transactional
     public void ganarPartida(int partidaId, int usuarioId) {
         Partida partida = pRepository.findById(partidaId).orElseThrow(
@@ -365,10 +385,7 @@ public class PartidaService {
         partida.setPartidaEstado(Estado.FINALIZADA);
         pRepository.save(partida);
 
-        // Cerrar sesión en memoria
-        // gameSManager.cerrarSesion(partidaId);
-
-        // Aviso a ambos jugadores que la partida ha finalizado al renunciar uno
+        // Aviso a ambos jugadores que la partida ha finalizado al ganar uno
         try {
             lobbyNotifier.notifyPartidaGanada(partida.getUsuarioId1().getId(), partidaId, ganador.getId());
         } catch (Exception e) {

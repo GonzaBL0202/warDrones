@@ -35,5 +35,6 @@ window.PartidaApi = {
     renunciarPartida: (partidaId, usuarioId) =>
   put(`/partida/renunciar/${partidaId}?usuarioId=${encodeURIComponent(usuarioId)}`),
     guardarPartida: (partidaId, discovered) => putJson(`/partida/guardar/${partidaId}`, { discovered }),
-    lobbyEventSource: (usuarioId) => new EventSource(`${API_URL}/lobby/connect?usuarioId=${encodeURIComponent(usuarioId)}`)
+    lobbyEventSource: (usuarioId) => new EventSource(`${API_URL}/lobby/connect?usuarioId=${encodeURIComponent(usuarioId)}`),
+    cerrarPartida: (partidaId) => postJson(`/cerrarPartida/${partidaId}`)
 };
