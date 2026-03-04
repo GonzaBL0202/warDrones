@@ -147,6 +147,14 @@ function cerrarMensajeVictoria() {
     document.getElementById('modalVictoria').classList.remove('active');
 }
 
+function abrirMensajeAviso(){
+    document.getElementById('modalAvisos').classList.add('active');
+}
+
+function cerrarMensajeAviso() {
+    document.getElementById('modalAvisos').classList.remove('active');
+}
+
 async function abandonarPartida() {
     const partidaId = localStorage.getItem("partidaId");
     console.log("Abandonar partida. partidaId:", partidaId);
@@ -184,21 +192,22 @@ async function cerrarPartida() {
 
 async function guardarPartida() {
     const partidaId = localStorage.getItem("partidaId");
-    const userId = localStorage.getItem("userId");
-    console.log("Guardar partida. partidaId:", partidaId, "userId:", userId);
-    if (!partidaId || !userId) return;
+    uGuardador = true;
+    console.log("Guardar partida. partidaId:", partidaId);
+    if (!partidaId) return;
 
     try {
-        // convert the booleans matrix to JSON string; the API will store it directly
-        const fogJson = JSON.stringify(discovered);
-        const res = await api.guardarPartida(partidaId, userId, fogJson);
+        const res = await api.guardarPartida(partidaId);
         console.log('Respuesta guardar:', res.status, res.statusText);
     } catch (error) {
         console.error("Error guardando partida:", error);
         return;
     }
+}
 
-    cerrarModalSalir();
+async function salirPartida(){
+    cerrarMensajeVictoria();
+    cerrarMensajeAviso();
     window.location.href = 'menu.html';
 }
 
@@ -208,7 +217,7 @@ document.getElementById("btnSalir")?.addEventListener("click", abrirModalSalir);
 //Botones del modal
 document.getElementById("btnConfirmarSalir")?.addEventListener("click", abandonarPartida);
 document.getElementById("btnCerrarPartida")?.addEventListener("click", cerrarPartida);
-
+document.getElementById("btnSalirPartida")?.addEventListener("click", salirPartida)
 
 document.getElementById("btnGuardar")?.addEventListener("click", guardarPartida);
 
@@ -328,7 +337,10 @@ if (usuarioId && currentPartidaId) {
         const pid = String(event.data);
         if (pid === String(currentPartidaId)) {
             eventSource.close();
-            window.location.href = "menu.html";
+            // En vez de quitarte te muestra el mensaje
+            abrirModalVictoria();
+            mostrarGanador(getId());
+            // window.location.href = "menu.html";
         }
     });
 
@@ -400,10 +412,26 @@ if (usuarioId && currentPartidaId) {
 
     eventSource.addEventListener("partida-guardada", (event) => {
         const pid = String(event.data);
-        if (pid === String(currentPartidaId)) {
+        if (pid === String(currentPartidaId))
+            guardarDiscovered();
+
+        if(!uGuardador){
+            abrirMensajeAviso();
+            mostrarAviso("El usuario rival a guardado la partida");
+        }
+        else{
             window.location.href = "menu.html";
         }
     });
+
+    async function guardarDiscovered(){
+        try{
+            let fogJson = JSON.stringify(discovered);
+            const res = await api.guardarDiscovered(currentPartidaId, getId(), fogJson);
+        }catch(error){
+            console.error("Error guardando discovered:", error);
+        }
+    }
 
     eventSource.onerror = (error) => {
         console.warn("SSE cerrado/error:", error);

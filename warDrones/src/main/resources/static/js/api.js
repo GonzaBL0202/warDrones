@@ -32,11 +32,10 @@ window.PartidaApi = {
     moverPortadron: (payload) => postJson('/moverPortadron', payload),
     atacarDronOPorta: (payload) => postJson('/atacarDronOPorta', payload),
     recargarDron: (payload) => postJson('/recargarDron', payload),
-    renunciarPartida: (partidaId, usuarioId) =>
-        put(`/partida/renunciar/${partidaId}?usuarioId=${encodeURIComponent(usuarioId)}`),
-    guardarPartida: (partidaId, usuarioId, discovered) =>
-        putJson(`/partida/guardar/${partidaId}?usuarioId=${encodeURIComponent(usuarioId)}`, { discovered }),
+    renunciarPartida: (partidaId, usuarioId) => put(`/partida/renunciar/${partidaId}?usuarioId=${encodeURIComponent(usuarioId)}`),
+    guardarPartida: (partidaId) => putJson(`/partida/guardar/${partidaId}`),
     lobbyEventSource: (usuarioId) => new EventSource(`${API_URL}/lobby/connect?usuarioId=${encodeURIComponent(usuarioId)}`),
     obtenerFog: (partidaId, usuarioId) => fetch(`${API_URL}/partida/fog/${partidaId}?usuarioId=${encodeURIComponent(usuarioId)}`),
-    cerrarPartida: (partidaId) => postJson(`/cerrarPartida/${partidaId}`)
+    cerrarPartida: (partidaId) => postJson(`/cerrarPartida/${partidaId}`),
+    guardarDiscovered: (partidaId, usuarioId, discovered) => putJson(`/partida/guardarDiscovered/${partidaId}?usuarioId=${encodeURIComponent(usuarioId)}`, { discovered }),
 };

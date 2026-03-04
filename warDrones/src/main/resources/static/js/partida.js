@@ -25,6 +25,7 @@ const attackBtn = document.getElementById('attackBtn');
 const reloadBtn = document.getElementById('reloadBtn');
 
 const bandoGanador = document.getElementById('lblGanador');
+const msjAviso = document.getElementById('lblAviso');
 
 /* Modos de acciÃ³n activados por botones */
 let isMoveMode = false;      // espera click para mover dron activo
@@ -50,6 +51,7 @@ let bandoSeleccionado = ((query.get('bando') || 'aereo').toUpperCase() === 'NAVA
 
 let ganador = null;
 let fin = null;
+let uGuardador = false;
 
 /* Estado global de la partida */
 let cols = 0; /* Cantidad de columnas del mapa */
@@ -280,6 +282,18 @@ function mostrarGanador(ganadorId) {
 
     lbl.textContent = `BANDO GANADOR: ${bando}`;
     console.log("Bando ganador final: " + bando);
+}
+
+function getId() {
+    const id = localStorage.getItem('userId');
+    return id ? parseInt(id) : null;
+}
+
+function mostrarAviso(msj) {
+    const lbl = document.getElementById('lblAviso');
+    if (!lbl) return; // evita error si aún no existe en DOM
+
+    lbl.textContent = msj;
 }
 
  function getId() {
