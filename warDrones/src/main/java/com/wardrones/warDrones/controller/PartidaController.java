@@ -199,9 +199,10 @@ public class PartidaController {
     @PutMapping("/partida/guardar/{partidaId}")
     public ResponseEntity<?> guardar(
             @PathVariable int partidaId,
+            @RequestParam int usuarioId,
             @org.springframework.web.bind.annotation.RequestBody
                     com.wardrones.warDrones.model.dto.request.NieblaDescubiertaRequest body) {
-        pService.guardarPartida(partidaId, body.getNieblaDescubierta());
+        pService.guardarPartida(partidaId, usuarioId, body.getNieblaDescubierta());
         return ResponseEntity.ok().build();
     }
 
@@ -218,9 +219,10 @@ public class PartidaController {
     }
 
     // expose stored fog string so client can reconstruct without touching session
+    // usuarioId is required so we can return the correct player's copy
     @GetMapping("/partida/fog/{partidaId}")
-    public String fog(@PathVariable int partidaId) {
-        return pService.obtenerNieblaDescubierta(partidaId);
+    public String fog(@PathVariable int partidaId, @RequestParam int usuarioId) {
+        return pService.obtenerNieblaDescubierta(partidaId, usuarioId);
     }
     
     @PutMapping("/partida/reanudar/unirse/{partidaId}")

@@ -84,7 +84,9 @@ async function obtenerPartidaInfo() {
 async function cargarNieblaDescubierta() {
     try {
         const partidaId = localStorage.getItem('partidaId');
-        const res = await fetch(`${API_URL}/partida/fog/${partidaId}`);
+        const userId = localStorage.getItem('userId');
+        if (!userId) return;
+        const res = await fetch(`${API_URL}/partida/fog/${partidaId}?usuarioId=${encodeURIComponent(userId)}`);
         if (res.ok) {
             const fog = await res.json();
             if (fog) {
@@ -182,13 +184,14 @@ async function cerrarPartida() {
 
 async function guardarPartida() {
     const partidaId = localStorage.getItem("partidaId");
-    console.log("Guardar partida. partidaId:", partidaId);
-    if (!partidaId) return;
+    const userId = localStorage.getItem("userId");
+    console.log("Guardar partida. partidaId:", partidaId, "userId:", userId);
+    if (!partidaId || !userId) return;
 
     try {
         // convert the booleans matrix to JSON string; the API will store it directly
         const fogJson = JSON.stringify(discovered);
-        const res = await api.guardarPartida(partidaId, fogJson);
+        const res = await api.guardarPartida(partidaId, userId, fogJson);
         console.log('Respuesta guardar:', res.status, res.statusText);
     } catch (error) {
         console.error("Error guardando partida:", error);
@@ -245,7 +248,7 @@ async function inicializarPartida() {
         console.log('Info de partida devuelta por el servidor:', info);
 
         // cargar niebla previamente guardada (si existe)
-        /* await cargarNieblaDescubierta();*/
+        await cargarNieblaDescubierta();
 
         // si la respuesta indica bandos asignados pero los valores son nulos/indefinidos,
         // forzamos la bandera a false para que el usuario pueda volver a elegir.

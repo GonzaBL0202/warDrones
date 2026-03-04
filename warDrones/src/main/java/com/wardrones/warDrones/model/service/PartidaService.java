@@ -397,12 +397,39 @@ public class PartidaService {
         }
     }
 
-      @Transactional
-    public void guardarPartida(int partidaId, String discoveredJson) {
+      // helper used internally to map a usuarioId -> portadron record
+    private Portadron resolvePortadronForUsuario(Partida partida, int usuarioId) {
+        if (partida == null) {
+            throw new RuntimeException("Partida no encontrada");
+        }
+        Integer u1 = partida.getUsuarioId1() != null ? partida.getUsuarioId1().getId() : null;
+        Integer u2 = partida.getUsuarioId2() != null ? partida.getUsuarioId2().getId() : null;
+        com.wardrones.warDrones.model.enums.Bando bando;
+        if (u1 != null && u1 == usuarioId) {
+            bando = partida.getBando1();
+        } else if (u2 != null && u2 == usuarioId) {
+            bando = partida.getBando2();
+        } else {
+            throw new RuntimeException("El usuario no pertenece a la partida");
+        }
+        return pdRepository.findByPartidaIdAndTipo(partida.getPartidaId(), bando)
+                .orElseThrow(() -> new RuntimeException("Portadron no encontrado para el usuario"));
+    }
+
+    @Transactional
+    public void guardarPartida(int partidaId, int usuarioId, String discoveredJson) {
+        System.out.println("[PartidaService] guardarPartida called partidaId=" + partidaId + " usuarioId=" + usuarioId + " fogLen=" + (discoveredJson==null?0:discoveredJson.length()));
         Partida partida = pRepository.findById(partidaId).orElseThrow(
                 () -> new RuntimeException("Partida no encontrada")
         );
-        partida.setNieblaDescubierta(discoveredJson);
+
+        // store fog on the appropriate portadron (each player has separate fog)
+        Portadron porta = resolvePortadronForUsuario(partida, usuarioId);
+        System.out.println("[PartidaService] resolved portadron id=" + porta.getId() + " tipo=" + porta.getTipo() );
+        porta.setDiscovered(discoveredJson);
+        pdRepository.save(porta);
+
+        // mark partida as saved; only fog per-portadron is stored now
         partida.setPartidaEstado(Estado.GUARDADA);
         pRepository.save(partida);
 
@@ -463,17 +490,25 @@ public class PartidaService {
         }
     }
 
+
     public List<Partida> obtenerPartidasReanudables(int usuarioId) {
         return pRepository.buscarPartidasReanudables(usuarioId);
     }
 
     /**
      * Returns the serialized fog-of-war matrix previously saved, or null if none.
+     * (legacy: read from partida table)
      */
-    public String obtenerNieblaDescubierta(int partidaId) {
-        return pRepository.findById(partidaId)
-                .map(Partida::getNieblaDescubierta)
-                .orElse(null);
+
+    /**
+     * User-specific fog.  Requires the requesting usuarioId so we can look up the
+     * correct portadron row.  Returns null if nothing saved yet.
+     */
+    public String obtenerNieblaDescubierta(int partidaId, int usuarioId) {
+        Partida partida = pRepository.findById(partidaId)
+                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+        Portadron porta = resolvePortadronForUsuario(partida, usuarioId);
+        return porta.getDiscovered();
     }
 
     @Transactional
@@ -525,9 +560,6 @@ public class PartidaService {
 
         PortadronState portaNaval = gs.getPortadronNaval();
         PortadronState portaAereo = gs.getPortadronAereo();
-
-        boolean finalizada = gs.getEstado() == Estado.FINALIZADA;
-
 
         List<ObtenerPartidaInfoResponse.PortadronInfo> portadrones = new ArrayList<>();
         if (portaNaval != null) {

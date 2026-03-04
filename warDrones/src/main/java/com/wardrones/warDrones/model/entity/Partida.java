@@ -38,9 +38,12 @@ public class Partida {
     @Enumerated(EnumType.STRING)
     private Estado partidaEstado;
 
-    //matriz de niebla de guerra serialized as JSON (rows×cols boolean grid) 
-    @jakarta.persistence.Column(columnDefinition = "TEXT")
-    private String discovered;
+    //matriz de niebla de guerra serialized as JSON (rows×cols boolean grid)
+    // legacy: previously stored a single fog matrix for both players. new code
+    // persists per-portadron and no longer relies on this field.
+    // @Deprecated
+    // @jakarta.persistence.Column(columnDefinition = "TEXT")
+    // private String discovered;
 
     //private boolean partidaActiva;
 
@@ -83,14 +86,16 @@ public class Partida {
         return partidaEstado;
     }
 
-    // getter / setter for fog string
-    public String getNieblaDescubierta() {
-        return discovered;
-    }
+    // getter / setter for fog string (legacy) - prefer portadron.discovered
+    // @Deprecated
+    // public String getNieblaDescubierta() {
+    //     return discovered;
+    // }
 
-    public void setNieblaDescubierta(String discovered) {
-        this.discovered = discovered;
-    }
+    // @Deprecated
+    // public void setNieblaDescubierta(String discovered) {
+    //     this.discovered = discovered;
+    // }
 
     //Setters
     public void setUsuario2(Usuario u2){
