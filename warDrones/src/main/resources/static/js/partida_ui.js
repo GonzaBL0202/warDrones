@@ -182,7 +182,9 @@ async function cerrarPartida() {
     window.location.href = 'menu.html';
 }
 
-async function guardarPartida() {
+// si skipRedirect=true, la función no hará la navegación final; el llamador
+// puede decidir qué hacer (útil cuando se invoca desde un evento SSE).
+async function guardarPartida(skipRedirect = false) {
     const partidaId = localStorage.getItem("partidaId");
     const userId = localStorage.getItem("userId");
     console.log("Guardar partida. partidaId:", partidaId, "userId:", userId);
@@ -195,11 +197,19 @@ async function guardarPartida() {
         console.log('Respuesta guardar:', res.status, res.statusText);
     } catch (error) {
         console.error("Error guardando partida:", error);
+        // si ocurre un error no redirigimos automáticamente, permitimos al llamador
+        // decidir qué hacer (la UI ya muestra el mensaje en consola).
+        if (!skipRedirect) {
+            cerrarModalSalir();
+            window.location.href = 'menu.html';
+        }
         return;
     }
 
-    cerrarModalSalir();
-    window.location.href = 'menu.html';
+    if (!skipRedirect) {
+        cerrarModalSalir();
+        window.location.href = 'menu.html';
+    }
 }
 
 //boton que abre el modal
@@ -248,7 +258,8 @@ async function inicializarPartida() {
         console.log('Info de partida devuelta por el servidor:', info);
 
         // cargar niebla previamente guardada (si existe)
-        await cargarNieblaDescubierta();
+        if (!info.esNueva)
+            await cargarNieblaDescubierta();
 
         // si la respuesta indica bandos asignados pero los valores son nulos/indefinidos,
         // forzamos la bandera a false para que el usuario pueda volver a elegir.
@@ -388,9 +399,9 @@ if (usuarioId && currentPartidaId) {
     
     /*Evento que se dispara al realizar una accion se le avisa al otro usuario para actualizar data*/
     eventSource.addEventListener("accion-realizada", (event) => {
-        /*cargo partida id y usuarioid*/
+        /*cargo partida id y jugadorId (la clase JSON usa ese nombre)*/
         const data = JSON.parse(event.data);
-        const uid = String(data.usuarioId);
+        const uid = String(data.jugadorId);
         const pid = String(data.partidaId);
         if (pid === String(currentPartidaId) && uid !== String(getId())) {
             console.log("Actualiza info");
@@ -398,10 +409,31 @@ if (usuarioId && currentPartidaId) {
         }
     });
 
-    eventSource.addEventListener("partida-guardada", (event) => {
-        const pid = String(event.data);
-        if (pid === String(currentPartidaId)) {
-            window.location.href = "menu.html";
+    eventSource.addEventListener("partida-guardada", async (event) => {
+        try {
+            // payload is now an object { jugadorId, partidaId }
+            const data = JSON.parse(event.data);
+            const pid = String(data.partidaId || data); // fall back for old format
+            const initiator = String(data.jugadorId || data.usuarioId);
+
+            if (pid === String(currentPartidaId)) {
+                // if the other player triggered save, send our fog too before leaving
+                if (initiator !== String(getId())) {
+                    console.log('Evento partida-guardada recibido de otro jugador, guardando mi niebla local.');
+                    setupHint.textContent = 'Guardando antes de salir...';
+                    await guardarPartida(true); // no redirect inside
+                    window.location.href = "menu.html"; // redirect independientemente del resultado
+                } else {
+                    // we initiated the save ourselves, simplemente salir
+                    window.location.href = "menu.html";
+                }
+            }
+        } catch (err) {
+            console.error('Error procesando evento partida-guardada:', err);
+            // fallback to simple redirect
+            if (String(event.data) === String(currentPartidaId)) {
+                window.location.href = "menu.html";
+            }
         }
     });
 

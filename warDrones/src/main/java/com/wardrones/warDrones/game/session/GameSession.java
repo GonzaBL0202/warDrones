@@ -25,6 +25,7 @@ public class GameSession {
     private int jugadorEnTurno;
     private Estado estado;
     private int ganadorId;
+    private boolean esNueva;
 
     //asignacion de portadrones
     private PortadronState PortadronNaval;
@@ -468,5 +469,12 @@ public class GameSession {
     }
 
 
+    public boolean getEsNueva() {
+        return esNueva;
+    }
+
+    public void setEsNueva(boolean nueva) {
+        this.esNueva=nueva;
+    }
 }
 

@@ -548,6 +548,8 @@ public class PartidaService {
             throw new RuntimeException("Sesión de partida no encontrada");
         }
 
+        boolean esNueva = gs.getEsNueva();
+
         int usuario1Id = gs.getJugador1Id();
         int usuario2Id = gs.getJugador2Id();
 
@@ -637,6 +639,7 @@ public class PartidaService {
                 turnoActual,
                 fin,
                 gs.getGanadorId(),
+                esNueva,
                 drones,
                 portadrones);
     }

@@ -80,10 +80,11 @@ public class LobbyNotifier {
         SseEmitter emitter = emitters.get(usuarioId);
         if (emitter != null) {
             try {
+                // send both usuarioId and partidaId so clients know who triggered the save
                 emitter.send(
                     SseEmitter.event()
                     .name("partida-guardada")
-                    .data(partidaId));
+                    .data(new AccionData(usuarioId, partidaId), MediaType.APPLICATION_JSON));
             } catch (IOException e) {
                 emitters.remove(usuarioId);
             }
