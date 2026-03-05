@@ -1,36 +1,53 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
+    <link rel="stylesheet" href="css/help.css">
+    <meta charset="UTF-8">
     <title>Inicio de Sesion</title>
+
     <link rel="stylesheet" href="css/fondo.css">
     <link rel="stylesheet" href="css/botom.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Jacquard+12&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/fuente.css">
+
+    <!-- Fuente global -->
+    <link rel="stylesheet" href="css/fuente.css">
 </head>
 
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0;">
+
     <section
         style="background-image: url('img/gold_panel_8x.png'); background-size: 100% 100%; background-repeat: no-repeat; padding: 56px 48px; min-width: 320px; display: flex; flex-direction: column; align-items: center;">
-        <h1 class="jacquard-12-regular" style="margin: 0 0 16px 0;">
-            Inicio de Sesion
+
+        <h1 class="font-display" style="margin: 0 0 16px 0;">
+            Inicio de Sesión
         </h1>
 
         <form id="loginForm" style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-            <input class="texto" type="text" id="username" name="username" placeholder="Usuario"
+
+            <input class="texto font-text" type="text" id="username" name="username" placeholder="Usuario"
                 style="padding: 8px; width: 200px;" required
                 oninvalid="this.setCustomValidity('Debes ingresar un usuario.')" oninput="this.setCustomValidity('')">
-            <button class="boton" type="submit" style="font-size: 16px;">
-                <span class="jacquard-12-regular">
-                    Iniciar
-                </span>
-            </button>
-        </form>
 
+            <button class="boton font-display" type="submit" style="font-size: 15px;">
+                Iniciar
+            </button>
+
+        </form>
     </section>
+
+    <script src="../js/help.js"></script>
     <script src="js/index.js"></script>
+
+    <script>
+        Help.init({
+            title: "Ayuda - Inicio",
+            items: [
+                "Ingresá tu usuario y presioná Iniciar.",
+                "Si no te deja entrar, revisá que el nombre no esté vacío."
+            ]
+        });
+    </script>
+
 </body>
 
 </html>

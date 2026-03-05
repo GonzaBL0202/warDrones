@@ -13,7 +13,7 @@ import com.wardrones.warDrones.model.entity.Portadron;
 import com.wardrones.warDrones.model.enums.Bando;
 import com.wardrones.warDrones.model.enums.Estado;  
 
-//GameSession: Es utilizado para manejar en mememoria el estado de la partida (turnos,estado,drones,etc...)
+//GameSession: Es utilizado para manejar en memoria el estado de la partida (turnos,estado,drones,etc...)
 
 public class GameSession {
 
@@ -24,6 +24,8 @@ public class GameSession {
     private Bando jugador2Bando;
     private int jugadorEnTurno;
     private Estado estado;
+    private int ganadorId;
+    private boolean esNueva;
 
     //asignacion de portadrones
     private PortadronState PortadronNaval;
@@ -37,13 +39,32 @@ public class GameSession {
     private final int largoMapa = 20;
 
     private int bandosDesplegados = 0; 
+    private int usuariosCerrados = 0;
 
+    public GameSession(){}
+    
     public GameSession(Partida par){
         partidaId = par.getPartidaId();
         jugador1Id = par.getUsuarioId1().getId();
         jugador2Id = par.getUsuarioId2().getId();
         jugadorEnTurno = par.getUsuarioId1().getId();
         estado = par.getPartidaEstado();
+    }
+
+    public GameSession recuperarSesion(Partida par){
+        GameSession gs = new GameSession();
+        gs.partidaId = par.getPartidaId();
+        gs.jugador1Id = par.getUsuarioId1().getId();
+        gs.jugador2Id = par.getUsuarioId2().getId();
+        gs.jugadorEnTurno = par.getUsuarioId1().getId();
+        gs.estado = par.getPartidaEstado();
+        gs.esNueva = false;
+        gs.jugador1Bando = par.getBando1();
+        gs.jugador2Bando = par.getBando2();
+        gs.bandosDesplegados = 2;
+        gs.usuariosCerrados = 0;
+
+        return gs;
     }
 
     //funciones
@@ -125,6 +146,7 @@ public class GameSession {
         DronState dronA = drones.get(dronAtaId);
         DronState dronB = drones.get(dronObjId);
 
+
         if (dronA ==null) 
             throw new IllegalArgumentException("Dron atacante inexistente");
         else if (dronB==null)
@@ -134,7 +156,6 @@ public class GameSession {
             throw new IllegalArgumentException("El dron atacante no pertenece a ningún portadron");
         else if (!PortadronNaval.getListadoDronesIds().contains(dronObjId) && !PortadronAereo.getListadoDronesIds().contains(dronObjId))
             throw new IllegalArgumentException("El dron objetivo no pertenece a ningún portadron");
-
 
         //reduce la municion del dron atacante
         if(dronA.getMunicion()==0)
@@ -148,6 +169,40 @@ public class GameSession {
         else {
             dronB.setVida(0);
             dronB.setEstado(false);
+        }
+
+        boolean vivo = false;
+        if(PortadronAereo.getListadoDronesIds().contains(dronObjId)){
+            System.out.println("Listado de aereos:");
+            for(int id : PortadronAereo.getListadoDronesIds()){
+               DronState dron = drones.get(id);
+               System.out.println("Dron, id: " + dron.getId() + ",vida: " + dron.getVida() );
+               if (dron.getVida() > 0){
+                    System.out.println("Vivo true");
+                    vivo = true;
+                    break;
+               }
+            }
+        }
+        else{
+            System.out.println("Listado de navales:");
+            for(int id : PortadronNaval.getListadoDronesIds()){
+                DronState dron = drones.get(id);
+                System.out.println("Dron, id: " + dron.getId() + ",vida: " + dron.getVida() );
+                if (dron.getVida() > 0){
+                    System.out.println("Vivo true");
+                    vivo = true;
+                    break;
+                }
+            }
+        }
+
+        System.out.println("Vivo: " + vivo);
+        if (!vivo){
+            System.out.println("Vivo falze, partida finalizada");
+            this.estado = Estado.FINALIZADA;
+            this.ganadorId = usuarioId;
+            System.out.println("Seteo de ganador: " + this.ganadorId);
         }
 
     }
@@ -206,8 +261,11 @@ public class GameSession {
                 throw new IllegalArgumentException("Portadron objetivo estaba muerto");
             else {
                 PortadronNaval.reducirVida();
-            if (PortadronNaval.getVida()==0)
-                PortadronNaval.setEstado(false);
+                if (PortadronNaval.getVida()==0){
+                    PortadronNaval.setEstado(false);
+                    this.estado =  Estado.FINALIZADA;
+                    this.ganadorId = usuarioId;
+                }
             }
 
         } else if (objPorta == 2) {//es aereo
@@ -215,8 +273,11 @@ public class GameSession {
                 throw new IllegalArgumentException("Portadron objetivo estaba muerto");
             else {
                 PortadronAereo.reducirVida();
-            if (PortadronAereo.getVida()==0)
-                PortadronAereo.setEstado(false);
+                if (PortadronAereo.getVida()==0){
+                    PortadronAereo.setEstado(false);
+                    this.estado =  Estado.FINALIZADA;
+                    this.ganadorId = usuarioId;
+                }
             }
 
         } else
@@ -404,5 +465,35 @@ public class GameSession {
             // no-op
         }
     }
+
+    public void setEstado(Estado est){
+        this.estado = est;
+    }
+
+    public void setGanadorId(int gan){
+        this.ganadorId = gan;
+    }
+
+    public int getGanadorId(){
+        return ganadorId;
+    }
+
+    public int getUsuariosCerrados(){
+        return usuariosCerrados;
+    }
+
+    public void setUsuariosCerrados(int uc){
+        this.usuariosCerrados = uc;
+    }
+
+    public boolean getEsNueva(){
+        return esNueva;
+    }
+
+    public void setEsNueva(boolean es){
+        this.esNueva = es;
+    }
+
+
 }
 

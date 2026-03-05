@@ -37,9 +37,14 @@ public class Usuario {
         return usuarioCantVictorias;
     }
 
+    public void sumarVictoria(){
+        this.usuarioCantVictorias++;
+    }
+
     //Funcion temporal
 
     public void setId(int id){
         this.usuarioId = id;
     }
+
 }

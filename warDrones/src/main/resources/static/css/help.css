@@ -1,0 +1,98 @@
+/* Overlay (click afuera para cerrar) */
+.help-overlay {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+.help-overlay.open {
+    display: block;
+}
+
+/* Botón ? (usa tu skin .boton) */
+.btn-help {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+
+    width: 34px;
+    height: 34px;
+    padding: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background-size: 100% 100%;
+    image-rendering: pixelated;
+
+    z-index: 1002;
+    /* arriba de todo */
+    font-size: 18px;
+    /* tamaño del ? */
+}
+
+/* Panel de ayuda: MISMO FORMATO que tu modal-content, pero en esquina */
+.help-panel {
+    display: none;
+    position: fixed;
+    z-index: 1002;
+
+    top: 58px;
+    right: 12px;
+
+    /* === TAMAÑO DEL CUADRO (EDITÁ ACÁ) === */
+    width: 260px;
+    /* ancho */
+    padding: 16px;
+    /* relleno */
+
+    background-color: #24323d;
+    border: 4px solid #6a4a1c;
+    border-radius: 8px;
+
+    text-align: left;
+    color: #fff;
+    /* IMPORTANTE: texto blanco */
+    font-family: inherit;
+}
+
+.help-panel.open {
+    display: block;
+}
+/* ========================= */
+/* FIX TIPOGRAFÍA HELP */
+/* ========================= */
+
+.help-panel h2 {
+    color: #fff;
+    margin: 0 0 10px 0;
+    font-size: 20px;   /* tamaño original */
+}
+
+.help-body {
+    font-size: 14px;
+    line-height: 1.25;
+    font-weight: 400;
+}
+
+.help-body ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.help-body li {
+    margin: 6px 0;
+}
+
+/* botón OK */
+.btn-ok {
+    width: 110px;
+    height: 30px;
+    font-size: 14px;
+}
