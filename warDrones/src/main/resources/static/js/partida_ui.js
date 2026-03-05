@@ -81,6 +81,27 @@ async function obtenerPartidaInfo() {
     }
 }
 
+async function cargarNieblaDescubierta() {
+    try {
+        const partidaId = localStorage.getItem('partidaId');
+        const userId = localStorage.getItem('userId');
+        if (!userId) return;
+        const res = await fetch(`${API_URL}/partida/fog/${partidaId}?usuarioId=${encodeURIComponent(userId)}`);
+        if (res.ok) {
+            let fog = [];
+            fog = await res.json();
+            if (fog) {
+                discovered = fog;
+                console.log("Discovered: ", discovered)
+                // drawRecoveredFog();
+                // drawScene(); // update display
+            }
+        }
+    } catch (err) {
+        console.error('Error cargando niebla descubierta:', err);
+    }
+}
+
 //-----------Actualizar Estado del Turno----------------
 function actualizarEstadoTurno() {
     /* Solo mostrar turno si el despliegue ha terminado (ambos bandos desplegados) */
@@ -121,13 +142,31 @@ function cerrarModalSalir() {
     document.getElementById('modalSalir').classList.remove('active');
 }
 
+function abrirModalVictoria(){
+    document.getElementById('modalVictoria').classList.add('active');
+}
+
+function cerrarMensajeVictoria() {
+    document.getElementById('modalVictoria').classList.remove('active');
+}
+
+function abrirMensajeAviso(){
+    document.getElementById('modalAvisos').classList.add('active');
+}
+
+function cerrarMensajeAviso() {
+    document.getElementById('modalAvisos').classList.remove('active');
+}
+
 async function abandonarPartida() {
     const partidaId = localStorage.getItem("partidaId");
     console.log("Abandonar partida. partidaId:", partidaId);
     if (!partidaId) return;
 
     try {
-        const res = await api.renunciarPartida(partidaId);
+        const userId = localStorage.getItem("userId");
+if (!userId) return;
+        const res = await api.renunciarPartida(partidaId, userId);
         console.log('Respuesta renunciar:', res.status, res.statusText);
     } catch (error) {
         console.error("Error abandonando partida:", error);
@@ -138,8 +177,25 @@ async function abandonarPartida() {
     window.location.href = 'menu.html';
 }
 
+async function cerrarPartida() {
+    const partidaId = localStorage.getItem("partidaId");
+    console.log("Cerrar partida. partidaId:", partidaId);
+    if (!partidaId) return;
+
+    try{
+        const res = await api.cerrarPartida(partidaId);
+        console.log('Respuesta cerrar:', res.status, res.statusText)
+    }catch(error){
+        console.error("Error cerrando la partida.", error);
+    }
+
+    cerrarMensajeVictoria();
+    window.location.href = 'menu.html';
+}
+
 async function guardarPartida() {
     const partidaId = localStorage.getItem("partidaId");
+    uGuardador = true;
     console.log("Guardar partida. partidaId:", partidaId);
     if (!partidaId) return;
 
@@ -150,8 +206,11 @@ async function guardarPartida() {
         console.error("Error guardando partida:", error);
         return;
     }
+}
 
-    cerrarModalSalir();
+async function salirPartida(){
+    cerrarMensajeVictoria();
+    cerrarMensajeAviso();
     window.location.href = 'menu.html';
 }
 
@@ -160,6 +219,8 @@ document.getElementById("btnSalir")?.addEventListener("click", abrirModalSalir);
 
 //Botones del modal
 document.getElementById("btnConfirmarSalir")?.addEventListener("click", abandonarPartida);
+document.getElementById("btnCerrarPartida")?.addEventListener("click", cerrarPartida);
+document.getElementById("btnSalirPartida")?.addEventListener("click", salirPartida)
 
 document.getElementById("btnGuardar")?.addEventListener("click", guardarPartida);
 
@@ -197,6 +258,10 @@ async function inicializarPartida() {
         bandosDesplegados = info.bandosDesplegados || 0;  // Extraer bandosDesplegados del servidor
 
         console.log('Info de partida devuelta por el servidor:', info);
+
+        // cargar niebla previamente guardada (si existe)
+        if (!info.esNueva)
+            await cargarNieblaDescubierta();
 
         // si la respuesta indica bandos asignados pero los valores son nulos/indefinidos,
         // forzamos la bandera a false para que el usuario pueda volver a elegir.
@@ -238,7 +303,8 @@ async function inicializarPartida() {
 
         /* Solo revelar columnas iniciales si los bandos estÃ¡n confirmados */
         if (bandasAsignadas) {
-            discovered = Array.from({ length: rows }, () => Array(cols).fill(false));
+            if(!discovered.length > 0)
+                discovered = Array.from({ length: rows }, () => Array(cols).fill(false));
             revealStartColumnsByBando();
             revealAroundActiveDrone();
             updateInfoPanel();
@@ -276,9 +342,25 @@ if (usuarioId && currentPartidaId) {
         const pid = String(event.data);
         if (pid === String(currentPartidaId)) {
             eventSource.close();
-            window.location.href = "menu.html";
+            // En vez de quitarte te muestra el mensaje
+            abrirModalVictoria();
+            mostrarGanador(getId());
+            // window.location.href = "menu.html";
         }
     });
+
+    eventSource.addEventListener("partida-ganada", (event) => {
+        const data = JSON.parse(event.data);
+        const gid = String(data.jugadorId);
+        const pid = String(data.partidaId);
+
+        console.log("gid: " + gid)
+        if (pid === String(currentPartidaId)) {
+           abrirModalVictoria();
+           mostrarGanador(gid);
+        }
+    });
+
 
     // Si el servidor emite 'partida-start' mientras el cliente ya está en partida.html,
     // actualizar la vista recargando la información desde el servidor y activar la UI de juego.
@@ -293,6 +375,8 @@ if (usuarioId && currentPartidaId) {
                         bandosDesplegados = info.bandosDesplegados || 0;  // Actualizar bandosDesplegados
                         const miiBando = isUsuario1 ? info.bando1 : info.bando2;
                         bandoSeleccionado = miiBando || bandoSeleccionado;
+                        fin = info.finalizada;
+                        ganador = info.ganadorId;
 
                         // Si eres usuario 2, recarga la página con el bando en la URL
                         // para que si recargas manualmente, no pierdas el contexto
@@ -310,6 +394,7 @@ if (usuarioId && currentPartidaId) {
                         updateButtonsVisibility(true);
                         actualizarEstadoTurno();  // Actualizar estado del turno
                         drawScene();
+
                     }
 
                 });
@@ -332,10 +417,26 @@ if (usuarioId && currentPartidaId) {
 
     eventSource.addEventListener("partida-guardada", (event) => {
         const pid = String(event.data);
-        if (pid === String(currentPartidaId)) {
+        if (pid === String(currentPartidaId))
+            guardarDiscovered();
+
+        if(!uGuardador){
+            abrirMensajeAviso();
+            mostrarAviso("El usuario rival a guardado la partida");
+        }
+        else{
             window.location.href = "menu.html";
         }
     });
+
+    async function guardarDiscovered(){
+        try{
+            let fogJson = JSON.stringify(discovered);
+            const res = await api.guardarDiscovered(currentPartidaId, getId(), fogJson);
+        }catch(error){
+            console.error("Error guardando discovered:", error);
+        }
+    }
 
     eventSource.onerror = (error) => {
         console.warn("SSE cerrado/error:", error);
@@ -369,7 +470,9 @@ if (usuarioId && currentPartidaId) {
         if (info) {
             let changed = false;
             getAllDrones(info.drones);
+            hydratePortadronesFromServer(info.portadrones)
             drawRivalDrones();
+            drawPortaDrones();
             turnoActual = info.turnoActual;  // Actualizar turnoActual
             actualizarEstadoTurno();
         }
@@ -481,11 +584,18 @@ if (usuarioId && currentPartidaId) {
         animateStep();
     }
 
+    //************SOLUCION TEMPORAL PARA QUE PERMITA ELEGIR LA ULTIMA COLUMNA, HAY QUE CORREGIR DIRECTAMENTE COMO SE ARMA EL CANVAS ****************************/
     function isInsideDeploymentZone(x, y) {
+        const firstThirdEnd = Math.floor(cols / 3);
+        const secondThirdStart = cols - firstThirdEnd;
+
+        console.log("NAVAL límite:", Math.floor(cols / 3));
+        console.log("AEREO límite:", Math.ceil(2 * cols / 3));
+
         if (bandoSeleccionado === 'NAVAL') {
-            return x <= Math.floor(cols / 3);
+            return x < firstThirdEnd + 1;
         } else {
-            return x >= Math.ceil(2 * cols / 3);
+            return x >= secondThirdStart - 1;
         }
     }
 
@@ -497,18 +607,34 @@ if (usuarioId && currentPartidaId) {
         const x = Math.floor((event.clientX - rect.left) / cellSize);
         const y = Math.floor((event.clientY - rect.top) / cellSize);
 
+
+        if(isInsidePortaArea(x, y, getOwnPorta())) {
+            updateButtonByChosen(true);
+        }
+        const droneIndex = drones.findIndex((drone) => drone.deployed && drone.x === x && drone.y === y);
+        if (droneIndex >= 0) {
+            updateButtonByChosen(false);
+        }
+
         // si estamos en modo ataque, cualquier click intenta disparar
         if (isAttackMode) {
             let objetivoId = null;
             const atacante = getActiveDrone(); // Ya validado en el listener del botÃ³n de ataque
 
+            if(!validaPosicion(x, y)) {
+                setupHint.textContent = 'Celda fuera del rango de ataque.';
+                isAttackMode = false;
+                return;
+            }
+
             // si se clickea en porta enemigo, objetivo 0 segÃºn backend
             if (isInsidePortaArea(x, y, getEnemyPorta())) {
                 objetivoId = 0;
             } else {
-                const targetIndex = dronesRivales.findIndex(d => d.deployed && d.x === x && d.y === y);
+                const targetIndex = dronesRivales.findIndex(d => d.deployed && d.x === x && d.y === y && d.vida > 0);
                 if (targetIndex >= 0) {
-                    objetivoId = dronesRivales[targetIndex].id;
+                    if (dronesRivales[targetIndex].vida > 0) 
+                        objetivoId = dronesRivales[targetIndex].id;
                 }
             }
 
@@ -569,11 +695,9 @@ if (usuarioId && currentPartidaId) {
                 return;
             }
 
-            //Validacion de posicion de drones propia y rival, y de portadrones
-            const occupied = drones.some((d) => d.deployed && d.x === x && d.y === y);
-            const occupiedByRival = dronesRivales.some((d) => d.deployed && d.x === x && d.y === y);
-            if (occupied || occupiedByRival || isInsideAnyPorta(x, y)) {
+            if(isPosicionOcupada(x,y)){
                 setupHint.textContent = 'Celda ocupada. Elige otra celda';
+                isMoveMode = false;
                 return;
             }
 
@@ -668,11 +792,13 @@ if (usuarioId && currentPartidaId) {
             return;
         }
 
-        const clickedDroneIndex = drones.findIndex((drone) => drone.deployed && drone.x === x && drone.y === y);
+        const clickedDroneIndex = drones.findIndex((drone) => drone.deployed && drone.vida > 0 
+        && drone.x === x && drone.y === y);
         if (clickedDroneIndex >= 0) {
             gameState.setActiveDroneById(drones[clickedDroneIndex].id);
             activeDroneId = gameState.activeDroneId;
             isPortaSelected = false;
+            drone = getActiveDrone();
             revealAroundActiveDrone();
             updateInfoPanel();
             drawScene();
@@ -695,10 +821,24 @@ if (usuarioId && currentPartidaId) {
 
         // Si no fue un click de seleccion y estamos en modo movimiento, procesar la acciÃ³n.
         if (!esSelec && isMoveMode) {
+
+            if(isPosicionOcupada(x,y)){
+                setupHint.textContent = 'Celda ocupada. Elige otra celda';
+                isMoveMode = false;
+                return;
+            }
+
             try {
                 let res;
                 let hasError = false;
                 if (isPortaSelected) {
+                    
+                    if(!validaPosicionPorta(x, y)) {
+                        setupHint.textContent = 'Celda fuera del rango de movimiento.';
+                        isMoveMode = false;
+                        return;
+                    }
+                    
                     res = await api.moverPortadron({
                         partidaId: localStorage.getItem("partidaId"),
                         jugadorId: getId(),
@@ -706,13 +846,21 @@ if (usuarioId && currentPartidaId) {
                         y: y
                     });
                     console.log('Respuesta moverPortadron:', res.status, res.statusText);
+                    
                 } else {
                     const drone = getActiveDrone();
+                    if(!validaPosicion(x, y)) {
+                        setupHint.textContent = 'Celda fuera del rango de movimiento.';
+                        isMoveMode = false;
+                        return;
+                    }
+
                     if (!drone || !drone.deployed) {
                         setupHint.textContent = 'Selecciona un dron para moverlo.';
                         isMoveMode = false;
                         return;
                     }
+
                     res = await api.moverDron({
                         partidaId: localStorage.getItem("partidaId"),
                         jugadorId: getId(),
@@ -727,6 +875,7 @@ if (usuarioId && currentPartidaId) {
                     // Actualizacion optimista: Mueve la unidad en el cliente para dar feedback visual inmediato.
                     // Lo ideal seri­a que el servidor envi­e el nuevo estado del juego vi­a SSE.
                     moveActiveDroneTo(x, y);
+
                 } else {
                     const raw = await res.text();
                     let display = raw;
@@ -744,16 +893,12 @@ if (usuarioId && currentPartidaId) {
                     // alert("Error al mover: " + display);
                 }
             } catch (err) {
-                console.error('Error en la peticiÃ³n de movimiento:', err);
+                console.error('Error en la peticion de movimiento:', err);
                 setupHint.textContent = 'Error de red al intentar mover.';
             } finally {
-                // Salir del modo movimiento. Solo limpiar el hint si no hubo error.
                 isMoveMode = false;
 
-                // setupHint.textContent = '';  // No limpiar si hay error
             }
-            //Avisarle al otro jugador por SSE para que actualice su vista con la nueva posicion del dron/portadron
-
             return; // La acciÃ³n de click ha sido manejada.
         }
 

@@ -1,6 +1,6 @@
 package com.wardrones.warDrones.model.entity;
 
-import org.hibernate.annotations.CompositeType;
+//import org.hibernate.annotations.CompositeType;
 
 import com.wardrones.warDrones.model.enums.Bando;
 
@@ -88,5 +88,30 @@ public class Dron {
 
     public int getRecargas(){
         return dronRecargas;
+    }
+
+    //Setters
+    public void setPosicionX(int x) {
+        this.dronPosicionX = x;
+    }
+
+    public void setPosicionY(int y) {
+        this.dronPosicionY = y;
+    }
+
+    public void setEstado(boolean estado) {
+        this.dronEstado = estado;
+    }
+
+    public void setVida(int vida) {
+        this.dronVida = vida;
+    }
+
+    public void setMunicion(int municion) {
+        this.dronMunicion = municion;
+    }
+
+    public void setRecargas(int recargas) {
+        this.dronRecargas = recargas;
     }
 }

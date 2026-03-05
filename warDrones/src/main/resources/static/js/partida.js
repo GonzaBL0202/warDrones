@@ -23,6 +23,13 @@ const nextDroneBtn = document.getElementById('nextDroneBtn');
 const moveBtn = document.getElementById('moveBtn');
 const attackBtn = document.getElementById('attackBtn');
 const reloadBtn = document.getElementById('reloadBtn');
+const modalObjetivoDestruido = document.getElementById('modalObjetivoDestruido');
+const killModalTitle = document.getElementById('killModalTitle');
+const killModalImage = document.getElementById('killModalImage');
+const btnCerrarKillModal = document.getElementById('btnCerrarKillModal');
+
+const bandoGanador = document.getElementById('lblGanador');
+const msjAviso = document.getElementById('lblAviso');
 
 /* Modos de acciÃ³n activados por botones */
 let isMoveMode = false;      // espera click para mover dron activo
@@ -46,6 +53,10 @@ let bandosDesplegados = 0;   // Cantidad de bandos que han completado despliegue
 const query = new URLSearchParams(window.location.search);
 let bandoSeleccionado = ((query.get('bando') || 'aereo').toUpperCase() === 'NAVAL') ? 'NAVAL' : 'AEREO';
 
+let ganador = null;
+let fin = null;
+let uGuardador = false;
+
 /* Estado global de la partida */
 let cols = 0; /* Cantidad de columnas del mapa */
 let rows = 0; /* Cantidad de filas del mapa */
@@ -58,6 +69,8 @@ let isDeployMode = false; /* Espera click en mapa para colocar dron */
 let isMoving = false; /* Evita iniciar otra animacion mientras el jugador se desplaza */
 const stepDelayMs = 90; /* Tiempo entre pasos para simular movimiento */
 let portadronesHydrated = false;
+let dronesHydratedOnce = false;
+let portasHydratedOnce = false;
 
 /* Estado interno para animar el sprite por frames */
 let spriteReady = false;
@@ -71,8 +84,8 @@ let rivalSpriteFrameCount = 1;
 let rivalSpriteFrameSize = 0;
 let portaDronNavalReady = false;
 let portaDronAereoReady = false;
-const portaDronNaval = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#4ec5ff', nombre: 'Porta Dron Naval' };
-const portaDronAereo = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#ffd166', nombre: 'Porta Dron Aereo' };
+const portaDronNaval = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#4ec5ff', nombre: 'Porta Dron Naval', vida: 3, estado: true };
+const portaDronAereo = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#ffd166', nombre: 'Porta Dron Aereo', vida: 6, estado: true };
 
 /* Cuando carga la imagen, calcula tamaï¿½o y numero de frames */
 droneSprite.onload = () => {
@@ -89,6 +102,7 @@ dronrivalSprite.onload = () => {
     rivalSpriteReady = true;
 };
 
+
 /* Carga de sprites */
 portaDronNavalSprite.onload = () => {
     portaDronNavalReady = true;
@@ -104,10 +118,11 @@ function getActiveDrone() {
 
 function mapDroneFromServer(droneInfo) {
     const isNaval = droneInfo.bando === 'NAVAL';
-    const nombre = isNaval ? 'Dron Naval' : 'Dron Aereo';
+    const nombre = isNaval ? 'Naval' : 'Aereo';
     const color = isNaval ? '#4ec5ff' : '#ffd166';
-    const moveRadius = 2;
-    const revealRadius = 2;
+    /* AQUI SE DEFINEN LOS RANGOS DE VISION Y MOVIMIENTO DE CADA DRON SEGUN SU TIPO */
+    const moveRadius = isNaval ? 4 : 2;
+    const revealRadius = isNaval ? 4 : 2;
     const deployed = !(droneInfo.posicionX === 0 && droneInfo.posicionY === 0);
     return {
         id: droneInfo.id,
@@ -116,12 +131,18 @@ function mapDroneFromServer(droneInfo) {
         revealRadius,
         color,
         deployed,
+        vida: droneInfo.vida,
         x: droneInfo.posicionX,
         y: droneInfo.posicionY
     };
 }
 
+
 function hydrateDronesFromServer(allDrones) {
+    /* conservar copia previa para detectar cambios de vida*/
+    const prevOwn = drones.map((d) => ({ id: d.id, vida: d.vida, x: d.x, y: d.y, deployed: d.deployed }));
+    const prevRival = dronesRivales.map((d) => ({ id: d.id, vida: d.vida, x: d.x, y: d.y, deployed: d.deployed }));
+
     const ownDrones = (allDrones || [])
         .filter((d) => !d.bando || d.bando === bandoSeleccionado)
         .map(mapDroneFromServer);
@@ -135,15 +156,42 @@ function hydrateDronesFromServer(allDrones) {
     drones = gameState.drones;
     dronesRivales = gameState.dronesRivales;
     activeDroneId = gameState.activeDroneId;
+
+    // detectar bajas y forzar celda descubierta / retirar despliegue
+    ownDrones.forEach((d) => {
+        const old = prevOwn.find((o) => o.id === d.id);
+        if (old && old.vida > 0 && d.vida <= 0) {
+            markCellDiscovered(d.x, d.y);
+            d.deployed = false;
+            abrirModalObjetivoDestruido('DRON', d.nombre && d.nombre.toUpperCase() === 'NAVAL' ? 'NAVAL' : 'AEREO');
+        }
+    });
+    rivalDrones.forEach((d) => {
+        const old = prevRival.find((o) => o.id === d.id);
+        if (old && old.vida > 0 && d.vida <= 0) {
+            markCellDiscovered(d.x, d.y);
+            d.deployed = false;
+            abrirModalObjetivoDestruido('DRON', d.nombre && d.nombre.toUpperCase() === 'NAVAL' ? 'NAVAL' : 'AEREO');
+        }
+    });
+
+    dronesHydratedOnce = true;
 }
 
 function hydratePortadronesFromServer(portadrones) {
     (portadrones || []).forEach((porta) => {
         const target = porta.tipo === 'NAVAL' ? portaDronNaval : portaDronAereo;
+        const prevVida = target.vida;
         target.x = porta.posicionX;
         target.y = porta.posicionY;
+        target.vida = porta.vida
+        target.estado = porta.vida > 0 ? true : false; 
+        if (portasHydratedOnce && prevVida > 0 && target.vida <= 0) {
+            abrirModalObjetivoDestruido('PORTA', porta.tipo === 'NAVAL' ? 'NAVAL' : 'AEREO');
+        }
     });
     portadronesHydrated = true;
+    portasHydratedOnce = true;
 }
 
 function applyBandoSprite() {
@@ -230,6 +278,44 @@ function positionFleet() {
     }
 }
 
+function mostrarGanador(ganadorId) {
+    const lbl = document.getElementById('lblGanador');
+    if (!lbl) return; // evita error si aún no existe en DOM
+
+    let bando;
+    console.log("GanadorId: " + ganadorId);
+    console.log("Usuario actual: " + getId());
+    console.log("Bando: " + bandoSeleccionado)
+
+    if (ganadorId == getId()) {
+        bando = bandoSeleccionado;
+        console.log("Soy usuario ganador, se carga mi bando: " + bando);
+    } else {
+        bando = (bandoSeleccionado === "NAVAL") ? "AEREO" : "NAVAL";
+        console.log("Soy usuario perdedor, se carga el bando rival: " + bando + ", mi bando era:" + bandoSeleccionado);
+    }
+
+    lbl.textContent = `BANDO GANADOR: ${bando}`;
+    console.log("Bando ganador final: " + bando);
+}
+
+function getId() {
+    const id = localStorage.getItem('userId');
+    return id ? parseInt(id) : null;
+}
+
+function mostrarAviso(msj) {
+    const lbl = document.getElementById('lblAviso');
+    if (!lbl) return; // evita error si aún no existe en DOM
+
+    lbl.textContent = msj;
+}
+
+ function getId() {
+    const id = localStorage.getItem('userId');
+    return id ? parseInt(id) : null;
+}
+
 /* Actualiza textos del panel y reconstruye la lista de drones clickeables */
 function updateInfoPanel() {
     const drone = getActiveDrone();
@@ -272,6 +358,7 @@ function updateInfoPanel() {
         const item = document.createElement('button');
         item.type = 'button';
         item.textContent = `#${i} ${d.nombre} | ${d.deployed ? 'Desplegado' : 'Reserva'}`;
+        item.textContent = d.vida <= 0 ? ` #${i} ${d.nombre} | Explotado` : item.textContent;
         item.style.width = '100%';
         item.style.textAlign = 'left';
         item.style.padding = '4px 6px';
@@ -280,8 +367,9 @@ function updateInfoPanel() {
         item.style.color = '#f7e7b2';
         item.style.cursor = 'pointer';
 
-        /* Al hacer click en un dron de la lista, lo activa */
+        /* Al hacer click en un dron de la lista, si esta vivo, lo activa */
         item.addEventListener('click', () => {
+            if (d.vida <= 0) return; // No permitir seleccionar drones explotados
             gameState.setActiveDroneById(d.id);
             activeDroneId = gameState.activeDroneId;
             isPortaSelected = false;
@@ -318,19 +406,36 @@ function updateButtonsVisibility(iniciada = false) {
     }
 }
 
+function updateButtonByChosen(esPorta) {
+    if (esPorta) {
+        attackBtn.style.display = 'none';
+        reloadBtn.style.display = 'none';
+    } else {
+        attackBtn.style.display = 'block';
+        reloadBtn.style.display = 'block';
+    }
+}
+
 /* Ajusta el tamano interno del canvas al tamano visual,
    calcula filas y columnas segun la grilla,
    reinicia la niebla de guerra, centra al jugador
    y redibuja toda la escena */
+
 function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
     canvas.width = Math.floor(rect.width);
     canvas.height = Math.floor(rect.height);
-    cols = Math.max(1, Math.floor(canvas.width / cellSize));
-    rows = Math.max(1, Math.floor(canvas.height / cellSize));
 
-    /* Recalcular cellSize para que encaje perfectamente */
+    // Fijar número de columnas y filas (por ejemplo, 20x20)
+    const FIXED_COLS = 35;
+    const FIXED_ROWS = 20;
+    cols = FIXED_COLS;
+    rows = FIXED_ROWS;
+
+    // Ajustar cellSize para que la grilla ocupe todo el canvas
     cellSize = Math.min(canvas.width / cols, canvas.height / rows);
+
+    // La matriz discovered debe tener el tamaño fijo
     discovered = Array.from({ length: rows }, () => Array(cols).fill(false));
     revealStartColumnsByBando();
     if (!portadronesHydrated) {
@@ -342,6 +447,7 @@ function resizeCanvas() {
     updateInfoPanel();
     drawScene();
 }
+
 
 /* Dibuja el fondo del mapa y la grilla t?ctica donde se mover?n
    las unidades (drones) dentro del tablero */
@@ -408,6 +514,43 @@ function revealAroundActiveDrone() {
     }
 }
 
+/* Crear una funcion que utilice la misma logica que revelsa el mapa al rededor del dron, pero para validar su rango de movimiento con respecto a un x,y dado
+Esta funcion se puede llamar desde el click del mapa para validar si la celda seleccionada esta dentro del rango de movimiento del dron activo, y mostrar un mensaje de error si no lo esta */
+function validaPosicion(x, y) {
+    const drone = getActiveDrone();
+    if (!drone || !drone.deployed) {
+        return false;
+    }
+
+    const centerX = drone.x + 0.5;
+    const centerY = drone.y + 0.5;
+    const dx = (x + 0.5) - centerX;
+    const dy = (y + 0.5) - centerY;
+
+    /* Distancia circular (sin ra?z) para rendimiento */
+    if ((dx * dx) + (dy * dy) <= drone.moveRadius * drone.moveRadius) {
+        return true;
+    }
+    return false;
+}
+
+function validaPosicionPorta(x, y) {
+    const ownPorta = getOwnPorta();
+    const centerX = ownPorta.x + (ownPorta.size / 2);
+    const centerY = ownPorta.y + (ownPorta.size / 2);
+    const dx = (x + 0.5) - centerX;
+    const dy = (y + 0.5) - centerY;
+    const isInsideCircle = (dx * dx) + (dy * dy) <= ownPorta.moveRadius * ownPorta.moveRadius;
+    return isInsideCircle;
+}
+
+function isPosicionOcupada(x, y) {
+    const occupiedByOwnDrones = drones.some((d) => d.deployed && d.x === x && d.y === y && d.vida > 0);
+    const occupiedByRivalDrones = dronesRivales.some((d) => d.deployed && d.x === x && d.y === y && d.vida > 0);
+    const occupiedByPorta = isInsideAnyPorta(x, y);
+    return occupiedByOwnDrones || occupiedByRivalDrones || occupiedByPorta;
+}
+
 /* Dibuja la niebla de guerra sobre el mapa.
    Las zonas no descubiertas se oscurecen y las descubiertas se ven parcialmente */
 function drawFog() {
@@ -446,17 +589,17 @@ function drawFog() {
     const maxVisibleWidth = cols * cellSize;
     const maxVisibleHeight = rows * cellSize;
 
-    /* Cubrir el Ã¡rea a la derecha si no alcanza a llenar toda la anchura */
-    if (maxVisibleWidth < canvas.width) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-        ctx.fillRect(maxVisibleWidth, 0, canvas.width - maxVisibleWidth, canvas.height);
-    }
+    // /* Cubrir el Ã¡rea a la derecha si no alcanza a llenar toda la anchura */
+    // if (maxVisibleWidth < canvas.width) {
+    //     ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    //     ctx.fillRect(maxVisibleWidth, 0, canvas.width - maxVisibleWidth, canvas.height);
+    // }
 
-    /* Cubrir el Ã¡rea abajo si no alcanza a llenar toda la altura */
-    if (maxVisibleHeight < canvas.height) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-        ctx.fillRect(0, maxVisibleHeight, canvas.width, canvas.height - maxVisibleHeight);
-    }
+    // /* Cubrir el Ã¡rea abajo si no alcanza a llenar toda la altura */
+    // if (maxVisibleHeight < canvas.height) {
+    //     ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    //     ctx.fillRect(0, maxVisibleHeight, canvas.width, canvas.height - maxVisibleHeight);
+    // }
 
     /* Centro y radio del lÃ­mite de movimiento del dron activo */
     if (hasUnit) {
@@ -473,12 +616,35 @@ function drawFog() {
     }
 }
 
+function drawRecoveredFog() {
+    for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+
+            if (!discovered[y][x]) {
+                ctx.fillStyle = 'rgba(0,0,0,0.9)';
+            } else {
+                ctx.fillStyle = 'rgba(0,0,0,0.35)';
+            }
+
+            ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+        }
+    }
+}
+
 /* Dibuja todos los drones en el tablero.
    Usa sprite animado si est? cargado, o un c?rculo de respaldo si no */
 function drawSinglePortaDron(porta, sprite, spriteReady, isSelected) {
     const px = porta.x * cellSize;
     const py = porta.y * cellSize;
     const sizePx = porta.size * cellSize;
+
+     // si está muerto no se dibuja
+    if (!porta.estado) {
+        markCellDiscovered(porta.x, porta.y);
+        markCellDiscovered(porta.x+1, porta.y);
+        markCellDiscovered(porta.x, porta.y+1);
+        markCellDiscovered(porta.x+1, porta.y+1);
+    }
 
     if (spriteReady) {
         /* Si la imagen es un sprite sheet horizontal, usa solo el primer frame cuadrado */
@@ -520,12 +686,25 @@ function drawPortaDrones() {
     drawSinglePortaDron(portaDronAereo, portaDronAereoSprite, portaDronAereoReady, isPortaSelected && ownPorta === portaDronAereo);
 }
 
+function markCellDiscovered(x, y) {
+    if (x >= 0 && x < cols && y >= 0 && y < rows) {
+        discovered[y][x] = true;
+    }
+}
+
+
 function drawDrones() {
     for (let i = 0; i < drones.length; i++) {
         const drone = drones[i];
-        if (!drone.deployed) {
+
+        // si está muerto o no desplegado no se dibuja
+        if (drone.vida <= 0 || !drone.deployed) {
+            if (drone.vida <= 0) {
+                markCellDiscovered(drone.x, drone.y);
+            }
             continue;
         }
+
         const px = (drone.x + 0.5) * cellSize;
         const py = (drone.y + 0.5) * cellSize;
         const size = Math.floor(cellSize * 1.05);
@@ -555,7 +734,6 @@ function drawDrones() {
             ctx.fill();
         }
 
-        /* Borde blanco para el dron activo y color de bando para el resto */
         ctx.save();
         ctx.lineWidth = drone.id === activeDroneId ? 3 : 2;
         ctx.strokeStyle = drone.id === activeDroneId ? '#ffffff' : drone.color;
@@ -569,15 +747,20 @@ function drawDrones() {
 function drawRivalDrones() {
     for (let i = 0; i < dronesRivales.length; i++) {
         const drone = dronesRivales[i];
-        if (!drone.deployed) {
+
+        if (drone.vida <= 0 || !drone.deployed) {
+            if (drone.vida <= 0) {
+                markCellDiscovered(drone.x, drone.y);
+            }
             continue;
         }
+
         const px = (drone.x + 0.5) * cellSize;
         const py = (drone.y + 0.5) * cellSize;
         const size = Math.floor(cellSize * 1.05);
         const half = size / 2;
 
-        if (rivalSpriteReady) { // Asegúrate de usar una variable específica para los sprites rivales
+        if (rivalSpriteReady) {
             const sx = rivalSpriteFrameIndex * rivalSpriteFrameSize;
             const sy = 0;
 
@@ -595,20 +778,18 @@ function drawRivalDrones() {
                 size
             );
         } else {
-            ctx.fillStyle = '#f2cb67'; 
+            ctx.fillStyle = '#f2cb67';
             ctx.beginPath();
             ctx.arc(px, py, Math.max(10, Math.floor(cellSize * 0.35)), 0, Math.PI * 2);
             ctx.fill();
         }
 
-        /* Para los drones rivales, quedan oculto bajo la niebla si no están dentro de discovered */
         if (!discovered[drone.y][drone.x]) {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
             ctx.beginPath();
             ctx.arc(px, py, Math.max(10, Math.floor(cellSize * 0.35)), 0, Math.PI * 2);
             ctx.fill();
         }
-
     }
 }
 
@@ -679,5 +860,56 @@ function moveActiveDrone(dx, dy) {
     drone.y = newY;
     revealAroundActiveDrone();
     drawScene();
+}
+
+//Animaciones
+
+function cerrarModalObjetivoDestruido() {
+    if (!modalObjetivoDestruido) return;
+    modalObjetivoDestruido.classList.remove('active');
+}
+
+function getKillModalImageSrc(tipoObjetivo, subtipoObjetivo) {
+    const defaults = {
+        DRON_NAVAL: '../img/dronNavalAnimacionDestruidoGIF.gif',
+        DRON_AEREO: '../img/animacionDronAereoDestruidGIF.gif',
+        PORTA_NAVAL: '../img/animacionNaval_explocionGIF.gif',
+        PORTA_AEREO: '../img/AnimacionPortadronAereoDestruidoGIF.gif',
+        DEFAULT: '../img/DronExplotando.png'
+    };
+
+    const override = (window.KILL_TARGET_IMAGES && typeof window.KILL_TARGET_IMAGES === 'object')
+        ? window.KILL_TARGET_IMAGES
+        : {};
+
+    const key = `${tipoObjetivo}_${subtipoObjetivo}`;
+    return override[key] || defaults[key] || override.DEFAULT || defaults.DEFAULT;
+}
+
+function abrirModalObjetivoDestruido(tipoObjetivo, subtipoObjetivo) {
+    if (!modalObjetivoDestruido) return;
+
+    const tipo = (subtipoObjetivo === 'NAVAL') ? 'naval' : 'aereo';
+    const texto = tipoObjetivo === 'PORTA'
+        ? `Porta dron ${tipo} destruido`
+        : `Dron ${tipo} destruido`;
+
+    if (killModalTitle) {
+        killModalTitle.textContent = texto;
+    }
+    if (killModalImage) {
+        // Forzar reinicio de GIF en cada apertura del modal
+        const baseSrc = getKillModalImageSrc(tipoObjetivo, subtipoObjetivo);
+        const cacheBuster = `v=${Date.now()}`;
+        const separator = baseSrc.includes('?') ? '&' : '?';
+        killModalImage.src = '';
+        killModalImage.src = `${baseSrc}${separator}${cacheBuster}`;
+    }
+
+    modalObjetivoDestruido.classList.add('active');
+}
+
+if (btnCerrarKillModal) {
+    btnCerrarKillModal.addEventListener('click', cerrarModalObjetivoDestruido);
 }
 

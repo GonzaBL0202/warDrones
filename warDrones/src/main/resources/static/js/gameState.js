@@ -7,7 +7,9 @@ class GameState {
 
     setDrones(drones) {
         this.drones = Array.isArray(drones) ? drones : [];
-        this.activeDroneId = this.drones[0]?.id ?? null;
+        //Validar que el dron activo siga existiendo, sino asignar el primero disponible
+        if (this.activeDroneId === null || !drones.some(d => d.id === this.activeDroneId && d.vida > 0)) 
+            this.activeDroneId = this.drones[0]?.id ?? null;
     }
 
     setDronesRivales(drones) {
@@ -27,26 +29,20 @@ class GameState {
             this.activeDroneId = droneId;
         }
     }
-    
+
+    // Busca el siguiente dron desplegado y con vida > 0
     selectNextDeployedDrone() {
-        if (!this.drones.length || this.activeDroneId === null) {
-            return false;
-        }
-
-        const deployed = this.drones.filter((d) => d.deployed);
-        if (!deployed.length) {
-            return false;
-        }
-
-        const currentIndex = this.drones.findIndex((d) => d.id === this.activeDroneId);
-        let nextIndex = currentIndex;
-        for (let i = 0; i < this.drones.length; i++) {
-            nextIndex = (nextIndex + 1) % this.drones.length;
-            if (this.drones[nextIndex].deployed) {
-                this.activeDroneId = this.drones[nextIndex].id;
+        if (!drones.length) return false;
+        let idx = drones.findIndex(d => d.id === activeDroneId);
+        let count = 0;
+        do {
+            idx = (idx + 1) % drones.length;
+            count++;
+            if (drones[idx].deployed && drones[idx].vida > 0) {
+                gameState.setActiveDroneById(drones[idx].id);
                 return true;
             }
-        }
+        } while (count < drones.length);
         return false;
     }
 }

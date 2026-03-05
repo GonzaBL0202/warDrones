@@ -1,10 +1,10 @@
 .jacquard-12-regular {
-  font-family: "Jacquard 12", system-ui;
-  font-weight: 400;
-  font-style: normal;
+   font-family: "Jacquard 12", system-ui;
+   font-weight: 400;
+   font-style: normal;
 }
 
-.boton{
+.boton {
    background: url("../img/gold_button_pressed.png") no-repeat center center;
    background-size: 100% 100%;
    border: none;
@@ -13,13 +13,13 @@
    text-align: center;
 }
 
-.boton-menu{
+.boton-menu {
    width: 190px;
    height: 42px;
    padding: 0;
 }
 
-.texto{
+.texto {
    background: url("../img/gold_button_pressed\ -\ copia.png") no-repeat center center;
    background-size: 107% 120%;
    border: none;
@@ -27,8 +27,29 @@
    padding: 5px 20px;
 }
 
-.texto:focus{
+.texto:focus {
    outline: none;
    border: none;
    box-shadow: none;
+}
+
+.btn-help {
+   position: fixed;
+   top: 12px;
+   right: 12px;
+
+   width: 42px;
+   height: 42px;
+   padding: 0;
+
+   background-size: 100% 100%; /* importante */
+
+   display: flex;
+   align-items: center;
+   justify-content: center;
+
+   font-size: 22px;
+
+   image-rendering: pixelated; /* mantiene estilo pixel art */
+   z-index: 9999;
 }
