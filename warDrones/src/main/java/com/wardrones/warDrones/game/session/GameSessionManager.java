@@ -18,6 +18,14 @@ public class GameSessionManager {
     public GameSession crearSesion(Partida partida) {
         GameSession session = new GameSession(partida);
         partidasActivas.put(partida.getPartidaId(), session);
+        session.setEsNueva(true);
+        return session;
+    }
+
+    public GameSession recuperarSesion(Partida partida) {
+        GameSession session = new GameSession();
+        session = session.recuperarSesion(partida);
+        partidasActivas.put(partida.getPartidaId(), session);
         return session;
     }
 

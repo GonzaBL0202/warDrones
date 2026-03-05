@@ -517,7 +517,24 @@ public class PartidaService {
         partida.setPartidaEstado(Estado.EN_CURSO);
         pRepository.save(partida);
 
-        gameSManager.crearSesion(partida);
+        gameSManager.recuperarSesion(partida);
+        GameSession gs = gameSManager.obtenerSesion(partidaId);
+
+
+        Portadron pNaval = pdRepository.findByPartidaIdAndTipo(partidaId, Bando.NAVAL).orElseThrow(() -> new RuntimeException("Portadron no encontrado"));
+        Portadron pAereo = pdRepository.findByPartidaIdAndTipo(partidaId, Bando.AEREO).orElseThrow(() -> new RuntimeException("Portadron no encontrado"));
+        
+        gs.setPortadrones(pNaval, pAereo);
+        List<Dron> dronsN = dRepository.findByDronPortaDronId_Id(pNaval.getId());
+        List<Dron> dronsA = dRepository.findByDronPortaDronId_Id(pAereo.getId());
+
+        List<Dron> allDrons = new ArrayList<>();
+
+        allDrons.addAll(dronsN);
+        allDrons.addAll(dronsA);
+
+        gs.setDrones(allDrons);
+
 
         try {
             lobbyNotifier.notifyUser(partida.getUsuarioId1().getId(), partidaId);
@@ -615,6 +632,7 @@ public class PartidaService {
         }
 
         boolean fin = (gs.getEstado() == Estado.FINALIZADA);
+        boolean esN = gs.getEsNueva();
 
         return new ObtenerPartidaInfoResponse(
                 partidaId,
@@ -627,6 +645,7 @@ public class PartidaService {
                 turnoActual,
                 fin,
                 gs.getGanadorId(),
+                esN,
                 drones,
                 portadrones);
     }

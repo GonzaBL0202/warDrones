@@ -19,7 +19,6 @@ public interface PortaDronRepository extends JpaRepository<Portadron, Integer> {
     @Query(value = "DELETE FROM portadron WHERE portadronpartida_id = :partidaId", nativeQuery = true)
     void deleteByPartidaId(@Param("partidaId") int partidaId);
 
-    // lookup a specific portadron (player) within a partida by its bando
     @Query("SELECT p FROM Portadron p WHERE p.portadronPartidaId.partidaId = :partidaId AND p.portadronTipo = :tipo")
     java.util.Optional<Portadron> findByPartidaIdAndTipo(@org.springframework.data.repository.query.Param("partidaId") int partidaId,
                                                          @org.springframework.data.repository.query.Param("tipo") com.wardrones.warDrones.model.enums.Bando tipo);

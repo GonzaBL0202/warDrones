@@ -23,6 +23,10 @@ const nextDroneBtn = document.getElementById('nextDroneBtn');
 const moveBtn = document.getElementById('moveBtn');
 const attackBtn = document.getElementById('attackBtn');
 const reloadBtn = document.getElementById('reloadBtn');
+const modalObjetivoDestruido = document.getElementById('modalObjetivoDestruido');
+const killModalTitle = document.getElementById('killModalTitle');
+const killModalImage = document.getElementById('killModalImage');
+const btnCerrarKillModal = document.getElementById('btnCerrarKillModal');
 
 const bandoGanador = document.getElementById('lblGanador');
 const msjAviso = document.getElementById('lblAviso');
@@ -65,6 +69,8 @@ let isDeployMode = false; /* Espera click en mapa para colocar dron */
 let isMoving = false; /* Evita iniciar otra animacion mientras el jugador se desplaza */
 const stepDelayMs = 90; /* Tiempo entre pasos para simular movimiento */
 let portadronesHydrated = false;
+let dronesHydratedOnce = false;
+let portasHydratedOnce = false;
 
 /* Estado interno para animar el sprite por frames */
 let spriteReady = false;
@@ -157,6 +163,7 @@ function hydrateDronesFromServer(allDrones) {
         if (old && old.vida > 0 && d.vida <= 0) {
             markCellDiscovered(d.x, d.y);
             d.deployed = false;
+            abrirModalObjetivoDestruido('DRON', d.nombre && d.nombre.toUpperCase() === 'NAVAL' ? 'NAVAL' : 'AEREO');
         }
     });
     rivalDrones.forEach((d) => {
@@ -164,19 +171,27 @@ function hydrateDronesFromServer(allDrones) {
         if (old && old.vida > 0 && d.vida <= 0) {
             markCellDiscovered(d.x, d.y);
             d.deployed = false;
+            abrirModalObjetivoDestruido('DRON', d.nombre && d.nombre.toUpperCase() === 'NAVAL' ? 'NAVAL' : 'AEREO');
         }
     });
+
+    dronesHydratedOnce = true;
 }
 
 function hydratePortadronesFromServer(portadrones) {
     (portadrones || []).forEach((porta) => {
         const target = porta.tipo === 'NAVAL' ? portaDronNaval : portaDronAereo;
+        const prevVida = target.vida;
         target.x = porta.posicionX;
         target.y = porta.posicionY;
         target.vida = porta.vida
         target.estado = porta.vida > 0 ? true : false; 
+        if (portasHydratedOnce && prevVida > 0 && target.vida <= 0) {
+            abrirModalObjetivoDestruido('PORTA', porta.tipo === 'NAVAL' ? 'NAVAL' : 'AEREO');
+        }
     });
     portadronesHydrated = true;
+    portasHydratedOnce = true;
 }
 
 function applyBandoSprite() {
@@ -433,6 +448,7 @@ function resizeCanvas() {
     drawScene();
 }
 
+
 /* Dibuja el fondo del mapa y la grilla t?ctica donde se mover?n
    las unidades (drones) dentro del tablero */
 function drawMap() {
@@ -573,17 +589,17 @@ function drawFog() {
     const maxVisibleWidth = cols * cellSize;
     const maxVisibleHeight = rows * cellSize;
 
-    /* Cubrir el Ã¡rea a la derecha si no alcanza a llenar toda la anchura */
-    if (maxVisibleWidth < canvas.width) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-        ctx.fillRect(maxVisibleWidth, 0, canvas.width - maxVisibleWidth, canvas.height);
-    }
+    // /* Cubrir el Ã¡rea a la derecha si no alcanza a llenar toda la anchura */
+    // if (maxVisibleWidth < canvas.width) {
+    //     ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    //     ctx.fillRect(maxVisibleWidth, 0, canvas.width - maxVisibleWidth, canvas.height);
+    // }
 
-    /* Cubrir el Ã¡rea abajo si no alcanza a llenar toda la altura */
-    if (maxVisibleHeight < canvas.height) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-        ctx.fillRect(0, maxVisibleHeight, canvas.width, canvas.height - maxVisibleHeight);
-    }
+    // /* Cubrir el Ã¡rea abajo si no alcanza a llenar toda la altura */
+    // if (maxVisibleHeight < canvas.height) {
+    //     ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    //     ctx.fillRect(0, maxVisibleHeight, canvas.width, canvas.height - maxVisibleHeight);
+    // }
 
     /* Centro y radio del lÃ­mite de movimiento del dron activo */
     if (hasUnit) {
@@ -597,6 +613,21 @@ function drawFog() {
         ctx.arc(px, py, outlineRadiusPx, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
+    }
+}
+
+function drawRecoveredFog() {
+    for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+
+            if (!discovered[y][x]) {
+                ctx.fillStyle = 'rgba(0,0,0,0.9)';
+            } else {
+                ctx.fillStyle = 'rgba(0,0,0,0.35)';
+            }
+
+            ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+        }
     }
 }
 
@@ -829,5 +860,56 @@ function moveActiveDrone(dx, dy) {
     drone.y = newY;
     revealAroundActiveDrone();
     drawScene();
+}
+
+//Animaciones
+
+function cerrarModalObjetivoDestruido() {
+    if (!modalObjetivoDestruido) return;
+    modalObjetivoDestruido.classList.remove('active');
+}
+
+function getKillModalImageSrc(tipoObjetivo, subtipoObjetivo) {
+    const defaults = {
+        DRON_NAVAL: '../img/dronNavalAnimacionDestruidoGIF.gif',
+        DRON_AEREO: '../img/animacionDronAereoDestruidGIF.gif',
+        PORTA_NAVAL: '../img/animacionNaval_explocionGIF.gif',
+        PORTA_AEREO: '../img/AnimacionPortadronAereoDestruidoGIF.gif',
+        DEFAULT: '../img/DronExplotando.png'
+    };
+
+    const override = (window.KILL_TARGET_IMAGES && typeof window.KILL_TARGET_IMAGES === 'object')
+        ? window.KILL_TARGET_IMAGES
+        : {};
+
+    const key = `${tipoObjetivo}_${subtipoObjetivo}`;
+    return override[key] || defaults[key] || override.DEFAULT || defaults.DEFAULT;
+}
+
+function abrirModalObjetivoDestruido(tipoObjetivo, subtipoObjetivo) {
+    if (!modalObjetivoDestruido) return;
+
+    const tipo = (subtipoObjetivo === 'NAVAL') ? 'naval' : 'aereo';
+    const texto = tipoObjetivo === 'PORTA'
+        ? `Porta dron ${tipo} destruido`
+        : `Dron ${tipo} destruido`;
+
+    if (killModalTitle) {
+        killModalTitle.textContent = texto;
+    }
+    if (killModalImage) {
+        // Forzar reinicio de GIF en cada apertura del modal
+        const baseSrc = getKillModalImageSrc(tipoObjetivo, subtipoObjetivo);
+        const cacheBuster = `v=${Date.now()}`;
+        const separator = baseSrc.includes('?') ? '&' : '?';
+        killModalImage.src = '';
+        killModalImage.src = `${baseSrc}${separator}${cacheBuster}`;
+    }
+
+    modalObjetivoDestruido.classList.add('active');
+}
+
+if (btnCerrarKillModal) {
+    btnCerrarKillModal.addEventListener('click', cerrarModalObjetivoDestruido);
 }
 

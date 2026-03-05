@@ -49,6 +49,25 @@
             gap: 12px;
             margin-top: 20px;
         }
+
+
+        .kill-modal-content {
+            width: min(96vw, 1080px);
+            max-width: 1080px;
+            padding: 24px;
+        }
+
+        .kill-modal-image {
+            width: 1024px;
+            height: 1024px;
+            max-width: calc(100vw - 80px);
+            max-height: calc(100vh - 220px);
+            margin: 0 auto;
+            border: 2px solid #6a4a1c;
+            background: #000;
+            object-fit: cover;
+            display: block;
+        }
     </style>
 </head>
 
@@ -170,6 +189,18 @@
                 </button>
                 <button id="btnBandoAereo" class="boton boton-menu font-display" style="font-size: 16px;">
                     Dron Aéreo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalObjetivoDestruido" class="modal">
+        <div class="modal-content kill-modal-content">
+            <h2 id="killModalTitle" class="font-display">Objetivo destruido</h2>
+            <img id="killModalImage" class="kill-modal-image" src="../img/DronExplotando.png" alt="Objetivo destruido">
+            <div class="modal-buttons">
+                <button id="btnCerrarKillModal" class="boton boton-menu font-display" style="font-size: 16px;">
+                    Salir
                 </button>
             </div>
         </div>

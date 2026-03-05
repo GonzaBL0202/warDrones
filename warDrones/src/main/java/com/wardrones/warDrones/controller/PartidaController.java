@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wardrones.warDrones.game.session.GameSession;
 import com.wardrones.warDrones.model.dto.request.AsignarBandosRequest;
 import com.wardrones.warDrones.model.dto.request.AtacarDronOPortaRequest;
@@ -229,11 +230,19 @@ public class PartidaController {
 
     // expose stored fog string so client can reconstruct without touching session
     // usuarioId is required so we can return the correct player's copy
+    // @GetMapping("/partida/fog/{partidaId}")
+    // public String fog(@PathVariable int partidaId, @RequestParam int usuarioId) {
+    //     return pService.obtenerNieblaDescubierta(partidaId, usuarioId);
+    // }
+ 
     @GetMapping("/partida/fog/{partidaId}")
-    public String fog(@PathVariable int partidaId, @RequestParam int usuarioId) {
-        return pService.obtenerNieblaDescubierta(partidaId, usuarioId);
+    public Object fog(@PathVariable int partidaId, @RequestParam int usuarioId) throws Exception {
+        String discovered = pService.obtenerNieblaDescubierta(partidaId, usuarioId);
+
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.readValue(discovered, boolean[][].class);
     }
-    
+
     @PutMapping("/partida/reanudar/unirse/{partidaId}")
     public ResponseEntity<?> unirseReanudando(
             @PathVariable int partidaId,

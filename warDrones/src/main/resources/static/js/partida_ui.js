@@ -88,10 +88,13 @@ async function cargarNieblaDescubierta() {
         if (!userId) return;
         const res = await fetch(`${API_URL}/partida/fog/${partidaId}?usuarioId=${encodeURIComponent(userId)}`);
         if (res.ok) {
-            const fog = await res.json();
+            let fog = [];
+            fog = await res.json();
             if (fog) {
-                discovered = JSON.parse(fog);
-                drawScene(); // update display
+                discovered = fog;
+                console.log("Discovered: ", discovered)
+                // drawRecoveredFog();
+                // drawScene(); // update display
             }
         }
     } catch (err) {
@@ -257,7 +260,8 @@ async function inicializarPartida() {
         console.log('Info de partida devuelta por el servidor:', info);
 
         // cargar niebla previamente guardada (si existe)
-        await cargarNieblaDescubierta();
+        if (!info.esNueva)
+            await cargarNieblaDescubierta();
 
         // si la respuesta indica bandos asignados pero los valores son nulos/indefinidos,
         // forzamos la bandera a false para que el usuario pueda volver a elegir.
@@ -299,7 +303,8 @@ async function inicializarPartida() {
 
         /* Solo revelar columnas iniciales si los bandos estÃ¡n confirmados */
         if (bandasAsignadas) {
-            discovered = Array.from({ length: rows }, () => Array(cols).fill(false));
+            if(!discovered.length > 0)
+                discovered = Array.from({ length: rows }, () => Array(cols).fill(false));
             revealStartColumnsByBando();
             revealAroundActiveDrone();
             updateInfoPanel();

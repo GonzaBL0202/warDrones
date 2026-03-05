@@ -25,6 +25,7 @@ public class GameSession {
     private int jugadorEnTurno;
     private Estado estado;
     private int ganadorId;
+    private boolean esNueva;
 
     //asignacion de portadrones
     private PortadronState PortadronNaval;
@@ -40,12 +41,30 @@ public class GameSession {
     private int bandosDesplegados = 0; 
     private int usuariosCerrados = 0;
 
+    public GameSession(){}
+    
     public GameSession(Partida par){
         partidaId = par.getPartidaId();
         jugador1Id = par.getUsuarioId1().getId();
         jugador2Id = par.getUsuarioId2().getId();
         jugadorEnTurno = par.getUsuarioId1().getId();
         estado = par.getPartidaEstado();
+    }
+
+    public GameSession recuperarSesion(Partida par){
+        GameSession gs = new GameSession();
+        gs.partidaId = par.getPartidaId();
+        gs.jugador1Id = par.getUsuarioId1().getId();
+        gs.jugador2Id = par.getUsuarioId2().getId();
+        gs.jugadorEnTurno = par.getUsuarioId1().getId();
+        gs.estado = par.getPartidaEstado();
+        gs.esNueva = false;
+        gs.jugador1Bando = par.getBando1();
+        gs.jugador2Bando = par.getBando2();
+        gs.bandosDesplegados = 2;
+        gs.usuariosCerrados = 0;
+
+        return gs;
     }
 
     //funciones
@@ -465,6 +484,14 @@ public class GameSession {
 
     public void setUsuariosCerrados(int uc){
         this.usuariosCerrados = uc;
+    }
+
+    public boolean getEsNueva(){
+        return esNueva;
+    }
+
+    public void setEsNueva(boolean es){
+        this.esNueva = es;
     }
 
 
