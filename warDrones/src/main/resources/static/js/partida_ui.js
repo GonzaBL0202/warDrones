@@ -468,6 +468,7 @@ if (usuarioId && currentPartidaId) {
         console.log('Actualizando info de partida desde servidor...');
         const info = await obtenerPartidaInfo();
         if (info) {
+            hydrateDronesFromServer(info.drones);
             let changed = false;
             getAllDrones(info.drones);
             hydratePortadronesFromServer(info.portadrones)
@@ -620,6 +621,11 @@ if (usuarioId && currentPartidaId) {
         if (isAttackMode) {
             let objetivoId = null;
             const atacante = getActiveDrone(); // Ya validado en el listener del botÃ³n de ataque
+            if (!atacante || !atacante.deployed || atacante.vida <= 0) {
+                setupHint.textContent = 'El dron seleccionado ya no puede atacar.';
+                isAttackMode = false;
+                return;
+            }
 
             if(!validaPosicion(x, y)) {
                 setupHint.textContent = 'Celda fuera del rango de ataque.';
@@ -860,6 +866,11 @@ if (usuarioId && currentPartidaId) {
                         isMoveMode = false;
                         return;
                     }
+                    if (drone.vida <= 0) {
+                        setupHint.textContent = 'El dron seleccionado ya no puede moverse.';
+                        isMoveMode = false;
+                        return;
+                    }
 
                     res = await api.moverDron({
                         partidaId: localStorage.getItem("partidaId"),
@@ -952,6 +963,11 @@ if (usuarioId && currentPartidaId) {
 
     // nuevo botÃ³n movimiento
     moveBtn.addEventListener('click', () => {
+        const activeDrone = getActiveDrone();
+        if (!activeDrone || !activeDrone.deployed || activeDrone.vida <= 0) {
+            setupHint.textContent = 'Selecciona un dron vivo para mover.';
+            return;
+        }
         isMoveMode = true;
         isAttackMode = false;
         isDeployMode = false;
@@ -961,7 +977,7 @@ if (usuarioId && currentPartidaId) {
     // nuevo botÃ³n atacar
     attackBtn.addEventListener('click', () => {
         const activeDrone = getActiveDrone();
-        if (!activeDrone || !activeDrone.deployed) {
+        if (!activeDrone || !activeDrone.deployed || activeDrone.vida <= 0) {
             setupHint.textContent = 'Selecciona un dron rival para atacar.';
             return;
         }

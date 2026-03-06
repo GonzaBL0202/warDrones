@@ -123,7 +123,7 @@ function mapDroneFromServer(droneInfo) {
     /* AQUI SE DEFINEN LOS RANGOS DE VISION Y MOVIMIENTO DE CADA DRON SEGUN SU TIPO */
     const moveRadius = isNaval ? 4 : 2;
     const revealRadius = isNaval ? 4 : 2;
-    const deployed = !(droneInfo.posicionX === 0 && droneInfo.posicionY === 0);
+    const deployed = droneInfo.vida > 0 && !(droneInfo.posicionX === 0 && droneInfo.posicionY === 0);
     return {
         id: droneInfo.id,
         nombre,
