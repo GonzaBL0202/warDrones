@@ -524,7 +524,7 @@ public class PartidaService {
         Portadron pNaval = pdRepository.findByPartidaIdAndTipo(partidaId, Bando.NAVAL).orElseThrow(() -> new RuntimeException("Portadron no encontrado"));
         Portadron pAereo = pdRepository.findByPartidaIdAndTipo(partidaId, Bando.AEREO).orElseThrow(() -> new RuntimeException("Portadron no encontrado"));
         
-        gs.setPortadrones(pNaval, pAereo);
+        gs.setPortadrones(pAereo, pNaval);
         List<Dron> dronsN = dRepository.findByDronPortaDronId_Id(pNaval.getId());
         List<Dron> dronsA = dRepository.findByDronPortaDronId_Id(pAereo.getId());
 

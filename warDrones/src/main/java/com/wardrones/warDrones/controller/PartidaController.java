@@ -228,12 +228,6 @@ public class PartidaController {
         return ResponseEntity.ok().build();
     }
 
-    // expose stored fog string so client can reconstruct without touching session
-    // usuarioId is required so we can return the correct player's copy
-    // @GetMapping("/partida/fog/{partidaId}")
-    // public String fog(@PathVariable int partidaId, @RequestParam int usuarioId) {
-    //     return pService.obtenerNieblaDescubierta(partidaId, usuarioId);
-    // }
  
     @GetMapping("/partida/fog/{partidaId}")
     public Object fog(@PathVariable int partidaId, @RequestParam int usuarioId) throws Exception {

@@ -184,7 +184,7 @@ function hydratePortadronesFromServer(portadrones) {
         const prevVida = target.vida;
         target.x = porta.posicionX;
         target.y = porta.posicionY;
-        target.vida = porta.vida
+        target.vida = porta.vida;
         target.estado = porta.vida > 0 ? true : false; 
         if (portasHydratedOnce && prevVida > 0 && target.vida <= 0) {
             abrirModalObjetivoDestruido('PORTA', porta.tipo === 'NAVAL' ? 'NAVAL' : 'AEREO');
