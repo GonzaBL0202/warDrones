@@ -38,6 +38,13 @@ public class Partida {
     @Enumerated(EnumType.STRING)
     private Estado partidaEstado;
 
+    //matriz de niebla de guerra serialized as JSON (rows×cols boolean grid)
+    // legacy: previously stored a single fog matrix for both players. new code
+    // persists per-portadron and no longer relies on this field.
+    // @Deprecated
+    // @jakarta.persistence.Column(columnDefinition = "TEXT")
+    // private String discovered;
+
     //private boolean partidaActiva;
 
     //Constructora
@@ -79,6 +86,17 @@ public class Partida {
         return partidaEstado;
     }
 
+    // getter / setter for fog string (legacy) - prefer portadron.discovered
+    // @Deprecated
+    // public String getNieblaDescubierta() {
+    //     return discovered;
+    // }
+
+    // @Deprecated
+    // public void setNieblaDescubierta(String discovered) {
+    //     this.discovered = discovered;
+    // }
+
     //Setters
     public void setUsuario2(Usuario u2){
         this.partidaUsuarioId2 = u2;
@@ -88,50 +106,14 @@ public class Partida {
         this.partidaEstado = estado;
     }
 
-    //funciones temporales para hardcordear y probar en postman
-    
-    
-    // public void setPartidaId(int id){
-    //     this.partidaId = id;
-    // }
+    public void setBando1(Bando bando) {
+        this.partidaBando1 = bando;
+    }
 
-    // public void setUsuario1(int id,String nombre){
-    //     Usuario u = new Usuario(nombre);
-    //     u.setId(id);
-    //     this.partidaUsuarioId1 = u;
-    // }
+    public void setBando2(Bando bando) {
+        this.partidaBando2 = bando;
+    }
 
-    // // public void setUsuario2(int id,String nombre){
-    // //     Usuario u = new Usuario(nombre);
-    // //     u.setId(id);
-    // //     this.partidaUsuarioId2 = u;
-    // // }
-
-    // public void setActiva(){
-    //     this.partidaActiva = true;
-    // }
-
-    // public void setBando1(){
-    //     this.partidaBando1 = Bando.AEREO;
-    // }
-
-    // public void setBando2(){
-    //     this.partidaBando2 = Bando.NAVAL;
-    // }
-    
-    // public void setTurno(){
-    //     this.partidaTurno = 3;
-    // }
-
-    // public void partidaHard(){
-    //     this.setPartidaId(4);
-    //     this.setUsuario1(1,"Gonzalo");
-    //     this.setUsuario2(3,"Franco");
-    //     this.setTurno();
-    //     this.setActiva();
-    //     this.setBando1();
-    //     this.setBando2();
-    // }
 }
 
 

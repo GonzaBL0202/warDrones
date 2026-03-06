@@ -41,3 +41,13 @@ form.addEventListener("submit", async (e) => {
 
     window.location.href = "sections/menu.html";
 });
+
+Help.init({
+    title: "¿Qué hago acá?",
+    items: [
+        "Ingresá tu nombre y creá tu usuario.",
+        "Si ya tenés usuario, entrá directo al menú.",
+        "Después elegís: crear partida, unirte, o reanudar."
+    ]
+});
+

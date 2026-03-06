@@ -1,5 +1,7 @@
 package com.wardrones.warDrones.model.entity;
 
+//import org.hibernate.annotations.CompositeType;
+
 import com.wardrones.warDrones.model.enums.Bando;
 
 import jakarta.persistence.Entity;
@@ -16,6 +18,7 @@ public class Dron {
 
     protected Dron(){} //JPA requiere un constructor sin argumentos para crear instancias de la entidad.
     
+    //La llave debe ser compuesta por dronid y dronportadronid, ejemplo: dronid 1 del portadronid 1, dronid 1 del portadronid 2, etc. Esto es para poder tener drones con el mismo id pero pertenecientes a portadrones diferentes, ya que cada portadron tiene su propia lista de drones. A revisar si esto es necesario o si se puede manejar con un id unico para cada dron y una relacion con el portadron al que pertenece.
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int dronId;
@@ -85,5 +88,30 @@ public class Dron {
 
     public int getRecargas(){
         return dronRecargas;
+    }
+
+    //Setters
+    public void setPosicionX(int x) {
+        this.dronPosicionX = x;
+    }
+
+    public void setPosicionY(int y) {
+        this.dronPosicionY = y;
+    }
+
+    public void setEstado(boolean estado) {
+        this.dronEstado = estado;
+    }
+
+    public void setVida(int vida) {
+        this.dronVida = vida;
+    }
+
+    public void setMunicion(int municion) {
+        this.dronMunicion = municion;
+    }
+
+    public void setRecargas(int recargas) {
+        this.dronRecargas = recargas;
     }
 }

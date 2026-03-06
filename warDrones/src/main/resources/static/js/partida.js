@@ -29,6 +29,7 @@ const killModalImage = document.getElementById('killModalImage');
 const btnCerrarKillModal = document.getElementById('btnCerrarKillModal');
 
 const bandoGanador = document.getElementById('lblGanador');
+const msjAviso = document.getElementById('lblAviso');
 
 /* Modos de acciÃ³n activados por botones */
 let isMoveMode = false;      // espera click para mover dron activo
@@ -54,6 +55,7 @@ let bandoSeleccionado = ((query.get('bando') || 'aereo').toUpperCase() === 'NAVA
 
 let ganador = null;
 let fin = null;
+let uGuardador = false;
 
 /* Estado global de la partida */
 let cols = 0; /* Cantidad de columnas del mapa */
@@ -121,7 +123,7 @@ function mapDroneFromServer(droneInfo) {
     /* AQUI SE DEFINEN LOS RANGOS DE VISION Y MOVIMIENTO DE CADA DRON SEGUN SU TIPO */
     const moveRadius = isNaval ? 4 : 2;
     const revealRadius = isNaval ? 4 : 2;
-    const deployed = !(droneInfo.posicionX === 0 && droneInfo.posicionY === 0);
+    const deployed = droneInfo.vida > 0 && !(droneInfo.posicionX === 0 && droneInfo.posicionY === 0);
     return {
         id: droneInfo.id,
         nombre,
@@ -133,55 +135,6 @@ function mapDroneFromServer(droneInfo) {
         x: droneInfo.posicionX,
         y: droneInfo.posicionY
     };
-}
-
-function cerrarModalObjetivoDestruido() {
-    if (!modalObjetivoDestruido) return;
-    modalObjetivoDestruido.classList.remove('active');
-}
-
-function getKillModalImageSrc(tipoObjetivo, subtipoObjetivo) {
-    const defaults = {
-        DRON_NAVAL: '../img/dronNavalAnimacionDestruidoGIF.gif',
-        DRON_AEREO: '../img/animacionDronAereoDestruidGIF.gif',
-        PORTA_NAVAL: '../img/animacionNaval_explocionGIF.gif',
-        PORTA_AEREO: '../img/AnimacionPortadronAereoDestruidoGIF.gif',
-        DEFAULT: '../img/DronExplotando.png'
-    };
-
-    const override = (window.KILL_TARGET_IMAGES && typeof window.KILL_TARGET_IMAGES === 'object')
-        ? window.KILL_TARGET_IMAGES
-        : {};
-
-    const key = `${tipoObjetivo}_${subtipoObjetivo}`;
-    return override[key] || defaults[key] || override.DEFAULT || defaults.DEFAULT;
-}
-
-function abrirModalObjetivoDestruido(tipoObjetivo, subtipoObjetivo) {
-    if (!modalObjetivoDestruido) return;
-
-    const tipo = (subtipoObjetivo === 'NAVAL') ? 'naval' : 'aereo';
-    const texto = tipoObjetivo === 'PORTA'
-        ? `Porta dron ${tipo} destruido`
-        : `Dron ${tipo} destruido`;
-
-    if (killModalTitle) {
-        killModalTitle.textContent = texto;
-    }
-    if (killModalImage) {
-        // Forzar reinicio de GIF en cada apertura del modal
-        const baseSrc = getKillModalImageSrc(tipoObjetivo, subtipoObjetivo);
-        const cacheBuster = `v=${Date.now()}`;
-        const separator = baseSrc.includes('?') ? '&' : '?';
-        killModalImage.src = '';
-        killModalImage.src = `${baseSrc}${separator}${cacheBuster}`;
-    }
-
-    modalObjetivoDestruido.classList.add('active');
-}
-
-if (btnCerrarKillModal) {
-    btnCerrarKillModal.addEventListener('click', cerrarModalObjetivoDestruido);
 }
 
 
@@ -207,7 +160,7 @@ function hydrateDronesFromServer(allDrones) {
     // detectar bajas y forzar celda descubierta / retirar despliegue
     ownDrones.forEach((d) => {
         const old = prevOwn.find((o) => o.id === d.id);
-        if (dronesHydratedOnce && old && old.vida > 0 && d.vida <= 0) {
+        if (old && old.vida > 0 && d.vida <= 0) {
             markCellDiscovered(d.x, d.y);
             d.deployed = false;
             abrirModalObjetivoDestruido('DRON', d.nombre && d.nombre.toUpperCase() === 'NAVAL' ? 'NAVAL' : 'AEREO');
@@ -215,7 +168,7 @@ function hydrateDronesFromServer(allDrones) {
     });
     rivalDrones.forEach((d) => {
         const old = prevRival.find((o) => o.id === d.id);
-        if (dronesHydratedOnce && old && old.vida > 0 && d.vida <= 0) {
+        if (old && old.vida > 0 && d.vida <= 0) {
             markCellDiscovered(d.x, d.y);
             d.deployed = false;
             abrirModalObjetivoDestruido('DRON', d.nombre && d.nombre.toUpperCase() === 'NAVAL' ? 'NAVAL' : 'AEREO');
@@ -232,7 +185,7 @@ function hydratePortadronesFromServer(portadrones) {
         target.x = porta.posicionX;
         target.y = porta.posicionY;
         target.vida = porta.vida;
-        target.estado = porta.vida > 0 ? true : false;
+        target.estado = porta.vida > 0 ? true : false; 
         if (portasHydratedOnce && prevVida > 0 && target.vida <= 0) {
             abrirModalObjetivoDestruido('PORTA', porta.tipo === 'NAVAL' ? 'NAVAL' : 'AEREO');
         }
@@ -344,6 +297,18 @@ function mostrarGanador(ganadorId) {
 
     lbl.textContent = `BANDO GANADOR: ${bando}`;
     console.log("Bando ganador final: " + bando);
+}
+
+function getId() {
+    const id = localStorage.getItem('userId');
+    return id ? parseInt(id) : null;
+}
+
+function mostrarAviso(msj) {
+    const lbl = document.getElementById('lblAviso');
+    if (!lbl) return; // evita error si aún no existe en DOM
+
+    lbl.textContent = msj;
 }
 
  function getId() {
@@ -482,6 +447,7 @@ function resizeCanvas() {
     updateInfoPanel();
     drawScene();
 }
+
 
 /* Dibuja el fondo del mapa y la grilla t?ctica donde se mover?n
    las unidades (drones) dentro del tablero */
@@ -623,17 +589,17 @@ function drawFog() {
     const maxVisibleWidth = cols * cellSize;
     const maxVisibleHeight = rows * cellSize;
 
-    /* Cubrir el Ã¡rea a la derecha si no alcanza a llenar toda la anchura */
-    if (maxVisibleWidth < canvas.width) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-        ctx.fillRect(maxVisibleWidth, 0, canvas.width - maxVisibleWidth, canvas.height);
-    }
+    // /* Cubrir el Ã¡rea a la derecha si no alcanza a llenar toda la anchura */
+    // if (maxVisibleWidth < canvas.width) {
+    //     ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    //     ctx.fillRect(maxVisibleWidth, 0, canvas.width - maxVisibleWidth, canvas.height);
+    // }
 
-    /* Cubrir el Ã¡rea abajo si no alcanza a llenar toda la altura */
-    if (maxVisibleHeight < canvas.height) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-        ctx.fillRect(0, maxVisibleHeight, canvas.width, canvas.height - maxVisibleHeight);
-    }
+    // /* Cubrir el Ã¡rea abajo si no alcanza a llenar toda la altura */
+    // if (maxVisibleHeight < canvas.height) {
+    //     ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    //     ctx.fillRect(0, maxVisibleHeight, canvas.width, canvas.height - maxVisibleHeight);
+    // }
 
     /* Centro y radio del lÃ­mite de movimiento del dron activo */
     if (hasUnit) {
@@ -647,6 +613,21 @@ function drawFog() {
         ctx.arc(px, py, outlineRadiusPx, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
+    }
+}
+
+function drawRecoveredFog() {
+    for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+
+            if (!discovered[y][x]) {
+                ctx.fillStyle = 'rgba(0,0,0,0.9)';
+            } else {
+                ctx.fillStyle = 'rgba(0,0,0,0.35)';
+            }
+
+            ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+        }
     }
 }
 
@@ -879,5 +860,56 @@ function moveActiveDrone(dx, dy) {
     drone.y = newY;
     revealAroundActiveDrone();
     drawScene();
+}
+
+//Animaciones
+
+function cerrarModalObjetivoDestruido() {
+    if (!modalObjetivoDestruido) return;
+    modalObjetivoDestruido.classList.remove('active');
+}
+
+function getKillModalImageSrc(tipoObjetivo, subtipoObjetivo) {
+    const defaults = {
+        DRON_NAVAL: '../img/dronNavalAnimacionDestruidoGIF.gif',
+        DRON_AEREO: '../img/animacionDronAereoDestruidGIF.gif',
+        PORTA_NAVAL: '../img/animacionNaval_explocionGIF.gif',
+        PORTA_AEREO: '../img/AnimacionPortadronAereoDestruidoGIF.gif',
+        DEFAULT: '../img/DronExplotando.png'
+    };
+
+    const override = (window.KILL_TARGET_IMAGES && typeof window.KILL_TARGET_IMAGES === 'object')
+        ? window.KILL_TARGET_IMAGES
+        : {};
+
+    const key = `${tipoObjetivo}_${subtipoObjetivo}`;
+    return override[key] || defaults[key] || override.DEFAULT || defaults.DEFAULT;
+}
+
+function abrirModalObjetivoDestruido(tipoObjetivo, subtipoObjetivo) {
+    if (!modalObjetivoDestruido) return;
+
+    const tipo = (subtipoObjetivo === 'NAVAL') ? 'naval' : 'aereo';
+    const texto = tipoObjetivo === 'PORTA'
+        ? `Porta dron ${tipo} destruido`
+        : `Dron ${tipo} destruido`;
+
+    if (killModalTitle) {
+        killModalTitle.textContent = texto;
+    }
+    if (killModalImage) {
+        // Forzar reinicio de GIF en cada apertura del modal
+        const baseSrc = getKillModalImageSrc(tipoObjetivo, subtipoObjetivo);
+        const cacheBuster = `v=${Date.now()}`;
+        const separator = baseSrc.includes('?') ? '&' : '?';
+        killModalImage.src = '';
+        killModalImage.src = `${baseSrc}${separator}${cacheBuster}`;
+    }
+
+    modalObjetivoDestruido.classList.add('active');
+}
+
+if (btnCerrarKillModal) {
+    btnCerrarKillModal.addEventListener('click', cerrarModalObjetivoDestruido);
 }
 

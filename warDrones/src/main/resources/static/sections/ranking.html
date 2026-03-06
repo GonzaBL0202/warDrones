@@ -1,49 +1,132 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="es">
 <head>
+    <meta charset="UTF-8">
     <title>Ranking</title>
+
     <link rel="stylesheet" href="../css/fondo.css">
     <link rel="stylesheet" href="../css/botom.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Jacquard+12&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/fuente.css">
+    <link rel="stylesheet" href="../css/fuente.css">
+<link rel="stylesheet" href="../css/help.css">
+    <style>
+        /* === MISMO FORMATO QUE "CARGAR PARTIDA" === */
+
+        #rankingBox {
+            width: 100%;
+            border: 1px solid rgba(255,215,0,0.3);
+            background: rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .ranking-table {
+            width: 100%;
+            border-collapse: collapse;
+            color: white;
+            margin: 0;
+        }
+
+        .ranking-table thead th {
+            position: sticky;
+            top: 0;
+            background: #2a2a2a;
+            color: #ffd700;
+            padding: 8px;
+            border-bottom: 1px solid #ffd700;
+            font-size: 14px;
+        }
+
+        .ranking-table td {
+            padding: 8px;
+            text-align: center;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(255,215,0,0.25);
+        }
+
+        #rankingScroll {
+            max-height: 320px;
+            overflow-y: auto;
+        }
+
+        #rankingScroll tbody tr:hover {
+            background: rgba(255,215,0,0.08);
+        }
+
+        /* “selección” tipo cargar partida (si tu JS marca el tr del jugador) */
+        #rankingScroll tbody tr.selected,
+        #rankingScroll tbody tr.seleccionada {
+            background: rgba(255,215,0,0.18);
+            outline: 1px solid rgba(255,215,0,0.45);
+            outline-offset: -1px;
+        }
+    </style>
 </head>
 
 <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0;">
     <section
         style="position: relative; width: 520px; min-height: 500px; display: flex; align-items: center; justify-content: center; padding: 24px 0; box-sizing: border-box;">
         <img src="../img/gold_panel_8x.png" alt="Panel"
-            style="position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated;">
-        <div
-            style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 14px; width: 82%;">
-            <h1 class="jacquard-12-regular" style="margin: 0; font-size: 50px;">Ranking</h1>
+             style="position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated;">
 
-            <table
-                style="width: 100%; border-collapse: collapse; background-image: url('../img/gold_panel_8x.png'); background-size: cover; background-position: center; color: #111;">
-                <thead>
-                    <tr>
-                        <th class="jacquard-12-regular"
-                            style="font-size: 28px; padding: 10px; border: 2px solid #6a4a1c;">Usuario</th>
-                        <th class="jacquard-12-regular"
-                            style="font-size: 28px; padding: 10px; border: 2px solid #6a4a1c;">Victorias</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td style="padding: 10px; border: 2px solid #6a4a1c; text-align: center;">Usuario1</td>
-                        <td style="padding: 10px; border: 2px solid #6a4a1c; text-align: center;">12</td>
-                    </tr>
-                </tbody>
-            </table>
+        <div style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 14px; width: 82%;">
+
+            <h1 class="font-display" style="margin: 0; font-size: 36px;">Ranking</h1>
+
+            <div id="rankingBox">
+
+                <!-- HEADER + TOP 3 FIJO -->
+                <table id="topTable" class="ranking-table">
+                    <colgroup>
+                        <col style="width: 33%;">
+                        <col style="width: 34%;">
+                        <col style="width: 33%;">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th class="font-display">Puesto</th>
+                            <th class="font-display">Usuario</th>
+                            <th class="font-display">Victorias</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rankingTop3" class="font-text"></tbody>
+                </table>
+
+                <!-- RESTO CON SCROLL -->
+                <div id="rankingScroll">
+                    <table class="ranking-table">
+                        <colgroup>
+                            <col style="width: 33%;">
+                            <col style="width: 34%;">
+                            <col style="width: 33%;">
+                        </colgroup>
+                        <tbody id="rankingBody" class="font-text"></tbody>
+                    </table>
+                </div>
+
+            </div>
 
             <form action="menu.html" method="get">
-                <button class="boton boton-menu" type="submit" style="font-size: 20px;"><span
-                        class="jacquard-12-regular">Volver al Menu</span></button>
+                <button class="boton boton-menu font-display" type="submit" style="font-size: 14px;">
+                    Volver al Menu
+                </button>
             </form>
         </div>
     </section>
-</body>
+<script src="../js/help.js"></script>
 
+<script>
+  Help.init({
+    title: "Ayuda - Ranking",
+    items: [
+      "Aquí se muestran los mejores jugadores.",
+      "El ranking se ordena según las victorias obtenidas.",
+      "Tu posición se actualizará después de cada partida.",
+      "Intentá mejorar tu posición ganando partidas.",
+      "Recuerda que si abandonas, es una victoria para tu rival."
+    ]
+  });
+</script>
+
+<script src="../js/ranking.js"></script>
+    <script src="../js/ranking.js"></script>
+</body>
 </html>

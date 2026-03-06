@@ -84,12 +84,17 @@ async function obtenerPartidaInfo() {
 async function cargarNieblaDescubierta() {
     try {
         const partidaId = localStorage.getItem('partidaId');
-        const res = await fetch(`${API_URL}/partida/fog/${partidaId}`);
+        const userId = localStorage.getItem('userId');
+        if (!userId) return;
+        const res = await fetch(`${API_URL}/partida/fog/${partidaId}?usuarioId=${encodeURIComponent(userId)}`);
         if (res.ok) {
-            const fog = await res.json();
+            let fog = [];
+            fog = await res.json();
             if (fog) {
-                discovered = JSON.parse(fog);
-                drawScene(); // update display
+                discovered = fog;
+                console.log("Discovered: ", discovered)
+                // drawRecoveredFog();
+                // drawScene(); // update display
             }
         }
     } catch (err) {
@@ -145,6 +150,14 @@ function cerrarMensajeVictoria() {
     document.getElementById('modalVictoria').classList.remove('active');
 }
 
+function abrirMensajeAviso(){
+    document.getElementById('modalAvisos').classList.add('active');
+}
+
+function cerrarMensajeAviso() {
+    document.getElementById('modalAvisos').classList.remove('active');
+}
+
 async function abandonarPartida() {
     const partidaId = localStorage.getItem("partidaId");
     console.log("Abandonar partida. partidaId:", partidaId);
@@ -182,20 +195,22 @@ async function cerrarPartida() {
 
 async function guardarPartida() {
     const partidaId = localStorage.getItem("partidaId");
+    uGuardador = true;
     console.log("Guardar partida. partidaId:", partidaId);
     if (!partidaId) return;
 
     try {
-        // convert the booleans matrix to JSON string; the API will store it directly
-        const fogJson = JSON.stringify(discovered);
-        const res = await api.guardarPartida(partidaId, fogJson);
+        const res = await api.guardarPartida(partidaId);
         console.log('Respuesta guardar:', res.status, res.statusText);
     } catch (error) {
         console.error("Error guardando partida:", error);
         return;
     }
+}
 
-    cerrarModalSalir();
+async function salirPartida(){
+    cerrarMensajeVictoria();
+    cerrarMensajeAviso();
     window.location.href = 'menu.html';
 }
 
@@ -205,7 +220,7 @@ document.getElementById("btnSalir")?.addEventListener("click", abrirModalSalir);
 //Botones del modal
 document.getElementById("btnConfirmarSalir")?.addEventListener("click", abandonarPartida);
 document.getElementById("btnCerrarPartida")?.addEventListener("click", cerrarPartida);
-
+document.getElementById("btnSalirPartida")?.addEventListener("click", salirPartida)
 
 document.getElementById("btnGuardar")?.addEventListener("click", guardarPartida);
 
@@ -245,7 +260,8 @@ async function inicializarPartida() {
         console.log('Info de partida devuelta por el servidor:', info);
 
         // cargar niebla previamente guardada (si existe)
-        /* await cargarNieblaDescubierta();*/
+        if (!info.esNueva)
+            await cargarNieblaDescubierta();
 
         // si la respuesta indica bandos asignados pero los valores son nulos/indefinidos,
         // forzamos la bandera a false para que el usuario pueda volver a elegir.
@@ -287,7 +303,8 @@ async function inicializarPartida() {
 
         /* Solo revelar columnas iniciales si los bandos estÃ¡n confirmados */
         if (bandasAsignadas) {
-            discovered = Array.from({ length: rows }, () => Array(cols).fill(false));
+            if(!discovered.length > 0)
+                discovered = Array.from({ length: rows }, () => Array(cols).fill(false));
             revealStartColumnsByBando();
             revealAroundActiveDrone();
             updateInfoPanel();
@@ -325,7 +342,10 @@ if (usuarioId && currentPartidaId) {
         const pid = String(event.data);
         if (pid === String(currentPartidaId)) {
             eventSource.close();
-            window.location.href = "menu.html";
+            // En vez de quitarte te muestra el mensaje
+            abrirModalVictoria();
+            mostrarGanador(getId());
+            // window.location.href = "menu.html";
         }
     });
 
@@ -397,10 +417,26 @@ if (usuarioId && currentPartidaId) {
 
     eventSource.addEventListener("partida-guardada", (event) => {
         const pid = String(event.data);
-        if (pid === String(currentPartidaId)) {
+        if (pid === String(currentPartidaId))
+            guardarDiscovered();
+
+        if(!uGuardador){
+            abrirMensajeAviso();
+            mostrarAviso("El usuario rival a guardado la partida");
+        }
+        else{
             window.location.href = "menu.html";
         }
     });
+
+    async function guardarDiscovered(){
+        try{
+            let fogJson = JSON.stringify(discovered);
+            const res = await api.guardarDiscovered(currentPartidaId, getId(), fogJson);
+        }catch(error){
+            console.error("Error guardando discovered:", error);
+        }
+    }
 
     eventSource.onerror = (error) => {
         console.warn("SSE cerrado/error:", error);
@@ -433,8 +469,11 @@ if (usuarioId && currentPartidaId) {
         const info = await obtenerPartidaInfo();
         if (info) {
             hydrateDronesFromServer(info.drones);
-            hydratePortadronesFromServer(info.portadrones);
-            drawScene();
+            let changed = false;
+            getAllDrones(info.drones);
+            hydratePortadronesFromServer(info.portadrones)
+            drawRivalDrones();
+            drawPortaDrones();
             turnoActual = info.turnoActual;  // Actualizar turnoActual
             actualizarEstadoTurno();
         }
@@ -582,6 +621,11 @@ if (usuarioId && currentPartidaId) {
         if (isAttackMode) {
             let objetivoId = null;
             const atacante = getActiveDrone(); // Ya validado en el listener del botÃ³n de ataque
+            if (!atacante || !atacante.deployed || atacante.vida <= 0) {
+                setupHint.textContent = 'El dron seleccionado ya no puede atacar.';
+                isAttackMode = false;
+                return;
+            }
 
             if(!validaPosicion(x, y)) {
                 setupHint.textContent = 'Celda fuera del rango de ataque.';
@@ -822,6 +866,11 @@ if (usuarioId && currentPartidaId) {
                         isMoveMode = false;
                         return;
                     }
+                    if (drone.vida <= 0) {
+                        setupHint.textContent = 'El dron seleccionado ya no puede moverse.';
+                        isMoveMode = false;
+                        return;
+                    }
 
                     res = await api.moverDron({
                         partidaId: localStorage.getItem("partidaId"),
@@ -914,6 +963,11 @@ if (usuarioId && currentPartidaId) {
 
     // nuevo botÃ³n movimiento
     moveBtn.addEventListener('click', () => {
+        const activeDrone = getActiveDrone();
+        if (!activeDrone || !activeDrone.deployed || activeDrone.vida <= 0) {
+            setupHint.textContent = 'Selecciona un dron vivo para mover.';
+            return;
+        }
         isMoveMode = true;
         isAttackMode = false;
         isDeployMode = false;
@@ -923,7 +977,7 @@ if (usuarioId && currentPartidaId) {
     // nuevo botÃ³n atacar
     attackBtn.addEventListener('click', () => {
         const activeDrone = getActiveDrone();
-        if (!activeDrone || !activeDrone.deployed) {
+        if (!activeDrone || !activeDrone.deployed || activeDrone.vida <= 0) {
             setupHint.textContent = 'Selecciona un dron rival para atacar.';
             return;
         }
