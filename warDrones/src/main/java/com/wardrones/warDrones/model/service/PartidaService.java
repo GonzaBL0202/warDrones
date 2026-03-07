@@ -35,7 +35,7 @@ public class PartidaService {
     private final DronRepository dRepository;
     private final GameSessionManager gameSManager;
     private final LobbyNotifier lobbyNotifier;
-    
+
     public PartidaService(PartidaRepository ppRepository, UsuarioRepository puRepository,
             PortaDronRepository pdRepository, DronRepository dRepository, GameSessionManager gsm,
             LobbyNotifier lobbyNotifier) {
@@ -83,22 +83,22 @@ public class PartidaService {
         return pRepository.save(game);
     }
 
-    public GameSession cerrarPartida(int partidaId){
-         try {
+    public GameSession cerrarPartida(int partidaId) {
+        try {
             GameSession gs = gameSManager.obtenerSesion(partidaId);
             if (gs == null) {
                 throw new RuntimeException("Sesion no encontrada");
             }
-            gs.setUsuariosCerrados(gs.getUsuariosCerrados()+1);
+            gs.setUsuariosCerrados(gs.getUsuariosCerrados() + 1);
 
-            if(gs.getUsuariosCerrados() == 2){
+            if (gs.getUsuariosCerrados() == 2) {
                 // Cerrar sesión en memoria
                 System.out.println("Cerramos la sesion de la partida en memoria");
                 gameSManager.cerrarSesion(partidaId);
             }
             return gs;
 
-         } catch (IllegalStateException e) {
+        } catch (IllegalStateException e) {
             return null;
         }
     }
@@ -143,10 +143,10 @@ public class PartidaService {
     // valores de GameSession
     public GameSession asignarBandos(int partidaId, Bando b1, Bando b2) {
         Partida partida = pRepository.findById(partidaId).orElseThrow(
-            () -> new RuntimeException("Partida no encontrada")
-        );
+                () -> new RuntimeException("Partida no encontrada"));
 
-        //seteamos los bandos recientemente recibidos por parametro en la eleccion del usuario
+        // seteamos los bandos recientemente recibidos por parametro en la eleccion del
+        // usuario
         partida.setBando1(b1);
         partida.setBando2(b2);
 
@@ -270,10 +270,10 @@ public class PartidaService {
         }
         session.cambiarTurno();
 
-        if(session.getGanadorId() > 0 && session.getEstado() == Estado.FINALIZADA){
+        if (session.getGanadorId() > 0 && session.getEstado() == Estado.FINALIZADA) {
             ganarPartida(partidaId, session.getGanadorId());
         }
-            
+
         lobbyNotifier.notifyAccion(session.getJugador1Id(), partidaId);
         lobbyNotifier.notifyAccion(session.getJugador2Id(), partidaId);
     }
@@ -351,7 +351,7 @@ public class PartidaService {
         }
     }
 
-      // ------------Victoria de partida -----------
+    // ------------Victoria de partida -----------
     @Transactional
     public void ganarPartida(int partidaId, int usuarioId) {
         Partida partida = pRepository.findById(partidaId).orElseThrow(
@@ -397,18 +397,17 @@ public class PartidaService {
         }
     }
 
-      @Transactional
+    @Transactional
     public void guardarPartida(int partidaId, String discoveredJson) {
         Partida partida = pRepository.findById(partidaId).orElseThrow(
-                () -> new RuntimeException("Partida no encontrada")
-        );
+                () -> new RuntimeException("Partida no encontrada"));
         partida.setNieblaDescubierta(discoveredJson);
         partida.setPartidaEstado(Estado.GUARDADA);
         pRepository.save(partida);
 
         GameSession session = gameSManager.obtenerSesion(partidaId);
         if (session != null) {
-            //Actualizar portadrones
+            // Actualizar portadrones
             PortadronState nav = session.getPortadronNaval();
             PortadronState aer = session.getPortadronAereo();
 
@@ -431,7 +430,7 @@ public class PartidaService {
                 });
             }
 
-            //Actualizar drones
+            // Actualizar drones
             Map<Integer, DronState> dronesMap = session.getDrones();
             if (dronesMap != null) {
                 for (DronState ds : dronesMap.values()) {
@@ -448,7 +447,7 @@ public class PartidaService {
             }
         }
 
-        //Sacar ambos al menu principal al guardar la partida
+        // Sacar ambos al menu principal al guardar la partida
         try {
             lobbyNotifier.notifyPartidaGuardada(
                     partida.getUsuarioId1().getId(),
@@ -527,7 +526,6 @@ public class PartidaService {
         PortadronState portaAereo = gs.getPortadronAereo();
 
         boolean finalizada = gs.getEstado() == Estado.FINALIZADA;
-
 
         List<ObtenerPartidaInfoResponse.PortadronInfo> portadrones = new ArrayList<>();
         if (portaNaval != null) {
