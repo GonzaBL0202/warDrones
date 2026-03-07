@@ -229,12 +229,31 @@ public class PartidaController {
     }
 
  
-    @GetMapping("/partida/fog/{partidaId}")
-    public Object fog(@PathVariable int partidaId, @RequestParam int usuarioId) throws Exception {
-        String discovered = pService.obtenerNieblaDescubierta(partidaId, usuarioId);
+    // @GetMapping("/partida/fog/{partidaId}")
+    // public Object fog(@PathVariable int partidaId, @RequestParam int usuarioId) throws Exception {
+    //     String discovered = pService.obtenerNieblaDescubierta(partidaId, usuarioId);
 
-        ObjectMapper mapper = new ObjectMapper();
-        return mapper.readValue(discovered, boolean[][].class);
+    //     ObjectMapper mapper = new ObjectMapper();
+    //     return mapper.readValue(discovered, boolean[][].class);
+    // }
+
+    @GetMapping("/partida/fog/{partidaId}")
+    public ResponseEntity<?> fog(@PathVariable int partidaId, @RequestParam int usuarioId) {
+        try {
+            String discovered = pService.obtenerNieblaDescubierta(partidaId, usuarioId);
+            
+            if (discovered == null || discovered.isBlank()) {
+                return ResponseEntity.ok(new boolean[0][0]); // array vacío, no 500
+            }
+            
+            ObjectMapper mapper = new ObjectMapper();
+            boolean[][] fog = mapper.readValue(discovered, boolean[][].class);
+            return ResponseEntity.ok(fog);
+            
+        } catch (Exception e) {
+            System.err.println("Error obteniendo niebla: " + e.getMessage());
+            return ResponseEntity.ok(new boolean[0][0]); // array vacío en vez de 500
+        }
     }
 
     @PutMapping("/partida/reanudar/unirse/{partidaId}")

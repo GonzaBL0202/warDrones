@@ -89,19 +89,33 @@ async function cargarNieblaDescubierta() {
         const partidaId = localStorage.getItem('partidaId');
         const userId = localStorage.getItem('userId');
         if (!userId) return;
+
+        // Primero intentar servidor
         const res = await fetch(`${API_URL}/partida/fog/${partidaId}?usuarioId=${encodeURIComponent(userId)}`);
         if (res.ok) {
-            let fog = [];
-            fog = await res.json();
-            if (fog) {
+            const fog = await res.json();
+            if (Array.isArray(fog) && fog.length > 0) {
                 discovered = fog;
-                console.log("Discovered: ", discovered)
-                // drawRecoveredFog();
-                // drawScene(); // update display
+                return; // servidor tenía datos, listo
             }
         }
     } catch (err) {
-        console.error('Error cargando niebla descubierta:', err);
+        console.error('Error cargando niebla del servidor:', err);
+    }
+
+    // Fallback: intentar desde localStorage
+    const key = `fog_${localStorage.getItem('partidaId')}_${localStorage.getItem('userId')}`;
+    const saved = localStorage.getItem(key);
+    if (saved) {
+        try {
+            const localFog = JSON.parse(saved);
+            if (Array.isArray(localFog) && localFog.length > 0) {
+                discovered = localFog;
+                console.log('Niebla recuperada desde localStorage');
+            }
+        } catch (e) {
+            console.error('Error parseando niebla local:', e);
+        }
     }
 }
 
@@ -250,10 +264,6 @@ async function inicializarPartida() {
 
         console.log('Info de partida devuelta por el servidor:', info);
 
-        // cargar niebla previamente guardada (si existe)
-        if (!info.esNueva)
-            await cargarNieblaDescubierta();
-
         // si la respuesta indica bandos asignados pero los valores son nulos/indefinidos,
         // forzamos la bandera a false para que el usuario pueda volver a elegir.
         if (bandasAsignadas && (!info.bando1 || !info.bando2)) {
@@ -317,9 +327,14 @@ async function inicializarPartida() {
             if(!discovered.length > 0)
                 discovered = Array.from({ length: rows }, () => Array(cols).fill(false));
             revealStartColumnsByBando();
+            revealAroundAllDeployedDrones(); // revela entorno de todos los drones, no solo el activo
             revealAroundActiveDrone();
             updateInfoPanel();
             statusDeployBase();
+
+            // cargar niebla previamente guardada (si existe)
+            // if (!info.esNueva)
+            await cargarNieblaDescubierta();
 
             /* Si la partida ya estÃ¡ iniciada (ambos bandos desplegados), mostrar botones de acciÃ³n */
             if (info.bandosDesplegados === 2) {
@@ -770,6 +785,7 @@ if (usuarioId && currentPartidaId) {
                 drone.x = x;
                 drone.y = y;
                 isDeployMode = false;
+                saveFogLocally();
                 revealAroundActiveDrone();
                 updateInfoPanel();
                 drawScene();
@@ -930,6 +946,7 @@ if (usuarioId && currentPartidaId) {
                     // Actualizacion optimista: Mueve la unidad en el cliente para dar feedback visual inmediato.
                     // Lo ideal seri­a que el servidor envi­e el nuevo estado del juego vi­a SSE.
                     moveActiveDroneTo(x, y);
+                    saveFogLocally();
 
                 } else {
                     const raw = await res.text();

@@ -640,7 +640,19 @@ function resizeCanvas() {
     cellSize = Math.min(canvas.width / cols, canvas.height / rows);
 
     // La matriz discovered debe tener el tamaño fijo
-    discovered = Array.from({ length: rows }, () => Array(cols).fill(false));
+    const prevDiscovered = discovered;
+    const prevRows = prevDiscovered.length;
+    const prevCols = prevRows > 0 ? prevDiscovered[0].length : 0;
+
+    discovered = Array.from({ length: rows }, (_, y) =>
+        Array.from({ length: cols }, (_, x) => {
+            // Si la celda existía antes, conservar su valor
+            if (y < prevRows && x < prevCols) {
+                return prevDiscovered[y][x];
+            }
+            return false;
+        })
+    );
     revealStartColumnsByBando();
     if (!portadronesHydrated) {
         positionPortaDronNaval();
@@ -721,6 +733,38 @@ function revealAroundActiveDrone() {
             }
         }
     }
+}
+
+function revealAroundAllDeployedDrones() {
+    // Revelar alrededor del portadrón propio
+    const ownPorta = getOwnPorta();
+    if (ownPorta) {
+        const centerX = ownPorta.x + (ownPorta.size / 2);
+        const centerY = ownPorta.y + (ownPorta.size / 2);
+        const r = ownPorta.revealRadius;
+        for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+                const dx = (x + 0.5) - centerX;
+                const dy = (y + 0.5) - centerY;
+                if ((dx * dx) + (dy * dy) <= r * r) discovered[y][x] = true;
+            }
+        }
+    }
+
+    // Revelar alrededor de cada dron desplegado propio
+    drones.forEach(drone => {
+        if (!drone.deployed || drone.vida <= 0) return;
+        const centerX = drone.x + 0.5;
+        const centerY = drone.y + 0.5;
+        const r = drone.revealRadius;
+        for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+                const dx = (x + 0.5) - centerX;
+                const dy = (y + 0.5) - centerY;
+                if ((dx * dx) + (dy * dy) <= r * r) discovered[y][x] = true;
+            }
+        }
+    });
 }
 
 /* Crear una funcion que utilice la misma logica que revelsa el mapa al rededor del dron, pero para validar su rango de movimiento con respecto a un x,y dado
@@ -1444,4 +1488,17 @@ async function recargarDronElegido(drone) {
         console.error('Error recargando dron:', err);
         showBattleToast("Error de red al recargar.", "error");
     }
+}
+
+//funciones para no perder discovered al recargar pagina
+
+function saveFogLocally() {
+    const key = `fog_${localStorage.getItem('partidaId')}_${localStorage.getItem('userId')}`;
+    localStorage.setItem(key, JSON.stringify(discovered));
+}
+
+function loadFogLocally() {
+    const key = `fog_${localStorage.getItem('partidaId')}_${localStorage.getItem('userId')}`;
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : null;
 }
