@@ -11,27 +11,26 @@
     <link rel="stylesheet" href="../css/fuente.css">
     <link rel="stylesheet" href="../css/modal.css">
     <link rel="stylesheet" href="../css/partida.css">
-
 </head>
 
 <style>
-     .kill-modal-content {
-            width: min(96vw, 1080px);
-            max-width: 1080px;
-            padding: 24px;
-        }
+    .kill-modal-content {
+        width: min(96vw, 1080px);
+        max-width: 1080px;
+        padding: 24px;
+    }
 
-        .kill-modal-image {
-            width: 1024px;
-            height: 1024px;
-            max-width: calc(100vw - 80px);
-            max-height: calc(100vh - 220px);
-            margin: 0 auto;
-            border: 2px solid #6a4a1c;
-            background: #000;
-            object-fit: cover;
-            display: block;
-        }
+    .kill-modal-image {
+        width: 1024px;
+        height: 1024px;
+        max-width: calc(100vw - 80px);
+        max-height: calc(100vh - 220px);
+        margin: 0 auto;
+        border: 2px solid #6a4a1c;
+        background: #000;
+        object-fit: cover;
+        display: block;
+    }
 </style>
 
 <body style="margin:0; min-height:100vh;">
@@ -39,14 +38,12 @@
     <div id="layoutPartida" style="display:flex; height:100vh;">
 
         <!-- PANEL IZQUIERDO -->
-        <aside
-            style="width:340px;position:relative;display:flex;flex-direction:column;padding:10px;box-sizing:border-box;">
+        <aside style="width:340px;position:relative;display:flex;flex-direction:column;padding:10px;box-sizing:border-box;">
 
             <img src="../img/gold_panel_8x.png"
                 style="position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;z-index:0;">
 
-            <div
-                style="position:relative;z-index:1;display:flex;flex-direction:column;height:100%;justify-content:space-between;">
+            <div style="position:relative;z-index:1;display:flex;flex-direction:column;height:100%;justify-content:space-between;">
 
                 <!-- TITULO -->
                 <h1 id="tituloPartida" class="font-display" style="text-align:center;margin:2px 0 4px;font-size:24px;">
@@ -64,7 +61,6 @@
                     </div>
 
                 </div>
-
 
                 <!-- BOTONES -->
                 <div id="actionBar">
@@ -87,33 +83,19 @@
 
                 </div>
 
-
                 <!-- LISTA DRONES (OCUPA TODO EL RESTO) -->
                 <div id="fleetList"
                     style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start;">
-
                 </div>
 
-
                 <!-- BOTONES INFERIORES -->
-                <div style="
-display:flex;
-justify-content:center;
-gap:8px;
-margin-top:10px;
-">
+                <div style="display:flex;justify-content:center;gap:8px;margin-top:10px;">
 
                     <button id="btnSalir" class="boton font-display" style="width:90px;height:30px;">
                         Salir
                     </button>
 
-                    <button id="btnHelp" class="boton font-display" style="
-width:32px;
-height:30px;
-display:flex;
-align-items:center;
-justify-content:center;
-">
+                    <button id="btnHelp" class="boton font-display" style="width:32px;height:30px;display:flex;align-items:center;justify-content:center;">
                         ?
                     </button>
 
@@ -122,56 +104,24 @@ justify-content:center;
             </div>
         </aside>
 
-
         <!-- PANEL DERECHO -->
-        <main style="
-flex:1;
-display:flex;
-flex-direction:column;
-padding:16px;
-gap:10px;
-">
+        <main style="flex:1;display:flex;flex-direction:column;padding:8px;gap:6px;">
 
             <!-- STATUS BAR -->
-<div style="
-    height:46px;
-    position:relative;
-    display:flex;
-    align-items:center;
-    justify-content:center;"
->
+            <div style="height:46px;position:relative;display:flex;align-items:center;justify-content:center;">
 
-                <img src="../img/gold_panel_8x.png" style="
-position:absolute;
-inset:0;
-width:100%;
-height:100%;
-image-rendering:pixelated;
-">
+                <img src="../img/gold_panel_8x.png" style="position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;">
 
-                <div id="statusBar" style="
-position:relative;
-z-index:1;
-width:100%;
-height:100%;
-display:flex;
-align-items:center;
-justify-content:center;
-color:#10100f;
-">
+                <div id="statusBar" style="position:relative;z-index:1;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#10100f;">
                 </div>
 
             </div>
+
             <!-- TOAST DE PARTIDA -->
             <div id="battleToast"></div>
 
             <!-- CANVAS -->
-            <canvas id="mapCanvas" style="
-flex:1;
-border:4px solid #6a4a1c;
-background:#24323d;
-cursor:pointer;
-">
+            <canvas id="mapCanvas" style="flex:1;border:4px solid #6a4a1c;background:#24323d;cursor:pointer;">
             </canvas>
 
         </main>
@@ -205,12 +155,12 @@ cursor:pointer;
         </div>
     </div>
 
-
     <div id="modalVictoria" class="modal-overlay oculto">
         <div class="modal-content">
 
             <h2 class="font-display">Partida finalizada</h2>
             <h2 id="lblGanador" class="font-display"></h2>
+
             <div class="modal-buttons">
 
                 <button id="btnCerrarPartida" class="boton boton-menu font-display" type="button">
@@ -224,12 +174,17 @@ cursor:pointer;
 
     <div id="modalAvisos" class="modal-overlay oculto">
         <div class="modal-content">
-            <h2 id= "lblAviso" class="font-display"></h2>
+
+            <h2 id="lblAviso" class="font-display"></h2>
+
             <div class="modal-buttons">
+
                 <button id="btnSalirPartida" class="boton boton-menu font-display" style="font-size: 16px;">
                     Salir
                 </button>
+
             </div>
+
         </div>
     </div>
 
@@ -253,7 +208,6 @@ cursor:pointer;
         </div>
     </div>
 
-
     <div id="modalEsperandoBando" class="modal-overlay oculto">
         <div class="modal-content">
 
@@ -268,13 +222,18 @@ cursor:pointer;
 
     <div id="modalObjetivoDestruido" class="modal-overlay oculto">
         <div class="modal-content kill-modal-content">
+
             <h2 id="killModalTitle" class="font-display">Objetivo destruido</h2>
             <img id="killModalImage" class="kill-modal-image" src="../img/DronExplotando.png" alt="Objetivo destruido">
+
             <div class="modal-buttons">
+
                 <button id="btnCerrarKillModal" class="boton boton-menu font-display" style="font-size: 16px;">
                     Salir
                 </button>
+
             </div>
+
         </div>
     </div>
 

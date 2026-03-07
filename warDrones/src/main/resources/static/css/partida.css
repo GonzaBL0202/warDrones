@@ -4,7 +4,7 @@
     justify-content: center;
     gap: 12px;
     flex-wrap: wrap;
-    padding: 8px 14px;
+    padding: 4px 14px;
     box-sizing: border-box;
 }
 
@@ -73,14 +73,20 @@
 }
 
 #battleToast {
-    min-height: 10px;
+    min-height: 0;
+    height: 0;
+    overflow: visible;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     pointer-events: none;
+    position: relative;
+    z-index: 10;
 }
 
 .battle-toast {
+    position: absolute;
+    top: 8px; /* distancia desde el borde superior del canvas */
     opacity: 0;
     transform: translateY(-6px);
     transition: opacity 0.18s ease, transform 0.18s ease;
@@ -92,7 +98,7 @@
 
     min-height: 24px;
     padding: 3px 10px;
-    margin-top: -6px;
+    margin-top: 0;  /* eliminar el margin-top negativo anterior */
     margin-bottom: 0;
 
     background: rgba(20, 16, 10, 0.92);

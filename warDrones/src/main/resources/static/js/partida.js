@@ -627,16 +627,19 @@ function updateButtonByChosen(esPorta) {
 
 function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
-    canvas.width = Math.floor(rect.width);
-    canvas.height = Math.floor(rect.height);
 
-    // Fijar número de columnas y filas (por ejemplo, 20x20)
     const FIXED_COLS = 35;
     const FIXED_ROWS = 20;
     cols = FIXED_COLS;
     rows = FIXED_ROWS;
 
-    // Ajustar cellSize para que la grilla ocupe todo el canvas
+    // Calcular cellSize desde el espacio disponible
+    cellSize = Math.min(rect.width / cols, rect.height / rows);
+
+    // Ajustar canvas exactamente a la grilla — sin píxeles sobrantes
+    canvas.width = Math.floor(cellSize * cols);
+    canvas.height = Math.floor(cellSize * rows);
+
     cellSize = Math.min(canvas.width / cols, canvas.height / rows);
 
     // La matriz discovered debe tener el tamaño fijo
@@ -646,13 +649,13 @@ function resizeCanvas() {
 
     discovered = Array.from({ length: rows }, (_, y) =>
         Array.from({ length: cols }, (_, x) => {
-            // Si la celda existía antes, conservar su valor
             if (y < prevRows && x < prevCols) {
                 return prevDiscovered[y][x];
             }
             return false;
         })
     );
+
     revealStartColumnsByBando();
     if (!portadronesHydrated) {
         positionPortaDronNaval();
