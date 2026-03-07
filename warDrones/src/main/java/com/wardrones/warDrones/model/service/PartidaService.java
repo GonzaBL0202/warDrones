@@ -429,28 +429,33 @@ public class PartidaService {
 
         GameSession session = gameSManager.obtenerSesion(partidaId);
         if (session != null) {
-            // Actualizar portadrones
             PortadronState nav = session.getPortadronNaval();
             PortadronState aer = session.getPortadronAereo();
 
             if (nav != null) {
-                pdRepository.findById(nav.getId()).ifPresent(p -> {
-                    p.setPosicionX(nav.getPosicionX());
-                    p.setPosicionY(nav.getPosicionY());
-                    p.setVida(nav.getVida());
-                    p.setEstado(nav.getEstado());
-                    pdRepository.save(p);
-                });
+                Portadron pNav = pdRepository.findById(nav.getId())
+                    .orElseThrow(() -> new RuntimeException("Portadron naval no encontrado"));
+                pNav.setPosicionX(nav.getPosicionX());
+                pNav.setPosicionY(nav.getPosicionY());
+                pNav.setVida(nav.getVida());
+                pNav.setEstado(nav.getEstado());
+                pdRepository.save(pNav);
+                System.out.println("Vida a guardar del porta naval: " + nav.getVida());
             }
+
             if (aer != null) {
-                pdRepository.findById(aer.getId()).ifPresent(p -> {
-                    p.setPosicionX(aer.getPosicionX());
-                    p.setPosicionY(aer.getPosicionY());
-                    p.setVida(aer.getVida());
-                    p.setEstado(aer.getEstado());
-                    pdRepository.save(p);
-                });
+                Portadron pAer = pdRepository.findById(aer.getId())
+                    .orElseThrow(() -> new RuntimeException("Portadron aereo no encontrado"));
+                pAer.setPosicionX(aer.getPosicionX());
+                pAer.setPosicionY(aer.getPosicionY());
+                pAer.setVida(aer.getVida());
+                pAer.setEstado(aer.getEstado());
+                pdRepository.save(pAer);
+                System.out.println("Vida a guardar del porta aereo: " + aer.getVida());
             }
+
+            // Forzar flush para asegurar que los cambios se escriben antes del commit
+            pdRepository.flush();
 
             // Actualizar drones
             Map<Integer, DronState> dronesMap = session.getDrones();
@@ -523,6 +528,9 @@ public class PartidaService {
 
         Portadron pNaval = pdRepository.findByPartidaIdAndTipo(partidaId, Bando.NAVAL).orElseThrow(() -> new RuntimeException("Portadron no encontrado"));
         Portadron pAereo = pdRepository.findByPartidaIdAndTipo(partidaId, Bando.AEREO).orElseThrow(() -> new RuntimeException("Portadron no encontrado"));
+
+        System.out.println("Vida naval en BD al recuperar: " + pNaval.getVida());
+        System.out.println("Vida aereo en BD al recuperar: " + pAereo.getVida());
         
         gs.setPortadrones(pAereo, pNaval);
         List<Dron> dronsN = dRepository.findByDronPortaDronId_Id(pNaval.getId());

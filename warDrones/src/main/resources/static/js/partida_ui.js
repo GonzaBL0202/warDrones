@@ -138,21 +138,14 @@ function cerrarMensajeVictoria() {
     document.getElementById('modalVictoria')?.classList.add('oculto');
 }
 
-function abrirMensajeAviso(){
-    document.getElementById('modalAvisos').classList.add('active');
+function abrirMensajeAviso() {
+    document.getElementById('modalAvisos')?.classList.remove('oculto');
 }
 
 function cerrarMensajeAviso() {
-    document.getElementById('modalAvisos').classList.add('oculto');
+    document.getElementById('modalAvisos')?.classList.add('oculto');
 }
 
-function abrirMensajeAviso(){
-    document.getElementById('modalAvisos').classList.add('active');
-}
-
-function cerrarMensajeAviso() {
-    document.getElementById('modalAvisos').classList.remove('active');
-}
 
 async function abandonarPartida() {
     const partidaId = localStorage.getItem("partidaId");
@@ -490,25 +483,15 @@ if (usuarioId && currentPartidaId) {
         const info = await obtenerPartidaInfo();
         if (!info) return;
 
-        // ====== STATUS BAR (solo despliegue cuando ambos bandos están elegidos) ======
-        // Ajustá estos nombres si en tu info vienen distinto:
         const b1 = info.partidaBando1 ?? info.bando1 ?? info.partida_bando1 ?? info.partida_bando_1;
         const b2 = info.partidaBando2 ?? info.bando2 ?? info.partida_bando2 ?? info.partida_bando_2;
-
-        const bandosListos = !!b1 && !!b2;
-        const yoElegiBando = !!bandoSeleccionado;
-
-
-        // ===========================================================================
-
-        getAllDrones(info.drones);
-        hydrateDronesFromServer(info.drones);
         
-        //  Portadrones + HUD corazones
+        hydrateDronesFromServer(info.drones);
+        getAllDrones(info.drones);
+
         if (Array.isArray(info.portadrones)) {
             hydratePortadronesFromServer(info.portadrones);
 
-            // actualizar corazones del portadron propio
             const miPorta = info.portadrones.find(
                 p => String(p.tipo || p.bando || "").toUpperCase() === String(bandoSeleccionado).toUpperCase()
             );
@@ -518,12 +501,11 @@ if (usuarioId && currentPartidaId) {
             }
         }
 
-        drawRivalDrones();
-        drawPortaDrones();
-
         turnoActual = info.turnoActual;
         bandosDesplegados = info.bandosDesplegados || bandosDesplegados;
         actualizarEstadoTurno();
+
+        drawScene(); // ← único punto de render
     }
 
 
