@@ -20,7 +20,7 @@ fogMapImage.onload = () => {
     drawScene();
 };
 
-fogMapImage.src = "../img/fog_map.png";
+fogMapImage.src = "../img/fog_map4.png";
 
 const waterTexture = new Image();
 let waterReady = false;
@@ -30,7 +30,7 @@ waterTexture.onload = () => {
     drawScene();
 };
 
-waterTexture.src = "../img/water_map.png";
+waterTexture.src = "../img/water_map3.png";
 
 
 /* Referencias del panel lateral (HUD) */
@@ -1255,7 +1255,7 @@ const partidaId = localStorage.getItem("partidaId");
 if (partidaId) {
     const titulo = document.getElementById("tituloPartida");
     if (titulo) {
-        titulo.textContent = "Partida #" + partidaId;
+        titulo.textContent = "";
     }
 }
 
