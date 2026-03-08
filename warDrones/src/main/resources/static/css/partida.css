@@ -309,3 +309,62 @@
     grid-column: 1;
     grid-row: 1;
 }
+
+.help-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: transparent;
+    z-index: 1000;
+}
+
+.help-overlay.open {
+    display: block;
+}
+
+.help-panel {
+    display: none;
+    position: fixed;
+    left: 240px;
+    bottom: 18px;
+
+    width: 320px;
+    max-width: calc(100vw - 30px);
+
+    box-sizing: border-box;
+    z-index: 1001;
+}
+
+.help-panel.open {
+    display: block;
+}
+
+.help-panel h2 {
+    margin: 0 0 10px 0;
+    font-size: 18px;
+    text-align: center;
+}
+
+.help-body {
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.help-body ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.help-body li {
+    margin-bottom: 6px;
+}
+
+.help-footer {
+    margin-top: 12px;
+    display: flex;
+    justify-content: center;
+}
+
+#helpOk {
+    min-width: 80px;
+}

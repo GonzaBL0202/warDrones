@@ -80,3 +80,14 @@ async function cargarRanking() {
 document.addEventListener("DOMContentLoaded", () => {
   cargarRanking().catch((err) => console.error("Ranking error:", err));
 });
+
+Help.init({
+  title: "Ayuda - Ranking",
+  items: [
+    "Aquí se muestran los mejores jugadores.",
+    "El ranking se ordena según las victorias obtenidas.",
+    "Tu posición se actualizará después de cada partida.",
+    "Intentá mejorar tu posición ganando partidas.",
+    "Recuerda que si abandonas, es una victoria para tu rival."
+  ]
+});

@@ -571,6 +571,8 @@ function updateButtonsVisibility(iniciada = false) {
     if (iniciada) {
         gameStarted = true;
         updateActionBarVisibility();
+            actualizarAyudaPartida();
+
     }
 }
 
@@ -1504,4 +1506,35 @@ function loadFogLocally() {
     const key = `fog_${localStorage.getItem('partidaId')}_${localStorage.getItem('userId')}`;
     const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : null;
+}
+
+function actualizarAyudaPartida() {
+    if (typeof Help === "undefined") return;
+
+    // AYUDA DURANTE DESPLIEGUE
+    if (!gameStarted) {
+        Help.init({
+            title: "Despliegue de drones",
+            items: [
+                "Seleccioná un dron en el panel izquierdo.",
+                "Hacé clic en una casilla válida del mapa para colocarlo.",
+                "No podés colocar dos unidades en la misma casilla.",
+                "Desplegá todos tus drones para comenzar la batalla."
+            ]
+        });
+        return;
+    }
+
+    // AYUDA DURANTE LA PARTIDA
+    Help.init({
+        title: "Cómo jugar",
+        items: [
+            "Seleccioná un dron o tu portadrones.",
+            "Usá los botones disponibles según la unidad seleccionada.",
+            "Mover: desplaza la unidad a una casilla válida.",
+            "Atacar: elegí un objetivo enemigo dentro del alcance.",
+            "Recargar: repone munición si la unidad lo permite.",
+            "Protegé tu portadrones y destruí al rival para ganar."
+        ]
+    });
 }
