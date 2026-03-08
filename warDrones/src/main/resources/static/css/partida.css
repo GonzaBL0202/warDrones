@@ -1,0 +1,311 @@
+#statusBar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 4px 14px;
+    box-sizing: border-box;
+}
+
+/* Cada bloque visual dentro de la barra */
+.status-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 26px;
+    padding: 2px 10px;
+
+    background: rgba(20, 16, 10, 0.72);
+    border: 2px solid #6a4a1c;
+    border-radius: 10px;
+
+    color: #f7e7b2;
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 230, 160, 0.08),
+        0 2px 8px rgba(0, 0, 0, 0.22);
+
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+/* Título dentro del chip */
+.status-chip-label {
+    font-weight: 800;
+    color: #f7e7b2;
+}
+
+/* Valor dentro del chip */
+.status-chip-value {
+    color: #fff6d6;
+}
+
+.status-chip-porta-icon {
+    width: 22px;
+    height: 22px;
+    image-rendering: pixelated;
+    object-fit: contain;
+    flex: 0 0 auto;
+}
+
+.status-chip-hearts {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.status-chip-heart {
+    width: 16px;
+    height: 16px;
+    image-rendering: pixelated;
+    object-fit: contain;
+    flex: 0 0 auto;
+}
+
+.status-chip-drone-icon {
+    width: 20px;
+    height: 20px;
+    image-rendering: pixelated;
+    object-fit: contain;
+    flex: 0 0 auto;
+}
+
+#battleToast {
+    min-height: 0;
+    height: 0;
+    overflow: visible;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    pointer-events: none;
+    position: relative;
+    z-index: 10;
+}
+
+.battle-toast {
+    position: absolute;
+    top: 8px; /* distancia desde el borde superior del canvas */
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+
+    min-height: 24px;
+    padding: 3px 10px;
+    margin-top: 0;  /* eliminar el margin-top negativo anterior */
+    margin-bottom: 0;
+
+    background: rgba(20, 16, 10, 0.92);
+    border: 2px solid #6a4a1c;
+    border-radius: 8px;
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 230, 160, 0.08),
+        0 2px 6px rgba(0, 0, 0, 0.24);
+
+    color: #f7e7b2;
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.battle-toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.battle-toast.info {
+    border-color: #6a4a1c;
+}
+
+.battle-toast.success {
+    border-color: #42ff73;
+}
+
+.battle-toast.error {
+    border-color: #ff5555;
+}
+
+/* GRID DRONES */
+#fleetList {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    align-content: start;
+}
+
+/* CARD GENERAL (drones + porta) */
+.drone-card,
+.porta-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 10px;
+    background: rgba(15, 25, 30, 0.55);
+    border: 2px solid #6a4a1c;
+    cursor: pointer;
+    transition:
+        transform 0.12s ease,
+        filter 0.12s ease,
+        box-shadow 0.12s ease,
+        background 0.12s ease,
+        border-color 0.12s ease;
+}
+
+/* PORTADRON ocupa 2 columnas */
+.porta-btn {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 64px;
+}
+
+/* ICONOS */
+.drone-icon,
+.porta-icon {
+    width: 36px;
+    height: 36px;
+    image-rendering: pixelated;
+    object-fit: contain;
+    flex: 0 0 auto;
+}
+
+/* HOVER */
+.drone-card:hover,
+.porta-btn:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.08);
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.1);
+}
+
+/* SELECCIONADO */
+.drone-card.active,
+.porta-btn.active {
+    border: 2px solid #ffffff !important;
+    background: rgba(255, 230, 140, 0.25) !important;
+    box-shadow:
+        0 0 6px rgba(255, 255, 255, 0.25),
+        0 0 12px rgba(255, 240, 170, 0.35);
+    transform: scale(1.02);
+}
+
+/* DESPLEGADO */
+.drone-card.deployed,
+.porta-btn.deployed {
+    border: 2px solid #42ff73;
+}
+
+/* RESERVA */
+.drone-card.reserve {
+    border: 2px solid #ff5555;
+}
+
+/* DESTRUIDO */
+.drone-card.dead,
+.porta-btn.dead {
+    border: 2px solid #666;
+    opacity: 0.5;
+    cursor: default;
+    filter: grayscale(0.35);
+}
+
+/* META */
+.drone-meta {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+    min-width: 0;
+}
+
+/* TITULO */
+.drone-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #f7e7b2;
+}
+
+/* MUNICION */
+.drone-ammo {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #f7e7b2;
+}
+
+.ammo-icon {
+    width: 16px;
+    height: 16px;
+    image-rendering: pixelated;
+}
+
+/* TEXTO DEL PORTADRON */
+.porta-btn span {
+    font-size: 13px;
+    font-weight: 800;
+    color: #f7e7b2;
+    text-align: left;
+}
+
+/* ACTION BAR */
+#actionBar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+#actionBar button {
+    height: 30px;
+    width: 100%;
+}
+
+#actionBar button.action-selected {
+    position: relative;
+    border: 2px solid rgba(255, 220, 120, 0.9) !important;
+    background-color: rgba(255, 200, 80, 0.18);
+
+    box-shadow:
+        0 0 6px rgba(255, 210, 120, 0.35),
+        0 0 14px rgba(255, 210, 120, 0.25),
+        inset 0 0 6px rgba(255, 220, 160, 0.25);
+
+    transform: translateY(-1px);
+
+    animation: actionButtonPulse 1.6s ease-in-out infinite;
+}
+
+/* Orden para dron */
+#attackBtn {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+#moveBtn {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+/* Cambiar: centrado y más chico */
+#nextDroneBtn {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: center;
+    width: 55%;
+    max-width: 140px;
+}
+
+/* Orden para portadron */
+#reloadBtn {
+    grid-column: 1;
+    grid-row: 1;
+}
