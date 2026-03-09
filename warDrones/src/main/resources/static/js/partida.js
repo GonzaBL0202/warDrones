@@ -12,12 +12,33 @@ const portaDronNavalSprite = new Image(); /* Sprite del porta dron naval */
 const portaDronAereoSprite = new Image(); /* Sprite del porta dron aereo */
 const spriteFps = 10; /* Velocidad de animacion del sprite */
 
+const fogMapImage = new Image();
+let fogMapReady = false;
+
+fogMapImage.onload = () => {
+    fogMapReady = true;
+    drawScene();
+};
+
+fogMapImage.src = "../img/fog_map4.png";
+
+const waterTexture = new Image();
+let waterReady = false;
+
+waterTexture.onload = () => {
+    waterReady = true;
+    drawScene();
+};
+
+waterTexture.src = "../img/water_map3.png";
+
+
 /* Referencias del panel lateral (HUD) */
 const bandoLabel = document.getElementById('bandoLabel');
 // HUD labels removed per user request (info shown on canvas).
 const setupHint = document.getElementById('setupHint');
 const turnHint = document.getElementById('turnHint');
-const deployDroneBtn = document.getElementById('deployDroneBtn');
+
 const fleetList = document.getElementById('fleetList');
 const nextDroneBtn = document.getElementById('nextDroneBtn');
 const moveBtn = document.getElementById('moveBtn');
@@ -34,7 +55,7 @@ const msjAviso = document.getElementById('lblAviso');
 /* Modos de acciÃ³n activados por botones */
 let isMoveMode = false;      // espera click para mover dron activo
 let isAttackMode = false;    // espera seleccionar objetivo para atacar
-// recarga no necesita modo separado, se lanza desde el botÃ³n
+let isReloadMode = false;    // espera seleccionar un dron aliado para recargar
 
 /* Estado global de visibilidad de botones - una vez que cambio no vuelve a cambiar */
 let gameStarted = false;     // true cuando la partida estÃ¡ iniciada por el servidor
@@ -49,9 +70,10 @@ let turnoActual = null;      // ID del usuario que tiene el turno actualmente
 let bandosDesplegados = 0;   // Cantidad de bandos que han completado despliegue (0, 1, o 2)
 
 
-/* Lee el parametro "bando" desde la URL y lo normaliza */
 const query = new URLSearchParams(window.location.search);
-let bandoSeleccionado = ((query.get('bando') || 'aereo').toUpperCase() === 'NAVAL') ? 'NAVAL' : 'AEREO';
+const bandoParam = query.get('bando');
+let bandoSeleccionado = bandoParam ? bandoParam.toUpperCase() : null;
+
 
 let ganador = null;
 let fin = null;
@@ -65,6 +87,7 @@ let drones = gameState.drones; /* Lista de drones del bando seleccionado */
 let dronesRivales = gameState.dronesRivales; /* Lista de drones del bando rival */
 let activeDroneId = null; /* Drone actualmente controlado */
 let isPortaSelected = false; /* Controla si la unidad activa es el porta dron */
+let hoveredDroneId = null; /* Drone previsualizado al pasar el mouse sobre el grid */
 let isDeployMode = false; /* Espera click en mapa para colocar dron */
 let isMoving = false; /* Evita iniciar otra animacion mientras el jugador se desplaza */
 const stepDelayMs = 90; /* Tiempo entre pasos para simular movimiento */
@@ -103,12 +126,14 @@ dronrivalSprite.onload = () => {
 };
 
 
-/* Carga de sprites */
 portaDronNavalSprite.onload = () => {
     portaDronNavalReady = true;
+    drawScene(); // <-- redibuja apenas carga
 };
+
 portaDronAereoSprite.onload = () => {
     portaDronAereoReady = true;
+    drawScene(); // <-- redibuja apenas carga
 };
 
 /* Devuelve el dron activo segun el indice seleccionado */
@@ -123,15 +148,17 @@ function mapDroneFromServer(droneInfo) {
     /* AQUI SE DEFINEN LOS RANGOS DE VISION Y MOVIMIENTO DE CADA DRON SEGUN SU TIPO */
     const moveRadius = isNaval ? 4 : 2;
     const revealRadius = isNaval ? 4 : 2;
-    const deployed = !(droneInfo.posicionX === 0 && droneInfo.posicionY === 0);
+    const deployed = droneInfo.vida > 0 && !(droneInfo.posicionX === 0 && droneInfo.posicionY === 0);
     return {
         id: droneInfo.id,
+        bando: String(droneInfo.bando || "").toUpperCase(),
         nombre,
         moveRadius,
         revealRadius,
         color,
         deployed,
         vida: droneInfo.vida,
+        municion: droneInfo.municion ?? 0,
         x: droneInfo.posicionX,
         y: droneInfo.posicionY
     };
@@ -139,7 +166,7 @@ function mapDroneFromServer(droneInfo) {
 
 
 function hydrateDronesFromServer(allDrones) {
-    /* conservar copia previa para detectar cambios de vida*/
+    // Capturar estado previo ANTES de actualizar
     const prevOwn = drones.map((d) => ({ id: d.id, vida: d.vida, x: d.x, y: d.y, deployed: d.deployed }));
     const prevRival = dronesRivales.map((d) => ({ id: d.id, vida: d.vida, x: d.x, y: d.y, deployed: d.deployed }));
 
@@ -157,23 +184,24 @@ function hydrateDronesFromServer(allDrones) {
     dronesRivales = gameState.dronesRivales;
     activeDroneId = gameState.activeDroneId;
 
-    // detectar bajas y forzar celda descubierta / retirar despliegue
-    ownDrones.forEach((d) => {
-        const old = prevOwn.find((o) => o.id === d.id);
-        if (old && old.vida > 0 && d.vida <= 0) {
-            markCellDiscovered(d.x, d.y);
-            d.deployed = false;
-            abrirModalObjetivoDestruido('DRON', d.nombre && d.nombre.toUpperCase() === 'NAVAL' ? 'NAVAL' : 'AEREO');
-        }
-    });
-    rivalDrones.forEach((d) => {
-        const old = prevRival.find((o) => o.id === d.id);
-        if (old && old.vida > 0 && d.vida <= 0) {
-            markCellDiscovered(d.x, d.y);
-            d.deployed = false;
-            abrirModalObjetivoDestruido('DRON', d.nombre && d.nombre.toUpperCase() === 'NAVAL' ? 'NAVAL' : 'AEREO');
-        }
-    });
+    // Solo detectar bajas si ya hubo una hidratación previa (prevOwn tiene datos)
+    if (dronesHydratedOnce) {
+        ownDrones.forEach((d) => {
+            const old = prevOwn.find((o) => o.id === d.id);
+            if (old && old.vida > 0 && d.vida <= 0) {
+                markCellDiscovered(d.x, d.y);
+                abrirModalObjetivoDestruido('DRON', String(d.bando).toUpperCase() === 'NAVAL' ? 'NAVAL' : 'AEREO');
+            }
+        });
+
+        rivalDrones.forEach((d) => {
+            const old = prevRival.find((o) => o.id === d.id);
+            if (old && old.vida > 0 && d.vida <= 0) {
+                markCellDiscovered(d.x, d.y);
+                abrirModalObjetivoDestruido('DRON', String(d.bando).toUpperCase() === 'NAVAL' ? 'NAVAL' : 'AEREO');
+            }
+        });
+    }
 
     dronesHydratedOnce = true;
 }
@@ -184,12 +212,13 @@ function hydratePortadronesFromServer(portadrones) {
         const prevVida = target.vida;
         target.x = porta.posicionX;
         target.y = porta.posicionY;
-        target.vida = porta.vida
+        target.vida = porta.vida;
         target.estado = porta.vida > 0 ? true : false; 
         if (portasHydratedOnce && prevVida > 0 && target.vida <= 0) {
             abrirModalObjetivoDestruido('PORTA', porta.tipo === 'NAVAL' ? 'NAVAL' : 'AEREO');
         }
     });
+
     portadronesHydrated = true;
     portasHydratedOnce = true;
 }
@@ -202,6 +231,16 @@ function applyBandoSprite() {
     dronrivalSprite.src = bandoSeleccionado === 'NAVAL'
         ? '../img/dron_aereo.png'
         : '../img/dron_naval.png';
+}
+
+function applyPortaSprites() {
+    // logs de error si no encuentra el archivo (así lo detectás al toque)
+    portaDronNavalSprite.onerror = () => console.error("No cargó Porta_dron_naval.png", portaDronNavalSprite.src);
+    portaDronAereoSprite.onerror = () => console.error("No cargó Porta_dron_aereo.png", portaDronAereoSprite.src);
+
+    // IMPORTANTÍSIMO: asignar src (si no, nunca se marca Ready)
+    portaDronNavalSprite.src = "../img/Porta_dron_naval.png";
+    portaDronAereoSprite.src = "../img/Porta_dron_aereo.png";
 }
 
 /* Revela columnas iniciales segun bando */
@@ -311,100 +350,267 @@ function mostrarAviso(msj) {
     lbl.textContent = msj;
 }
 
- function getId() {
-    const id = localStorage.getItem('userId');
-    return id ? parseInt(id) : null;
-}
 
 /* Actualiza textos del panel y reconstruye la lista de drones clickeables */
 function updateInfoPanel() {
-    const drone = getActiveDrone();
+    if (!bandoSeleccionado) {
+        if (fleetList) fleetList.innerHTML = '';
+        if (bandoLabel) bandoLabel.textContent = 'Bando: -';
+        updateButtonsVisibility(false);
+        return;
+    }
+
     const ownPorta = getOwnPorta();
-    bandoLabel.textContent = `Bando: ${bandoSeleccionado}`;
-    // Info de dron desplegada directamente en canvas; no actualizar labels.
+    if (!ownPorta) return;
 
-    if (!isDeployMode) {
-        setupHint.textContent = 'Elige un dron y pulsa Desplegar.';
+    // Solo drones del jugador actual
+    const misDrones = drones.filter(d =>
+        String(d.bando || '').toUpperCase() === String(bandoSeleccionado || '').toUpperCase()
+    );
+
+    if (bandoLabel) {
+        bandoLabel.textContent = `Bando: ${bandoSeleccionado}`;
     }
 
-    /* Actualizar visibilidad de botones solo si la partida aÃºn no ha iniciado */
-    if (!gameStarted) {
-        updateButtonsVisibility();
+    if (setupHint && !gameStarted) {
+        if (isDeployMode) {
+            setupHint.textContent = 'Selecciona una celda del mapa para desplegar el dron.';
+        } else {
+            setupHint.textContent = 'Elige un dron para desplegar.';
+        }
     }
 
-    /* Limpia y vuelve a crear la lista para reflejar seleccion actual */
+    // limpiar y reconstruir
     fleetList.innerHTML = '';
+
+    // =========================
+    // PORTADRÓN
+    // =========================
     const portaItem = document.createElement('button');
     portaItem.type = 'button';
-    portaItem.textContent = `${ownPorta.nombre}`;
-    portaItem.style.width = '100%';
-    portaItem.style.textAlign = 'left';
-    portaItem.style.padding = '4px 6px';
-    portaItem.style.border = '1px solid #6a4a1c';
-    portaItem.style.background = isPortaSelected ? 'rgba(78, 197, 255, 0.3)' : 'rgba(15, 25, 30, 0.55)';
-    portaItem.style.color = '#f7e7b2';
-    portaItem.style.cursor = 'pointer';
+    portaItem.className = 'porta-btn';
+
+    if (!ownPorta.estado) {
+        portaItem.classList.add('dead');
+    } else {
+        portaItem.classList.add('deployed');
+    }
+
+    if (isPortaSelected) {
+        portaItem.classList.add('active');
+    }
+
+    const portaImg = document.createElement('img');
+    portaImg.className = 'porta-icon';
+    portaImg.src = (String(bandoSeleccionado).toUpperCase() === 'NAVAL')
+        ? '../img/Porta_dron_naval.png'
+        : '../img/porta_dron_aereo_icon.png';
+    portaImg.alt = ownPorta.nombre || 'Portadrón';
+    portaImg.draggable = false;
+
+    const portaText = document.createElement('span');
+    portaText.textContent = ownPorta.nombre || 'Portadrón';
+
+    portaItem.appendChild(portaImg);
+    portaItem.appendChild(portaText);
+
     portaItem.addEventListener('click', () => {
+        if (!ownPorta.estado) return;
+
         isPortaSelected = true;
+
+        // deseleccionar dron
+        activeDroneId = null;
+        gameState.activeDroneId = null;
+
         isDeployMode = false;
+
+        // al volver a seleccionar el portadrón, cancelar modos pendientes
+        isReloadMode = false;
+        isAttackMode = false;
+        isMoveMode = false;
+        updateActionButtonSelection();
+
         revealAroundActiveDrone();
         updateInfoPanel();
         drawScene();
+
+        if (!gameStarted) {
+            statusDeployBase();
+        }
     });
+
     fleetList.appendChild(portaItem);
 
-    for (let i = 0; i < drones.length; i++) {
-        const d = drones[i];
-        const item = document.createElement('button');
-        item.type = 'button';
-        item.textContent = `#${i} ${d.nombre} | ${d.deployed ? 'Desplegado' : 'Reserva'}`;
-        item.textContent = d.vida <= 0 ? ` #${i} ${d.nombre} | Explotado` : item.textContent;
-        item.style.width = '100%';
-        item.style.textAlign = 'left';
-        item.style.padding = '4px 6px';
-        item.style.border = '1px solid #6a4a1c';
-        item.style.background = d.id === activeDroneId ? 'rgba(242, 203, 103, 0.25)' : 'rgba(15, 25, 30, 0.55)';
-        item.style.color = '#f7e7b2';
-        item.style.cursor = 'pointer';
+    // =========================
+    // DRONES
+    // =========================
+    misDrones.forEach((d, index) => {
+        const dead = (d.vida <= 0) || (d.estado === false);
 
-        /* Al hacer click en un dron de la lista, si esta vivo, lo activa */
-        item.addEventListener('click', () => {
-            if (d.vida <= 0) return; // No permitir seleccionar drones explotados
+        const card = document.createElement('div');
+        card.className = 'drone-card';
+
+        if (dead) {
+            card.classList.add('dead');
+        } else if (d.deployed) {
+            card.classList.add('deployed');
+        } else {
+            card.classList.add('reserve');
+        }
+
+        if (!dead && d.id === activeDroneId) {
+            card.classList.add('active');
+        }
+
+        const ico = document.createElement('img');
+        ico.className = 'drone-icon';
+
+        const b = String(d.bando || bandoSeleccionado).toUpperCase();
+        ico.src = (b === 'NAVAL')
+            ? '../img/dron_icon_naval.png'
+            : '../img/dron_icon_aereo.png';
+        ico.alt = `Icono dron ${index + 1}`;
+        ico.draggable = false;
+
+        const meta = document.createElement('div');
+        meta.className = 'drone-meta';
+
+        const title = document.createElement('div');
+        title.className = 'drone-title';
+        title.textContent = `DRON #${index + 1}`;
+
+        const ammoRow = document.createElement('div');
+        ammoRow.className = 'drone-ammo';
+
+        const ammoImg = document.createElement('img');
+        ammoImg.className = 'ammo-icon';
+        ammoImg.src = (b === 'NAVAL')
+            ? '../img/m1sil.png'
+            : '../img/bomb.png';
+        ammoImg.alt = 'Munición';
+        ammoImg.draggable = false;
+
+        const ammoText = document.createElement('span');
+        ammoText.textContent = `x${dead ? 0 : (d.municion ?? 0)}`;
+
+        ammoRow.appendChild(ammoImg);
+        ammoRow.appendChild(ammoText);
+
+        meta.appendChild(title);
+        meta.appendChild(ammoRow);
+
+        card.appendChild(ico);
+        card.appendChild(meta);
+
+        card.addEventListener('mouseenter', () => {
+            if (dead) return;
+            hoveredDroneId = d.id;
+            drawScene();
+        });
+
+        card.addEventListener('mouseleave', () => {
+            if (hoveredDroneId === d.id) {
+                hoveredDroneId = null;
+                drawScene();
+            }
+        });
+        card.addEventListener('click', async () => {
+            if (dead) return;
+
+            // Si estamos en modo recarga, el click en el grid recarga ese dron
+            if (isReloadMode) {
+                await recargarDronElegido(d);
+                return;
+            }
+
             gameState.setActiveDroneById(d.id);
             activeDroneId = gameState.activeDroneId;
+
+            // deseleccionar porta
             isPortaSelected = false;
-            isDeployMode = false;
+
+            // al seleccionar un dron, se cancelan modos de acción pendientes
+            isReloadMode = false;
+            isAttackMode = false;
+            isMoveMode = false;
+            updateActionButtonSelection();
+
+            if (!gameStarted) {
+                if (!d.deployed) {
+                    isDeployMode = true;
+                    statusDeployPick();
+                } else {
+                    isDeployMode = false;
+                    statusDeployBase();
+                }
+            }
+
             revealAroundActiveDrone();
             updateInfoPanel();
             drawScene();
         });
 
-        fleetList.appendChild(item);
-    }
+        fleetList.appendChild(card);
+    });
+
+    updateActionBarVisibility();
 }
+
 
 /* Actualiza la visibilidad de los botones en funciÃ³n de si la partida estÃ¡ iniciada */
 function updateButtonsVisibility(iniciada = false) {
-    /* Si la partida estÃ¡ iniciada por el servidor, mostrar botones de acciÃ³n */
-    if (iniciada) {
-        /* En fase de juego: ocultar "Desplegar Dron" y mostrar acciones */
-        deployDroneBtn.style.display = 'none';
-        nextDroneBtn.style.display = 'block';
-        moveBtn.style.display = 'block';
-        attackBtn.style.display = 'block';
-        reloadBtn.style.display = 'block';
+    if (!nextDroneBtn || !moveBtn || !attackBtn || !reloadBtn) return;
 
-        /* Marcar que la partida ha iniciado para evitar cambios posteriores */
+    // ocultar todo siempre
+    nextDroneBtn.style.display = 'none';
+    moveBtn.style.display = 'none';
+    attackBtn.style.display = 'none';
+    reloadBtn.style.display = 'none';
+
+    if (iniciada) {
         gameStarted = true;
-    } else {
-        /* En fase de despliegue: mostrar solo "Desplegar Dron" y "Cambiar Dron" */
-        deployDroneBtn.style.display = 'block';
-        nextDroneBtn.style.display = 'block';
+        updateActionBarVisibility();
+            actualizarAyudaPartida();
+
+    }
+}
+
+function updateActionBarVisibility() {
+    if (!nextDroneBtn || !moveBtn || !attackBtn || !reloadBtn) return;
+
+    // antes de que empiece la partida, no mostrar nada
+    if (!gameStarted) {
+        nextDroneBtn.style.display = 'none';
         moveBtn.style.display = 'none';
         attackBtn.style.display = 'none';
         reloadBtn.style.display = 'none';
+        return;
+    }
+
+    // reset
+    nextDroneBtn.style.display = 'none';
+    moveBtn.style.display = 'none';
+    attackBtn.style.display = 'none';
+    reloadBtn.style.display = 'none';
+
+    // si está seleccionado el portadrón
+    if (isPortaSelected) {
+        reloadBtn.style.display = 'block';
+        moveBtn.style.display = 'block';
+        nextDroneBtn.style.display = 'block';
+        return;
+    }
+
+    // si hay dron activo
+    const d = getActiveDrone();
+    if (d && d.vida > 0) {
+        attackBtn.style.display = 'block';
+        moveBtn.style.display = 'block';
+        nextDroneBtn.style.display = 'block';
     }
 }
+
 
 function updateButtonByChosen(esPorta) {
     if (esPorta) {
@@ -416,27 +622,41 @@ function updateButtonByChosen(esPorta) {
     }
 }
 
-/* Ajusta el tamano interno del canvas al tamano visual,
-   calcula filas y columnas segun la grilla,
-   reinicia la niebla de guerra, centra al jugador
-   y redibuja toda la escena */
 
 function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
-    canvas.width = Math.floor(rect.width);
-    canvas.height = Math.floor(rect.height);
+    const borderWidth = parseFloat(getComputedStyle(canvas).borderLeftWidth) || 0;
 
-    // Fijar número de columnas y filas (por ejemplo, 20x20)
     const FIXED_COLS = 35;
     const FIXED_ROWS = 20;
     cols = FIXED_COLS;
     rows = FIXED_ROWS;
 
-    // Ajustar cellSize para que la grilla ocupe todo el canvas
+    const availableWidth = rect.width - borderWidth * 2;
+    const availableHeight = rect.height - borderWidth * 2;
+
+    cellSize = Math.min(availableWidth / cols, availableHeight / rows);
+
+    // Ajustar canvas exactamente a la grilla — sin píxeles sobrantes
+    canvas.width = Math.floor(cellSize * cols);
+    canvas.height = Math.floor(cellSize * rows);
+
     cellSize = Math.min(canvas.width / cols, canvas.height / rows);
 
-    // La matriz discovered debe tener el tamaño fijo
-    discovered = Array.from({ length: rows }, () => Array(cols).fill(false));
+    // Preservar discovered al redimensionar
+    const prevDiscovered = discovered;
+    const prevRows = prevDiscovered.length;
+    const prevCols = prevRows > 0 ? prevDiscovered[0].length : 0;
+
+    discovered = Array.from({ length: rows }, (_, y) =>
+        Array.from({ length: cols }, (_, x) => {
+            if (y < prevRows && x < prevCols) {
+                return prevDiscovered[y][x];
+            }
+            return false;
+        })
+    );
+
     revealStartColumnsByBando();
     if (!portadronesHydrated) {
         positionPortaDronNaval();
@@ -452,25 +672,30 @@ function resizeCanvas() {
 /* Dibuja el fondo del mapa y la grilla t?ctica donde se mover?n
    las unidades (drones) dentro del tablero */
 function drawMap() {
-    ctx.fillStyle = '#24323d';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (waterReady) {
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(waterTexture, 0, 0, canvas.width, canvas.height);
+    } else {
+        ctx.fillStyle = '#24323d';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
 
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
     ctx.lineWidth = 1;
 
-    /* Dibuja las líneas verticales de la grilla */
-    for (let x = 0; x <= canvas.width; x += cellSize) {
+    for (let x = 0; x <= cols; x++) {
+        const px = x * cellSize;
         ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
+        ctx.moveTo(px, 0);
+        ctx.lineTo(px, rows * cellSize);
         ctx.stroke();
     }
 
-    /* Dibuja las líneas horizontales de la grilla */
-    for (let y = 0; y <= canvas.height; y += cellSize) {
+    for (let y = 0; y <= rows; y++) {
+        const py = y * cellSize;
         ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
+        ctx.moveTo(0, py);
+        ctx.lineTo(cols * cellSize, py);
         ctx.stroke();
     }
 }
@@ -512,6 +737,38 @@ function revealAroundActiveDrone() {
             }
         }
     }
+}
+
+function revealAroundAllDeployedDrones() {
+    // Revelar alrededor del portadrón propio
+    const ownPorta = getOwnPorta();
+    if (ownPorta) {
+        const centerX = ownPorta.x + (ownPorta.size / 2);
+        const centerY = ownPorta.y + (ownPorta.size / 2);
+        const r = ownPorta.revealRadius;
+        for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+                const dx = (x + 0.5) - centerX;
+                const dy = (y + 0.5) - centerY;
+                if ((dx * dx) + (dy * dy) <= r * r) discovered[y][x] = true;
+            }
+        }
+    }
+
+    // Revelar alrededor de cada dron desplegado propio
+    drones.forEach(drone => {
+        if (!drone.deployed || drone.vida <= 0) return;
+        const centerX = drone.x + 0.5;
+        const centerY = drone.y + 0.5;
+        const r = drone.revealRadius;
+        for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+                const dx = (x + 0.5) - centerX;
+                const dy = (y + 0.5) - centerY;
+                if ((dx * dx) + (dy * dy) <= r * r) discovered[y][x] = true;
+            }
+        }
+    });
 }
 
 /* Crear una funcion que utilice la misma logica que revelsa el mapa al rededor del dron, pero para validar su rango de movimiento con respecto a un x,y dado
@@ -558,15 +815,26 @@ function drawFog() {
     const hasDeployedDrone = !!(drone && drone.deployed);
     const hasSelectedPorta = isPortaSelected;
     const ownPorta = getOwnPorta();
+
     const hasUnit = hasSelectedPorta || hasDeployedDrone;
+
     const centerX = hasSelectedPorta
         ? (ownPorta.x + (ownPorta.size / 2))
         : (hasDeployedDrone ? (drone.x + 0.5) : 0);
+
     const centerY = hasSelectedPorta
         ? (ownPorta.y + (ownPorta.size / 2))
         : (hasDeployedDrone ? (drone.y + 0.5) : 0);
-    const revealRadius = hasSelectedPorta ? ownPorta.revealRadius : (hasDeployedDrone ? drone.revealRadius : 0);
-    const moveRadius = hasSelectedPorta ? ownPorta.moveRadius : (hasDeployedDrone ? drone.moveRadius : 0);
+
+    const revealRadius = hasSelectedPorta
+        ? ownPorta.revealRadius
+        : (hasDeployedDrone ? drone.revealRadius : 0);
+
+    const moveRadius = hasSelectedPorta
+        ? ownPorta.moveRadius
+        : (hasDeployedDrone ? drone.moveRadius : 0);
+
+    const columnsToReveal = Math.max(1, Math.ceil(cols / 3));
 
     for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
@@ -574,38 +842,65 @@ function drawFog() {
             const dy = hasUnit ? ((y + 0.5) - centerY) : 0;
             const isInsideCircle = hasUnit && ((dx * dx) + (dy * dy) <= revealRadius * revealRadius);
 
-            if (isInsideCircle) {
+            const isInitialRevealZone = (bandoSeleccionado === 'NAVAL')
+                ? (x < columnsToReveal)
+                : (x >= cols - columnsToReveal);
+
+            if (isInsideCircle || isInitialRevealZone) {
                 continue;
             }
 
-            /* Celda ya vista = sombra suave; nunca vista = sombra fuerte */
-            ctx.fillStyle = discovered[y][x] ? 'rgba(0, 0, 0, 0.35)' : 'rgba(0, 0, 0, 0.9)';
+            const px = x * cellSize;
+            const py = y * cellSize;
+            const yaDescubierta = discovered[y][x];
 
-            ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+            ctx.save();
+
+            ctx.fillStyle = yaDescubierta
+                ? 'rgba(0, 0, 0, 0.28)'
+                : 'rgba(0, 0, 0, 0.52)';
+            ctx.fillRect(px, py, cellSize, cellSize);
+
+            if (fogMapReady) {
+                const sx = (x / cols) * fogMapImage.width;
+                const sy = (y / rows) * fogMapImage.height;
+                const sw = fogMapImage.width / cols;
+                const sh = fogMapImage.height / rows;
+
+                ctx.globalAlpha = yaDescubierta ? 0 : 1;
+                ctx.imageSmoothingEnabled = false;
+
+                ctx.drawImage(
+                    fogMapImage,
+                    sx, sy, sw, sh,
+                    px, py, cellSize, cellSize
+                );
+            }
+
+            ctx.restore();
         }
     }
 
-    /* Cubrir el resto del canvas que no alcanza perfectamente a ser una Ãºltima fila/columna completa */
     const maxVisibleWidth = cols * cellSize;
     const maxVisibleHeight = rows * cellSize;
 
-    // /* Cubrir el Ã¡rea a la derecha si no alcanza a llenar toda la anchura */
-    // if (maxVisibleWidth < canvas.width) {
-    //     ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-    //     ctx.fillRect(maxVisibleWidth, 0, canvas.width - maxVisibleWidth, canvas.height);
-    // }
+    /* Cubrir el Ã¡rea a la derecha si no alcanza a llenar toda la anchura */
+    if (maxVisibleWidth < canvas.width) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+        ctx.fillRect(maxVisibleWidth, 0, canvas.width - maxVisibleWidth, canvas.height);
+    }
 
-    // /* Cubrir el Ã¡rea abajo si no alcanza a llenar toda la altura */
-    // if (maxVisibleHeight < canvas.height) {
-    //     ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-    //     ctx.fillRect(0, maxVisibleHeight, canvas.width, canvas.height - maxVisibleHeight);
-    // }
+    /* Cubrir el Ã¡rea abajo si no alcanza a llenar toda la altura */
+    if (maxVisibleHeight < canvas.height) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+        ctx.fillRect(0, maxVisibleHeight, canvas.width, canvas.height - maxVisibleHeight);
+    }
 
-    /* Centro y radio del lÃ­mite de movimiento del dron activo */
     if (hasUnit) {
         const px = centerX * cellSize;
         const py = centerY * cellSize;
         const outlineRadiusPx = moveRadius * cellSize;
+
         ctx.save();
         ctx.strokeStyle = 'rgba(242, 203, 103, 0.7)';
         ctx.lineWidth = 2;
@@ -638,12 +933,12 @@ function drawSinglePortaDron(porta, sprite, spriteReady, isSelected) {
     const py = porta.y * cellSize;
     const sizePx = porta.size * cellSize;
 
-     // si está muerto no se dibuja
+    // si está muerto no se dibuja
     if (!porta.estado) {
         markCellDiscovered(porta.x, porta.y);
-        markCellDiscovered(porta.x+1, porta.y);
-        markCellDiscovered(porta.x, porta.y+1);
-        markCellDiscovered(porta.x+1, porta.y+1);
+        markCellDiscovered(porta.x + 1, porta.y);
+        markCellDiscovered(porta.x, porta.y + 1);
+        markCellDiscovered(porta.x + 1, porta.y + 1);
     }
 
     if (spriteReady) {
@@ -734,12 +1029,32 @@ function drawDrones() {
             ctx.fill();
         }
 
+        const isActive = drone.id === activeDroneId;
+        const isHovered = drone.id === hoveredDroneId;
+
         ctx.save();
-        ctx.lineWidth = drone.id === activeDroneId ? 3 : 2;
-        ctx.strokeStyle = drone.id === activeDroneId ? '#ffffff' : drone.color;
+
+        // círculo más fuerte para hover
+        ctx.lineWidth = isActive ? 3 : (isHovered ? 4 : 2);
+
+        // color más brillante
+        ctx.strokeStyle = isActive
+            ? '#ffffff'
+            : (isHovered ? '#fff3b0' : drone.color);
+
         ctx.beginPath();
-        ctx.arc(px, py, Math.max(12, Math.floor(cellSize * 0.42)), 0, Math.PI * 2);
+        ctx.arc(px, py, Math.max(12, Math.floor(cellSize * 0.46)), 0, Math.PI * 2);
         ctx.stroke();
+
+        // pequeño glow para hover
+        if (isHovered && !isActive) {
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+            ctx.beginPath();
+            ctx.arc(px, py, Math.max(14, Math.floor(cellSize * 0.52)), 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
         ctx.restore();
     }
 }
@@ -865,8 +1180,8 @@ function moveActiveDrone(dx, dy) {
 //Animaciones
 
 function cerrarModalObjetivoDestruido() {
-    if (!modalObjetivoDestruido) return;
-    modalObjetivoDestruido.classList.remove('active');
+    const modal = document.getElementById("modalObjetivoDestruido");
+    if (modal) modal.classList.add("oculto");
 }
 
 function getKillModalImageSrc(tipoObjetivo, subtipoObjetivo) {
@@ -886,19 +1201,42 @@ function getKillModalImageSrc(tipoObjetivo, subtipoObjetivo) {
     return override[key] || defaults[key] || override.DEFAULT || defaults.DEFAULT;
 }
 
+
+if (btnCerrarKillModal) {
+    btnCerrarKillModal.addEventListener('click', cerrarModalObjetivoDestruido);
+}
+
+//Animaciones
+
+function getKillModalImageSrc(tipoObjetivo, subtipoObjetivo) {
+    const defaults = {
+        DRON_NAVAL: '../img/dronNavalAnimacionDestruidoGIF.gif',
+        DRON_AEREO: '../img/animacionDronAereoDestruidGIF.gif',
+        PORTA_NAVAL: '../img/animacionNaval_explocionGIF.gif',
+        PORTA_AEREO: '../img/AnimacionPortadronAereoDestruidoGIF.gif',
+        DEFAULT: '../img/DronExplotando.png'
+    };
+
+    const override = (window.KILL_TARGET_IMAGES && typeof window.KILL_TARGET_IMAGES === 'object')
+        ? window.KILL_TARGET_IMAGES
+        : {};
+
+    const key = `${tipoObjetivo}_${subtipoObjetivo}`;
+    return override[key] || defaults[key] || override.DEFAULT || defaults.DEFAULT;
+}
+
 function abrirModalObjetivoDestruido(tipoObjetivo, subtipoObjetivo) {
-    if (!modalObjetivoDestruido) return;
+    const modal = document.getElementById("modalObjetivoDestruido");
+    if (!modal) return;
 
     const tipo = (subtipoObjetivo === 'NAVAL') ? 'naval' : 'aereo';
     const texto = tipoObjetivo === 'PORTA'
         ? `Porta dron ${tipo} destruido`
         : `Dron ${tipo} destruido`;
 
-    if (killModalTitle) {
-        killModalTitle.textContent = texto;
-    }
+    if (killModalTitle) killModalTitle.textContent = texto;
+
     if (killModalImage) {
-        // Forzar reinicio de GIF en cada apertura del modal
         const baseSrc = getKillModalImageSrc(tipoObjetivo, subtipoObjetivo);
         const cacheBuster = `v=${Date.now()}`;
         const separator = baseSrc.includes('?') ? '&' : '?';
@@ -906,10 +1244,296 @@ function abrirModalObjetivoDestruido(tipoObjetivo, subtipoObjetivo) {
         killModalImage.src = `${baseSrc}${separator}${cacheBuster}`;
     }
 
-    modalObjetivoDestruido.classList.add('active');
+    modal.classList.remove("oculto");
 }
 
 if (btnCerrarKillModal) {
     btnCerrarKillModal.addEventListener('click', cerrarModalObjetivoDestruido);
 }
 
+const partidaId = localStorage.getItem("partidaId");
+
+if (partidaId) {
+    const titulo = document.getElementById("tituloPartida");
+    if (titulo) {
+        titulo.textContent = "";
+    }
+}
+
+function abrirModalEsperandoBando() {
+    const modal = document.getElementById("modalEsperandoBando");
+    if (modal) modal.classList.remove("oculto");
+}
+
+function cerrarModalEsperandoBando() {
+    const modal = document.getElementById("modalEsperandoBando");
+    if (modal) modal.classList.add("oculto");
+}
+
+function actualizarVidaPortadron(vidaActual, vidaMax) {
+
+    const vidasEl = document.getElementById("portaVidas");
+    if (!vidasEl) return;
+
+    vidasEl.innerHTML = "";
+
+    for (let i = 0; i < vidaMax; i++) {
+
+        const img = document.createElement("img");
+
+        img.src = (i < vidaActual)
+            ? "../img/cora_full.png"
+            : "../img/cora_empty.png";
+
+        img.style.width = "16px";
+        img.style.imageRendering = "pixelated";
+
+        vidasEl.appendChild(img);
+    }
+}
+
+
+function setStatusBar(titulo, descripcion = "") {
+    const el = document.getElementById("statusBar");
+    if (!el) return;
+
+    el.innerHTML = `
+        <div class="status-chip">
+            <span class="status-chip-label">${titulo}</span>
+            <span class="status-chip-value">${descripcion}</span>
+        </div>
+    `;
+}
+
+
+function statusDeployBase() {
+    setStatusBar(
+        "DESPLIEGUE DE DRONES:",
+        "seleccioná un dron y hacé click en el mapa para colocarlo."
+    );
+}
+
+function statusDeployPick() {
+    setStatusBar(
+        "DESPLIEGUE DE DRONES:",
+        "Haz click en el mapa para colocar el dron."
+    );
+}
+
+function statusDeployWaitingRival() {
+    setStatusBar(
+        "DESPLIEGUE COMPLETO.",
+        "Esperando al rival para comenzar."
+    );
+}
+
+function statusBattleTurn() {
+    renderBattleStatusBar();
+}
+
+function renderBattleStatusBar() {
+    const el = document.getElementById("statusBar");
+    if (!el) return;
+    if (bandosDesplegados < 2) return;
+
+    const esMiTurno = Number(turnoActual) === Number(currentUserId);
+    const textoTurno = esMiTurno ? "Tu turno" : "Turno rival";
+
+    const portaRival = getEnemyPorta();
+    const vidaRival = Math.max(0, Number(portaRival?.vida ?? 0));
+    const vidaMaxRival = String(bandoSeleccionado).toUpperCase() === "NAVAL" ? 6 : 3;
+
+    const rivalIconSrc = String(bandoSeleccionado).toUpperCase() === "NAVAL"
+        ? "../img/porta_dron_aereo_icon.png"
+        : "../img/Porta_dron_naval.png";
+
+    let corazonesHtml = "";
+    for (let i = 0; i < vidaMaxRival; i++) {
+        const heartSrc = i < vidaRival
+            ? "../img/cora_full.png"
+            : "../img/cora_empty.png";
+
+        corazonesHtml += `<img class="status-chip-heart" src="${heartSrc}" alt="vida rival">`;
+    }
+
+    const dronesRivalesVivos = dronesRivales.filter(d => d.vida > 0).length;
+    const totalDronesRivales = dronesRivales.length;
+    const rivalDroneIconSrc = String(bandoSeleccionado).toUpperCase() === "NAVAL"
+        ? "../img/dron_icon_aereo.png"
+        : "../img/dron_icon_naval.png";
+
+    el.innerHTML = `
+        <div class="status-chip">
+            <span class="status-chip-label">TURNO:</span>
+            <span class="status-chip-value">${textoTurno}</span>
+        </div>
+
+        <div class="status-chip">
+            <img class="status-chip-porta-icon" src="${rivalIconSrc}" alt="Portadrón rival">
+            <span class="status-chip-label">RIVAL:</span>
+            <span class="status-chip-hearts">${corazonesHtml}</span>
+        </div>
+
+        <div class="status-chip">
+    <img class="status-chip-drone-icon" src="${rivalDroneIconSrc}" alt="Dron rival">
+    <span class="status-chip-label">DRONES RIVAL:</span>
+    <span class="status-chip-value">${dronesRivalesVivos}/${totalDronesRivales}</span>
+</div>
+    `;
+}
+
+let battleToastTimeout = null;
+
+function showBattleToast(message, type = "info", duration = 1800) {
+    const container = document.getElementById("battleToast");
+    if (!container) return;
+
+    if (battleToastTimeout) {
+        clearTimeout(battleToastTimeout);
+        battleToastTimeout = null;
+    }
+
+    container.innerHTML = `
+        <div class="battle-toast ${type}">
+            ${message}
+        </div>
+    `;
+
+    const toast = container.querySelector(".battle-toast");
+    if (!toast) return;
+
+    requestAnimationFrame(() => {
+        toast.classList.add("show");
+    });
+
+    battleToastTimeout = setTimeout(() => {
+        toast.classList.remove("show");
+
+        setTimeout(() => {
+            if (container.contains(toast)) {
+                container.innerHTML = "";
+            }
+        }, 180);
+    }, duration);
+}
+
+function clearActionButtonSelection() {
+    attackBtn?.classList.remove('action-selected');
+    moveBtn?.classList.remove('action-selected');
+    reloadBtn?.classList.remove('action-selected');
+}
+
+function updateActionButtonSelection() {
+    clearActionButtonSelection();
+
+    if (isAttackMode) {
+        attackBtn?.classList.add('action-selected');
+        return;
+    }
+
+    if (isMoveMode) {
+        moveBtn?.classList.add('action-selected');
+        return;
+    }
+
+    if (isReloadMode) {
+        reloadBtn?.classList.add('action-selected');
+    }
+}
+
+async function recargarDronElegido(drone) {
+    if (!drone) {
+        showBattleToast("Seleccioná un dron.", "error");
+        return;
+    }
+
+    if (!drone.deployed) {
+        showBattleToast("Ese dron aún no está desplegado.", "error");
+        return;
+    }
+
+    if (drone.vida <= 0) {
+        showBattleToast("No puedes recargar un dron destruido.", "error");
+        return;
+    }
+
+    try {
+        const res = await api.recargarDron({
+            partidaId: localStorage.getItem('partidaId'),
+            jugadorId: getId(),
+            dronId: drone.id
+        });
+
+        console.log('Respuesta recargarDron:', res.status, res.statusText);
+
+        if (!res.ok) {
+            const raw = await res.text();
+            let display = raw;
+            try {
+                const parsed = JSON.parse(raw);
+                if (parsed && typeof parsed === 'object') {
+                    display = parsed.error || parsed.message || parsed.msg || display;
+                }
+            } catch (e) { }
+
+            console.error('Error en recargarDron:', display);
+            showBattleToast(display, "error", 2200);
+            return;
+        }
+
+        showBattleToast("Recarga exitosa.", "success");
+
+        isReloadMode = false;
+        isAttackMode = false;
+        isMoveMode = false;
+        updateActionButtonSelection();
+
+    } catch (err) {
+        console.error('Error recargando dron:', err);
+        showBattleToast("Error de red al recargar.", "error");
+    }
+}
+
+//funciones para no perder discovered al recargar pagina
+
+function saveFogLocally() {
+    const key = `fog_${localStorage.getItem('partidaId')}_${localStorage.getItem('userId')}`;
+    localStorage.setItem(key, JSON.stringify(discovered));
+}
+
+function loadFogLocally() {
+    const key = `fog_${localStorage.getItem('partidaId')}_${localStorage.getItem('userId')}`;
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : null;
+}
+
+function actualizarAyudaPartida() {
+    if (typeof Help === "undefined") return;
+
+    // AYUDA DURANTE DESPLIEGUE
+    if (!gameStarted) {
+        Help.init({
+            title: "Despliegue de drones",
+            items: [
+                "Seleccioná un dron en el panel izquierdo.",
+                "Hacé clic en una casilla válida del mapa para colocarlo.",
+                "No podés colocar dos unidades en la misma casilla.",
+                "Desplegá todos tus drones para comenzar la batalla."
+            ]
+        });
+        return;
+    }
+
+    // AYUDA DURANTE LA PARTIDA
+    Help.init({
+        title: "Cómo jugar",
+        items: [
+            "Seleccioná un dron o tu portadrones.",
+            "Usá los botones disponibles según la unidad seleccionada.",
+            "Mover: desplaza la unidad a una casilla válida.",
+            "Atacar: elegí un objetivo enemigo dentro del alcance.",
+            "Recargar: repone munición si la unidad lo permite.",
+            "Protegé tu portadrones y destruí al rival para ganar."
+        ]
+    });
+}

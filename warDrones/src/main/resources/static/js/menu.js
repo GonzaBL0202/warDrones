@@ -5,3 +5,12 @@ const nombreUsuario = localStorage.getItem("username");
 if (nombreUsuario) {
     document.getElementById("nombreUsuario").textContent = nombreUsuario;
 }
+
+Help.init({
+    title: "Ayuda - Menú",
+    items: [
+        "Inicia una nueva partida.",
+        "Carga una partida guardada.",
+        "Revisa en que puesto del ranking estás."
+    ]
+});

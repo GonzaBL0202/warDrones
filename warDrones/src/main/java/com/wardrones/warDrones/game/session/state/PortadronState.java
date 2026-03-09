@@ -32,6 +32,7 @@ public class PortadronState {
         this.y = p.getPosicionY();
         this.estado = p.getEstado();
         this.vida = p.getVida();
+        System.out.println("Vida del portadron al crear el state: " + this.vida);
 
         if (tipo == Bando.AEREO){
             this.ataqueBase = 1;

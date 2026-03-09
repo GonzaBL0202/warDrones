@@ -8,6 +8,7 @@ function getUserId() {
 const cont = document.getElementById("listaPartidas");
 const btnCargar = document.getElementById("btnCargar");
 const btnEliminar = document.getElementById("btnEliminar");
+const btnVolverMenu = document.getElementById("btnVolverMenu");
 
 // Modal
 const modalEliminar = document.getElementById("modalEliminar");
@@ -97,8 +98,12 @@ async function cargarPartidas() {
         if (!Array.isArray(partidas) || partidas.length === 0) {
             cont.innerHTML =
                 "<tr><td colspan='3' style='padding:10px;'>No hay partidas guardadas</td></tr>";
+
+            mostrarModoSinPartidas();
             return;
         }
+
+        mostrarModoConPartidas();
 
         partidas.forEach((p) => {
             const id = p.partidaId ?? p.id;
@@ -114,8 +119,7 @@ async function cargarPartidas() {
             fila.innerHTML = `
         <td style="padding: 8px;">#${id}</td>
         <td style="padding: 8px;">${u1}</td>
-        <td style="padding: 8px;">${u2}</td>
-      `;
+        <td style="padding: 8px;">${u2}</td>`;
 
             fila.addEventListener("click", () => seleccionarPartida(id, estado, fila));
             cont.appendChild(fila);
@@ -129,6 +133,12 @@ async function cargarPartidas() {
 
 // BOTÓN CARGAR
 btnCargar.addEventListener("click", async () => {
+    // Si el botón está en modo CREAR
+    if (btnCargar.textContent === "Crear Partida") {
+        window.location.href = "crear-partida.html";
+        return;
+    }
+
     if (!partidaSeleccionadaId) return;
 
     const userId = getUserId();
@@ -227,3 +237,45 @@ btnEliminarSi.addEventListener("click", async () => {
 
 // INIT
 cargarPartidas();
+
+function mostrarModoConPartidas() {
+    btnCargar.textContent = "Cargar";
+    btnCargar.disabled = true;
+    btnCargar.style.opacity = "0.6";
+    btnCargar.style.display = "block";
+
+    btnEliminar.textContent = "Eliminar";
+    btnEliminar.disabled = true;
+    btnEliminar.style.opacity = "0.6";
+    btnEliminar.style.display = "block";
+
+    if (btnVolverMenu) {
+        btnVolverMenu.textContent = "Volver al Menu";
+    }
+}
+
+function mostrarModoSinPartidas() {
+    btnCargar.textContent = "Crear Partida";
+    btnCargar.disabled = false;
+    btnCargar.style.opacity = "1";
+    btnCargar.style.display = "block";
+
+    btnEliminar.disabled = true;
+    btnEliminar.style.opacity = "0.6";
+    btnEliminar.style.display = "none";
+
+    if (btnVolverMenu) {
+        btnVolverMenu.textContent = "Volver al Menu";
+    }
+}
+
+Help.init({
+    title: "Ayuda - Cargar Partida",
+    items: [
+        "Selecciona la partida que quieras cargar.",
+        "Espera a que el otro jugador también cargue la partida.",
+        "Recuerda que aparecen partidas previamente guardadas.",
+        "Puedes eliminar partidas guardadas.",
+        "Si no hay partidas guardadas, puedes crear una nueva partida."
+    ]
+});

@@ -55,3 +55,12 @@ document.getElementById('btnIniciar').addEventListener('click', async () => {
         console.error('No se pudo crear la partida:', error);
     }
 });
+
+Help.init({
+    title: "Ayuda - Crear Partida",
+    items: [
+        "Al entrar en una partida te conectarás automáticamente.",
+        "Si sos el primer jugador, irás al lobby y luego eliges tu bando.",
+        "Si ya hay un jugador, entrarás directamente como segundo jugador.",
+    ]
+});
