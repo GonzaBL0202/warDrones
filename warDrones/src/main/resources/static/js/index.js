@@ -43,11 +43,10 @@ form.addEventListener("submit", async (e) => {
 });
 
 Help.init({
-    title: "¿Qué hago acá?",
+    title: "Ayuda - Inicio",
     items: [
-        "Ingresá tu nombre y creá tu usuario.",
-        "Si ya tenés usuario, entrá directo al menú.",
-        "Después elegís: crear partida, unirte, o reanudar."
+        "Ingresá tu usuario.",
+        "Si el usuario no existe se crea automáticamente.",
+        "Luego accederás al menú principal."
     ]
 });
-

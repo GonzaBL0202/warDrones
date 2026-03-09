@@ -2,51 +2,54 @@
 <html lang="es">
 
 <head>
-    <link rel="stylesheet" href="css/help.css">
     <meta charset="UTF-8">
-    <title>Inicio de Sesion</title>
+    <title>Inicio de Sesión</title>
 
+    <!-- Estilos -->
     <link rel="stylesheet" href="css/fondo.css">
     <link rel="stylesheet" href="css/botom.css">
-
+    <link rel="stylesheet" href="css/help.css">
     <!-- Fuente global -->
     <link rel="stylesheet" href="css/fuente.css">
+    
 </head>
 
-<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0;">
+<body style="display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0;">
 
-    <section
-        style="background-image: url('img/gold_panel_8x.png'); background-size: 100% 100%; background-repeat: no-repeat; padding: 56px 48px; min-width: 320px; display: flex; flex-direction: column; align-items: center;">
+    <!-- PANEL -->
+    <section style="background-image:url('img/gold_panel_8x.png');
+            background-size:100% 100%;
+            background-repeat:no-repeat;
+            padding:56px 48px;
+            min-width:320px;
+            display:flex;
+            flex-direction:column;
+            align-items:center;">
 
-        <h1 class="font-display" style="margin: 0 0 16px 0;">
+        <!-- TITULO -->
+        <h1 class="font-display" style="margin:0 0 16px 0;">
             Inicio de Sesión
         </h1>
 
-        <form id="loginForm" style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+        <!-- FORMULARIO -->
+        <form id="loginForm" style="display:flex; flex-direction:column; align-items:center; gap:10px;">
 
             <input class="texto font-text" type="text" id="username" name="username" placeholder="Usuario"
-                style="padding: 8px; width: 200px;" required
+                style="padding:8px; width:200px;" required
                 oninvalid="this.setCustomValidity('Debes ingresar un usuario.')" oninput="this.setCustomValidity('')">
 
-            <button class="boton font-display" type="submit" style="font-size: 15px;">
+            <button class="boton font-display" type="submit" style="font-size:15px;">
                 Iniciar
             </button>
 
         </form>
+
     </section>
 
-    <script src="../js/help.js"></script>
-    <script src="js/index.js"></script>
 
-    <script>
-        Help.init({
-            title: "Ayuda - Inicio",
-            items: [
-                "Ingresá tu usuario y presioná Iniciar.",
-                "Si el usuario es nuevo, se creará automáticamente."
-            ]
-        });
-    </script>
+    <!-- Scripts -->
+    <script src="js/help.js"></script>
+    <script src="js/index.js"></script>
 
 </body>
 
