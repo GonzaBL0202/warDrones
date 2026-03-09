@@ -159,6 +159,7 @@ function mapDroneFromServer(droneInfo) {
         deployed,
         vida: droneInfo.vida,
         municion: droneInfo.municion ?? 0,
+        recargas: droneInfo.recargas ?? 0,
         x: droneInfo.posicionX,
         y: droneInfo.posicionY
     };
@@ -213,7 +214,7 @@ function hydratePortadronesFromServer(portadrones) {
         target.x = porta.posicionX;
         target.y = porta.posicionY;
         target.vida = porta.vida;
-        target.estado = porta.vida > 0 ? true : false; 
+        target.estado = porta.vida > 0 ? true : false;
         if (portasHydratedOnce && prevVida > 0 && target.vida <= 0) {
             abrirModalObjetivoDestruido('PORTA', porta.tipo === 'NAVAL' ? 'NAVAL' : 'AEREO');
         }
@@ -467,6 +468,7 @@ function updateInfoPanel() {
         ico.className = 'drone-icon';
 
         const b = String(d.bando || bandoSeleccionado).toUpperCase();
+        const recargasDisponibles = d.recargas ?? d.dronRecargas ?? 0;
         ico.src = (b === 'NAVAL')
             ? '../img/dron_icon_naval.png'
             : '../img/dron_icon_aereo.png';
@@ -494,8 +496,20 @@ function updateInfoPanel() {
         const ammoText = document.createElement('span');
         ammoText.textContent = `x${dead ? 0 : (d.municion ?? 0)}`;
 
+        const reloadImg = document.createElement('img');
+        reloadImg.className = 'ammo-icon';
+        reloadImg.src = (b === 'NAVAL')
+            ? '../img/m1sil_recarga.png'
+            : '../img/bomb_recarga.png';
+        reloadImg.draggable = false;
+
+        const reloadText = document.createElement('span');
+        reloadText.textContent = `x${dead ? 0 : recargasDisponibles}`;
+
         ammoRow.appendChild(ammoImg);
         ammoRow.appendChild(ammoText);
+        ammoRow.appendChild(reloadImg);
+        ammoRow.appendChild(reloadText);
 
         meta.appendChild(title);
         meta.appendChild(ammoRow);
@@ -571,7 +585,7 @@ function updateButtonsVisibility(iniciada = false) {
     if (iniciada) {
         gameStarted = true;
         updateActionBarVisibility();
-            actualizarAyudaPartida();
+        actualizarAyudaPartida();
 
     }
 }
@@ -1452,8 +1466,24 @@ async function recargarDronElegido(drone) {
         return;
     }
 
-    if (drone.vida <= 0) {
+    if ((drone.vida ?? drone.dronVida ?? 0) <= 0) {
         showBattleToast("No puedes recargar un dron destruido.", "error");
+        return;
+    }
+
+    const recargasDisponibles = drone.recargas ?? drone.dronRecargas ?? 0;
+    const municionActual = drone.municion ?? drone.dronMunicion ?? 0;
+    const tipoDron = String(drone.bando ?? drone.tipo ?? drone.dronTipo ?? bandoSeleccionado ?? "").toUpperCase();
+
+    if (recargasDisponibles <= 0) {
+        showBattleToast("Este dron ya no tiene recargas disponibles.", "error");
+        return;
+    }
+
+    const maxMunicion = (tipoDron === "NAVAL") ? 2 : 1;
+
+    if (municionActual >= maxMunicion) {
+        showBattleToast("Este dron ya tiene munición completa.", "error");
         return;
     }
 
@@ -1469,6 +1499,7 @@ async function recargarDronElegido(drone) {
         if (!res.ok) {
             const raw = await res.text();
             let display = raw;
+
             try {
                 const parsed = JSON.parse(raw);
                 if (parsed && typeof parsed === 'object') {
@@ -1481,12 +1512,14 @@ async function recargarDronElegido(drone) {
             return;
         }
 
-        showBattleToast("Recarga exitosa.", "success");
+        showBattleToast("Recarga exitosa.", "success", 2200);
 
         isReloadMode = false;
         isAttackMode = false;
         isMoveMode = false;
         updateActionButtonSelection();
+
+        await actualizarInfo();
 
     } catch (err) {
         console.error('Error recargando dron:', err);

@@ -211,7 +211,7 @@ async function guardarPartida() {
     }
 }
 
-async function salirPartida(){
+async function salirPartida() {
     cerrarMensajeVictoria();
     cerrarMensajeAviso();
     window.location.href = 'menu.html';
@@ -324,7 +324,7 @@ async function inicializarPartida() {
 
         /* Solo revelar columnas iniciales si los bandos estÃ¡n confirmados */
         if (bandasAsignadas) {
-            if(!discovered.length > 0)
+            if (!discovered.length > 0)
                 discovered = Array.from({ length: rows }, () => Array(cols).fill(false));
             revealStartColumnsByBando();
             revealAroundAllDeployedDrones(); // revela entorno de todos los drones, no solo el activo
@@ -340,7 +340,7 @@ async function inicializarPartida() {
             if (info.bandosDesplegados === 2) {
                 updateButtonsVisibility(true);
             }
-    actualizarAyudaPartida();
+            actualizarAyudaPartida();
 
             drawScene();
         } else {
@@ -422,7 +422,7 @@ if (usuarioId && currentPartidaId) {
                         revealAroundActiveDrone();
                         updateInfoPanel();
                         updateButtonsVisibility(true);
-                            actualizarAyudaPartida();
+                        actualizarAyudaPartida();
 
                         actualizarEstadoTurno();  // Actualizar estado del turno
                         drawScene();
@@ -452,20 +452,20 @@ if (usuarioId && currentPartidaId) {
         if (pid === String(currentPartidaId))
             guardarDiscovered();
 
-        if(!uGuardador){
+        if (!uGuardador) {
             abrirMensajeAviso();
             mostrarAviso("El usuario rival a guardado la partida");
         }
-        else{
+        else {
             window.location.href = "menu.html";
         }
     });
 
-    async function guardarDiscovered(){
-        try{
+    async function guardarDiscovered() {
+        try {
             let fogJson = JSON.stringify(discovered);
             const res = await api.guardarDiscovered(currentPartidaId, getId(), fogJson);
-        }catch(error){
+        } catch (error) {
             console.error("Error guardando discovered:", error);
         }
     }
@@ -503,7 +503,7 @@ if (usuarioId && currentPartidaId) {
 
         const b1 = info.partidaBando1 ?? info.bando1 ?? info.partida_bando1 ?? info.partida_bando_1;
         const b2 = info.partidaBando2 ?? info.bando2 ?? info.partida_bando2 ?? info.partida_bando_2;
-        
+
         hydrateDronesFromServer(info.drones);
         getAllDrones(info.drones);
 
@@ -678,7 +678,7 @@ if (usuarioId && currentPartidaId) {
         if (isAttackMode) {
             let objetivoId = null;
             const atacante = getActiveDrone(); // Ya validado en el listener del botÃ³n de ataque
-            
+
             if (!atacante || !atacante.deployed || atacante.vida <= 0) {
                 setupHint.textContent = 'El dron seleccionado ya no puede atacar.';
                 isAttackMode = false;
@@ -1060,10 +1060,21 @@ if (usuarioId && currentPartidaId) {
             return;
         }
 
-        // Si hay un dron seleccionado, mantenemos el comportamiento actual por ahora
         const drone = getActiveDrone();
         if (!drone || !drone.deployed) {
             showBattleToast("No hay dron desplegado para recargar.", "error");
+            return;
+        }
+        
+        if (drone.recargas <= 0) {
+            showBattleToast("Este dron ya no tiene recargas disponibles.", "error");
+            return;
+        }
+
+        const maxMunicion = (bandoSeleccionado === "NAVAL") ? 2 : 1;
+
+        if (drone.municion >= maxMunicion) {
+            showBattleToast("Este dron ya tiene munición completa.", "error");
             return;
         }
 
@@ -1073,19 +1084,26 @@ if (usuarioId && currentPartidaId) {
                 jugadorId: getId(),
                 dronId: drone.id
             });
+
             console.log('Respuesta recargarDron:', res.status, res.statusText);
+
             if (!res.ok) {
                 const raw = await res.text();
                 let display = raw;
+
                 try {
                     const parsed = JSON.parse(raw);
-                    if (parsed && typeof parsed === 'object') display = parsed.error || parsed.message || parsed.msg || display;
+                    if (parsed && typeof parsed === 'object')
+                        display = parsed.error || parsed.message || parsed.msg || display;
                 } catch (e) { }
+
                 console.error('Error en recargarDron:', display);
                 showBattleToast(display, "error", 2200);
+
             } else {
                 showBattleToast("Recarga exitosa.", "success");
             }
+
         } catch (err) {
             console.error('Error recargando dron:', err);
         }
