@@ -1,4 +1,5 @@
-const API_URL = "http://localhost:8080";
+// const API_URL = "http://localhost:8080";
+const API_URL = window.location.origin;
 
 function getUserId() {
     return localStorage.getItem("userId");

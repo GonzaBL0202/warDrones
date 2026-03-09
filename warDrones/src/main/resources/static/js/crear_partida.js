@@ -1,4 +1,5 @@
-const API_URL = 'http://localhost:8080';
+// const API_URL = 'http://localhost:8080';
+const API_URL = window.location.origin;
 const userId = localStorage.getItem('userId');
 
 document.getElementById('btnCancelar').onclick = () => {
