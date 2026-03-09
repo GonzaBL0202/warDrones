@@ -625,16 +625,62 @@ function updateButtonByChosen(esPorta) {
    reinicia la niebla de guerra, centra al jugador
    y redibuja toda la escena */
 
+// function resizeCanvas() {
+//     const rect = canvas.getBoundingClientRect();
+
+//     const FIXED_COLS = 35;
+//     const FIXED_ROWS = 20;
+//     cols = FIXED_COLS;
+//     rows = FIXED_ROWS;
+
+//     // Calcular cellSize desde el espacio disponible
+//     cellSize = Math.min(rect.width / cols, rect.height / rows);
+
+//     // Ajustar canvas exactamente a la grilla — sin píxeles sobrantes
+//     canvas.width = Math.floor(cellSize * cols);
+//     canvas.height = Math.floor(cellSize * rows);
+
+//     cellSize = Math.min(canvas.width / cols, canvas.height / rows);
+
+//     // La matriz discovered debe tener el tamaño fijo
+//     const prevDiscovered = discovered;
+//     const prevRows = prevDiscovered.length;
+//     const prevCols = prevRows > 0 ? prevDiscovered[0].length : 0;
+
+//     discovered = Array.from({ length: rows }, (_, y) =>
+//         Array.from({ length: cols }, (_, x) => {
+//             if (y < prevRows && x < prevCols) {
+//                 return prevDiscovered[y][x];
+//             }
+//             return false;
+//         })
+//     );
+
+//     revealStartColumnsByBando();
+//     if (!portadronesHydrated) {
+//         positionPortaDronNaval();
+//         positionPortaDronAereo();
+//     }
+
+//     revealAroundActiveDrone();
+//     updateInfoPanel();
+//     drawScene();
+// }
+
 function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
+    const borderWidth = parseFloat(getComputedStyle(canvas).borderLeftWidth) || 0;
 
     const FIXED_COLS = 35;
     const FIXED_ROWS = 20;
     cols = FIXED_COLS;
     rows = FIXED_ROWS;
 
-    // Calcular cellSize desde el espacio disponible
-    cellSize = Math.min(rect.width / cols, rect.height / rows);
+    // Descontar los bordes del espacio disponible
+    const availableWidth = rect.width - borderWidth * 2;
+    const availableHeight = rect.height - borderWidth * 2;
+
+    cellSize = Math.min(availableWidth / cols, availableHeight / rows);
 
     // Ajustar canvas exactamente a la grilla — sin píxeles sobrantes
     canvas.width = Math.floor(cellSize * cols);
@@ -642,7 +688,7 @@ function resizeCanvas() {
 
     cellSize = Math.min(canvas.width / cols, canvas.height / rows);
 
-    // La matriz discovered debe tener el tamaño fijo
+    // Preservar discovered al redimensionar
     const prevDiscovered = discovered;
     const prevRows = prevDiscovered.length;
     const prevCols = prevRows > 0 ? prevDiscovered[0].length : 0;

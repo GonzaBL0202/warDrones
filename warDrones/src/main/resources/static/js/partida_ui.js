@@ -649,8 +649,12 @@ if (usuarioId && currentPartidaId) {
        2) si haces click en una celda vacia, intenta mover al dron activo */
     canvas.addEventListener('click', async (event) => {
         const rect = canvas.getBoundingClientRect();
-        const x = Math.floor((event.clientX - rect.left) / cellSize);
-        const y = Math.floor((event.clientY - rect.top) / cellSize);
+        const borderWidth = parseFloat(getComputedStyle(canvas).borderLeftWidth) || 0;
+        const scaleX = canvas.width / (rect.width - borderWidth * 2);
+        const scaleY = canvas.height / (rect.height - borderWidth * 2);
+        const x = Math.floor((event.clientX - rect.left - borderWidth) * scaleX / cellSize);
+        const y = Math.floor((event.clientY - rect.top - borderWidth) * scaleY / cellSize);
+        console.log('canvas.width:', canvas.width, 'rect.width:', rect.width, 'ratio:', rect.width / canvas.width);
 
 
         if (!isAttackMode && !isMoveMode && !isReloadMode && !isDeployMode) {
