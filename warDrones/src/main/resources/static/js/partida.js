@@ -632,7 +632,6 @@ function resizeCanvas() {
     cols = FIXED_COLS;
     rows = FIXED_ROWS;
 
-    // Descontar los bordes del espacio disponible
     const availableWidth = rect.width - borderWidth * 2;
     const availableHeight = rect.height - borderWidth * 2;
 
