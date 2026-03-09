@@ -1,7 +1,8 @@
 body{
-    background-image: url("../img/orig_big.png");
-    background-position: center center;
+    background-image: url("../img/FondoPortaDrones.png");
+    background-position: top center;
     background-repeat: no-repeat;
-    background-size: cover;
+    background-size: 100% auto;
     background-attachment: fixed;
+    background-color: #000;
 }
