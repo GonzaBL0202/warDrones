@@ -571,6 +571,8 @@ function updateButtonsVisibility(iniciada = false) {
     if (iniciada) {
         gameStarted = true;
         updateActionBarVisibility();
+            actualizarAyudaPartida();
+
     }
 }
 
@@ -620,21 +622,20 @@ function updateButtonByChosen(esPorta) {
     }
 }
 
-/* Ajusta el tamano interno del canvas al tamano visual,
-   calcula filas y columnas segun la grilla,
-   reinicia la niebla de guerra, centra al jugador
-   y redibuja toda la escena */
 
 function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
+    const borderWidth = parseFloat(getComputedStyle(canvas).borderLeftWidth) || 0;
 
     const FIXED_COLS = 35;
     const FIXED_ROWS = 20;
     cols = FIXED_COLS;
     rows = FIXED_ROWS;
 
-    // Calcular cellSize desde el espacio disponible
-    cellSize = Math.min(rect.width / cols, rect.height / rows);
+    const availableWidth = rect.width - borderWidth * 2;
+    const availableHeight = rect.height - borderWidth * 2;
+
+    cellSize = Math.min(availableWidth / cols, availableHeight / rows);
 
     // Ajustar canvas exactamente a la grilla — sin píxeles sobrantes
     canvas.width = Math.floor(cellSize * cols);
@@ -642,7 +643,7 @@ function resizeCanvas() {
 
     cellSize = Math.min(canvas.width / cols, canvas.height / rows);
 
-    // La matriz discovered debe tener el tamaño fijo
+    // Preservar discovered al redimensionar
     const prevDiscovered = discovered;
     const prevRows = prevDiscovered.length;
     const prevCols = prevRows > 0 ? prevDiscovered[0].length : 0;
@@ -1504,4 +1505,35 @@ function loadFogLocally() {
     const key = `fog_${localStorage.getItem('partidaId')}_${localStorage.getItem('userId')}`;
     const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : null;
+}
+
+function actualizarAyudaPartida() {
+    if (typeof Help === "undefined") return;
+
+    // AYUDA DURANTE DESPLIEGUE
+    if (!gameStarted) {
+        Help.init({
+            title: "Despliegue de drones",
+            items: [
+                "Seleccioná un dron en el panel izquierdo.",
+                "Hacé clic en una casilla válida del mapa para colocarlo.",
+                "No podés colocar dos unidades en la misma casilla.",
+                "Desplegá todos tus drones para comenzar la batalla."
+            ]
+        });
+        return;
+    }
+
+    // AYUDA DURANTE LA PARTIDA
+    Help.init({
+        title: "Cómo jugar",
+        items: [
+            "Seleccioná un dron o tu portadrones.",
+            "Usá los botones disponibles según la unidad seleccionada.",
+            "Mover: desplaza la unidad a una casilla válida.",
+            "Atacar: elegí un objetivo enemigo dentro del alcance.",
+            "Recargar: repone munición si la unidad lo permite.",
+            "Protegé tu portadrones y destruí al rival para ganar."
+        ]
+    });
 }

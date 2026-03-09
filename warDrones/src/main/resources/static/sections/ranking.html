@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <title>Ranking</title>
@@ -7,14 +8,14 @@
     <link rel="stylesheet" href="../css/fondo.css">
     <link rel="stylesheet" href="../css/botom.css">
     <link rel="stylesheet" href="../css/fuente.css">
-<link rel="stylesheet" href="../css/help.css">
+    <link rel="stylesheet" href="../css/help.css">
     <style>
         /* === MISMO FORMATO QUE "CARGAR PARTIDA" === */
 
         #rankingBox {
             width: 100%;
-            border: 1px solid rgba(255,215,0,0.3);
-            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            background: rgba(0, 0, 0, 0.2);
             overflow: hidden;
         }
 
@@ -39,7 +40,7 @@
             padding: 8px;
             text-align: center;
             font-size: 14px;
-            border-bottom: 1px solid rgba(255,215,0,0.25);
+            border-bottom: 1px solid rgba(255, 215, 0, 0.25);
         }
 
         #rankingScroll {
@@ -48,14 +49,14 @@
         }
 
         #rankingScroll tbody tr:hover {
-            background: rgba(255,215,0,0.08);
+            background: rgba(255, 215, 0, 0.08);
         }
 
         /* “selección” tipo cargar partida (si tu JS marca el tr del jugador) */
         #rankingScroll tbody tr.selected,
         #rankingScroll tbody tr.seleccionada {
-            background: rgba(255,215,0,0.18);
-            outline: 1px solid rgba(255,215,0,0.45);
+            background: rgba(255, 215, 0, 0.18);
+            outline: 1px solid rgba(255, 215, 0, 0.45);
             outline-offset: -1px;
         }
     </style>
@@ -65,9 +66,10 @@
     <section
         style="position: relative; width: 520px; min-height: 500px; display: flex; align-items: center; justify-content: center; padding: 24px 0; box-sizing: border-box;">
         <img src="../img/gold_panel_8x.png" alt="Panel"
-             style="position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated;">
+            style="position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated;">
 
-        <div style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 14px; width: 82%;">
+        <div
+            style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 14px; width: 82%;">
 
             <h1 class="font-display" style="margin: 0; font-size: 36px;">Ranking</h1>
 
@@ -111,22 +113,10 @@
             </form>
         </div>
     </section>
-<script src="../js/help.js"></script>
 
-<script>
-  Help.init({
-    title: "Ayuda - Ranking",
-    items: [
-      "Aquí se muestran los mejores jugadores.",
-      "El ranking se ordena según las victorias obtenidas.",
-      "Tu posición se actualizará después de cada partida.",
-      "Intentá mejorar tu posición ganando partidas.",
-      "Recuerda que si abandonas, es una victoria para tu rival."
-    ]
-  });
-</script>
-
-<script src="../js/ranking.js"></script>
+    <script src="../js/help.js"></script>
     <script src="../js/ranking.js"></script>
+
 </body>
+
 </html>

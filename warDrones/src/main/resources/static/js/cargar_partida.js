@@ -96,14 +96,14 @@ async function cargarPartidas() {
         cont.innerHTML = "";
 
         if (!Array.isArray(partidas) || partidas.length === 0) {
-    cont.innerHTML =
-        "<tr><td colspan='3' style='padding:10px;'>No hay partidas guardadas</td></tr>";
+            cont.innerHTML =
+                "<tr><td colspan='3' style='padding:10px;'>No hay partidas guardadas</td></tr>";
 
-    mostrarModoSinPartidas();
-    return;
-}
+            mostrarModoSinPartidas();
+            return;
+        }
 
-mostrarModoConPartidas();
+        mostrarModoConPartidas();
 
         partidas.forEach((p) => {
             const id = p.partidaId ?? p.id;
@@ -135,9 +135,9 @@ mostrarModoConPartidas();
 btnCargar.addEventListener("click", async () => {
     // Si el botón está en modo CREAR
     if (btnCargar.textContent === "Crear Partida") {
-    window.location.href = "crear-partida.html";
-    return;
-}
+        window.location.href = "crear-partida.html";
+        return;
+    }
 
     if (!partidaSeleccionadaId) return;
 
@@ -268,3 +268,14 @@ function mostrarModoSinPartidas() {
         btnVolverMenu.textContent = "Volver al Menu";
     }
 }
+
+Help.init({
+    title: "Ayuda - Cargar Partida",
+    items: [
+        "Selecciona la partida que quieras cargar.",
+        "Espera a que el otro jugador también cargue la partida.",
+        "Recuerda que aparecen partidas previamente guardadas.",
+        "Puedes eliminar partidas guardadas.",
+        "Si no hay partidas guardadas, puedes crear una nueva partida."
+    ]
+});

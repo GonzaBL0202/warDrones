@@ -11,6 +11,9 @@
             btn.setAttribute("aria-label", "Ayuda");
             btn.setAttribute("aria-expanded", "false");
             document.body.appendChild(btn);
+        } else {
+            btn.setAttribute("aria-label", "Ayuda");
+            btn.setAttribute("aria-expanded", "false");
         }
 
         // Overlay
@@ -27,14 +30,14 @@
         if (!panel) {
             panel = document.createElement("div");
             panel.id = "helpPanel";
-            panel.className = "help-panel font-display";
+            panel.className = "modal-content help-panel font-display";
             panel.innerHTML = `
-        <h2 id="helpTitle">Ayuda</h2>
-        <div id="helpBody" class="help-body"></div>
-        <div class="help-footer">
-          <button id="helpOk" class="boton btn-ok font-display" type="button">OK</button>
-        </div>
-      `;
+                <h2 id="helpTitle">Ayuda</h2>
+                <div id="helpBody" class="help-body"></div>
+                <div class="help-footer">
+                    <button id="helpOk" class="boton btn-ok font-display" type="button">OK</button>
+                </div>
+            `;
             document.body.appendChild(panel);
         }
     }
@@ -80,9 +83,13 @@
             ensureUI();
             setContent(title, items);
 
-            document.getElementById("helpBtn").onclick = toggleHelp;
-            document.getElementById("helpOverlay").onclick = closeHelp;
-            document.getElementById("helpOk").onclick = closeHelp;
+            const btn = document.getElementById("helpBtn");
+            const overlay = document.getElementById("helpOverlay");
+            const ok = document.getElementById("helpOk");
+
+            if (btn) btn.onclick = toggleHelp;
+            if (overlay) overlay.onclick = closeHelp;
+            if (ok) ok.onclick = closeHelp;
 
             document.addEventListener("keydown", (e) => {
                 if (e.key === "Escape") closeHelp();

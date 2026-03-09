@@ -38,12 +38,14 @@
     <div id="layoutPartida" style="display:flex; height:100vh;">
 
         <!-- PANEL IZQUIERDO -->
-        <aside style="width:340px;position:relative;display:flex;flex-direction:column;padding:10px;box-sizing:border-box;">
+        <aside
+            style="width:340px;position:relative;display:flex;flex-direction:column;padding:10px;box-sizing:border-box;">
 
             <img src="../img/gold_panel_8x.png"
                 style="position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;z-index:0;">
 
-            <div style="position:relative;z-index:1;display:flex;flex-direction:column;height:100%;justify-content:space-between;">
+            <div
+                style="position:relative;z-index:1;display:flex;flex-direction:column;height:100%;justify-content:space-between;">
 
                 <!-- TITULO -->
                 <h1 id="tituloPartida" class="font-display" style="text-align:center;margin:2px 0 4px;font-size:24px;">
@@ -95,9 +97,10 @@
                         Salir
                     </button>
 
-                    <button id="btnHelp" class="boton font-display" style="width:32px;height:30px;display:flex;align-items:center;justify-content:center;">
-                        ?
-                    </button>
+                    <button id="helpBtn" class="boton font-display" type="button"
+    style="width:32px;height:30px;display:flex;align-items:center;justify-content:center;">
+    ?
+</button>
 
                 </div>
 
@@ -110,9 +113,11 @@
             <!-- STATUS BAR -->
             <div style="height:46px;position:relative;display:flex;align-items:center;justify-content:center;">
 
-                <img src="../img/gold_panel_8x.png" style="position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;">
+                <img src="../img/gold_panel_8x.png"
+                    style="position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;">
 
-                <div id="statusBar" style="position:relative;z-index:1;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#10100f;">
+                <div id="statusBar"
+                    style="position:relative;z-index:1;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#10100f;">
                 </div>
 
             </div>
@@ -239,6 +244,7 @@
 
     <script src="../js/gameState.js"></script>
     <script src="../js/api.js"></script>
+    <script src="../js/help.js"></script>
     <script src="../js/partida.js"></script>
     <script src="../js/partida_ui.js"></script>
 
