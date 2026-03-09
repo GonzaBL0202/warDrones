@@ -340,6 +340,7 @@ async function inicializarPartida() {
             if (info.bandosDesplegados === 2) {
                 updateButtonsVisibility(true);
             }
+    actualizarAyudaPartida();
 
             drawScene();
         } else {
@@ -421,6 +422,8 @@ if (usuarioId && currentPartidaId) {
                         revealAroundActiveDrone();
                         updateInfoPanel();
                         updateButtonsVisibility(true);
+                            actualizarAyudaPartida();
+
                         actualizarEstadoTurno();  // Actualizar estado del turno
                         drawScene();
 
