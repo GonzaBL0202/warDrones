@@ -52,7 +52,7 @@ const btnCerrarKillModal = document.getElementById('btnCerrarKillModal');
 const bandoGanador = document.getElementById('lblGanador');
 const msjAviso = document.getElementById('lblAviso');
 
-/* Modos de acciÃ³n activados por botones */
+/* Modos de accion activados por botones */
 let isMoveMode = false;      // espera click para mover dron activo
 let isAttackMode = false;    // espera seleccionar objetivo para atacar
 let isReloadMode = false;    // espera seleccionar un dron aliado para recargar
@@ -110,7 +110,7 @@ let portaDronAereoReady = false;
 const portaDronNaval = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#4ec5ff', nombre: 'Porta Dron Naval', vida: 3, estado: true };
 const portaDronAereo = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#ffd166', nombre: 'Porta Dron Aereo', vida: 6, estado: true };
 
-/* Cuando carga la imagen, calcula tamaï¿½o y numero de frames */
+/* Cuando carga la imagen, calcula tamaño y numero de frames */
 droneSprite.onload = () => {
     /* Asume un sprite horizontal de frames cuadrados */
     spriteFrameSize = droneSprite.height;
@@ -572,7 +572,7 @@ function updateInfoPanel() {
 }
 
 
-/* Actualiza la visibilidad de los botones en funciÃ³n de si la partida estÃ¡ iniciada */
+/* Actualiza la visibilidad de los botones en funcion de si la partida esta iniciada */
 function updateButtonsVisibility(iniciada = false) {
     if (!nextDroneBtn || !moveBtn || !attackBtn || !reloadBtn) return;
 
@@ -683,7 +683,7 @@ function resizeCanvas() {
 }
 
 
-/* Dibuja el fondo del mapa y la grilla t?ctica donde se mover?n
+/* Dibuja el fondo del mapa y la grilla tactica donde se moverieron
    las unidades (drones) dentro del tablero */
 function drawMap() {
     if (waterReady) {
@@ -714,8 +714,8 @@ function drawMap() {
     }
 }
 
-/* Revela las celdas alrededor del jugador seg?n su radio de visi?n.
-   Implementa la l?gica principal del sistema de fog of war */
+/* Revela las celdas alrededor del jugador segun su radio de visi?n.
+   Implementa la logica principal del sistema de fog of war */
 function revealAroundActiveDrone() {
     let centerX = 0;
     let centerY = 0;
@@ -798,7 +798,7 @@ function validaPosicion(x, y) {
     const dx = (x + 0.5) - centerX;
     const dy = (y + 0.5) - centerY;
 
-    /* Distancia circular (sin ra?z) para rendimiento */
+    /* Distancia circular (sin raiz) para rendimiento */
     if ((dx * dx) + (dy * dy) <= drone.moveRadius * drone.moveRadius) {
         return true;
     }
@@ -898,13 +898,13 @@ function drawFog() {
     const maxVisibleWidth = cols * cellSize;
     const maxVisibleHeight = rows * cellSize;
 
-    /* Cubrir el Ã¡rea a la derecha si no alcanza a llenar toda la anchura */
+    /* Cubrir el area a la derecha si no alcanza a llenar toda la anchura */
     if (maxVisibleWidth < canvas.width) {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
         ctx.fillRect(maxVisibleWidth, 0, canvas.width - maxVisibleWidth, canvas.height);
     }
 
-    /* Cubrir el Ã¡rea abajo si no alcanza a llenar toda la altura */
+    /* Cubrir el area abajo si no alcanza a llenar toda la altura */
     if (maxVisibleHeight < canvas.height) {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
         ctx.fillRect(0, maxVisibleHeight, canvas.width, canvas.height - maxVisibleHeight);
@@ -941,7 +941,7 @@ function drawRecoveredFog() {
 }
 
 /* Dibuja todos los drones en el tablero.
-   Usa sprite animado si est? cargado, o un c?rculo de respaldo si no */
+   Usa sprite animado si esta cargado, o un circulo de respaldo si no */
 function drawSinglePortaDron(porta, sprite, spriteReady, isSelected) {
     const px = porta.x * cellSize;
     const py = porta.y * cellSize;

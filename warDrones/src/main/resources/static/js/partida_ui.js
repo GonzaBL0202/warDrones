@@ -54,7 +54,7 @@ async function asignarBandosAlServidor(bando1, bando2) {
 
         /* Actualizar bandoSeleccionado para usuario 1 */
         if (isUsuario1) {
-            /* Recargar la pÃ¡gina con el bando correcto */
+            /* Recargar la pagina con el bando correcto */
             window.location.href = `partida.html?bando=${bando1.toLowerCase()}`;
         }
     } catch (err) {
@@ -237,7 +237,7 @@ document.getElementById("btnBandoAereo")?.addEventListener("click", seleccionarB
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-/* InicializaciÃ³n: obtener info de partida y validar si mostrar modal */
+/* Inicializacion: obtener info de partida y validar si mostrar modal */
 async function inicializarPartida() {
     currentUserId = parseInt(localStorage.getItem('userId'));
     if (!currentUserId || isNaN(currentUserId)) {
@@ -373,7 +373,6 @@ if (usuarioId && currentPartidaId) {
             // En vez de quitarte te muestra el mensaje
             abrirModalVictoria();
             mostrarGanador(getId());
-            // window.location.href = "menu.html";
         }
     });
 
@@ -523,7 +522,7 @@ if (usuarioId && currentPartidaId) {
         bandosDesplegados = info.bandosDesplegados || bandosDesplegados;
         actualizarEstadoTurno();
 
-        drawScene(); // ← único punto de render
+        drawScene(); // único punto de render
     }
 
 
@@ -632,7 +631,6 @@ if (usuarioId && currentPartidaId) {
         animateStep();
     }
 
-    //************SOLUCION TEMPORAL PARA QUE PERMITA ELEGIR LA ULTIMA COLUMNA, HAY QUE CORREGIR DIRECTAMENTE COMO SE ARMA EL CANVAS ****************************/
     function isInsideDeploymentZone(x, y) {
         const firstThirdEnd = Math.floor(cols / 3);
         const secondThirdStart = cols - firstThirdEnd;
@@ -717,19 +715,15 @@ if (usuarioId && currentPartidaId) {
                             const parsed = JSON.parse(raw);
                             if (parsed && typeof parsed === 'object') display = parsed.error || parsed.message || parsed.msg || display;
                         } catch (e) { }
-                
+
                         console.error('Error en atacarDronOPorta:', display);
                         showBattleToast(display, "error", 2200);
-                    
+
                     } else {
                         const dronLocal = drones.find(d => d.id === atacante.id);
 
                         if (dronLocal && typeof dronLocal.municion === "number" && dronLocal.municion > 0) {
                             dronLocal.municion -= 1;
-                        }
-
-                        if (atacante && typeof atacante.municion === "number" && atacante.municion > 0) {
-                            atacante.municion = dronLocal ? dronLocal.municion : atacante.municion - 1;
                         }
 
                         updateInfoPanel();
@@ -948,7 +942,6 @@ if (usuarioId && currentPartidaId) {
                     }
                     if (drone.vida <= 0) {
                         showBattleToast('El dron seleccionado ya no puede moverse.', 'error', 2200);
-                        // setupHint.textContent = 'El dron seleccionado ya no puede moverse.';
                         isMoveMode = false;
                         return;
                     }
@@ -964,11 +957,8 @@ if (usuarioId && currentPartidaId) {
                 }
 
                 if (res.ok) {
-                    // Actualizacion optimista: Mueve la unidad en el cliente para dar feedback visual inmediato.
-                    // Lo ideal seri­a que el servidor envi­e el nuevo estado del juego vi­a SSE.
                     moveActiveDroneTo(x, y);
                     saveFogLocally();
-
                 } else {
                     const raw = await res.text();
                     let display = raw;
@@ -992,7 +982,7 @@ if (usuarioId && currentPartidaId) {
                 updateActionButtonSelection();
 
             }
-            return; // La acciÃ³n de click ha sido manejada.
+            return; // La accion de click ha sido manejada.
         }
 
         // Si se hizo click sin estar en modo movimiento, asegurarse de que el modo se desactive.
@@ -1029,7 +1019,7 @@ if (usuarioId && currentPartidaId) {
     });
 
 
-    // nuevo botÃ³n movimiento
+    // nuevo boton movimiento
     moveBtn.addEventListener('click', () => {
         const activeDrone = getActiveDrone();
         if (!activeDrone || !activeDrone.deployed || activeDrone.vida <= 0) {
@@ -1127,7 +1117,7 @@ if (usuarioId && currentPartidaId) {
         isMoveMode = false;
     });
 
-    /* Evento que se ejecuta cuando cambia el tamaï¿½o de la ventana.
+    /* Evento que se ejecuta cuando cambia el tamaño de la ventana.
        Recalcula el canvas y redibuja el mapa para mantener la escala correcta */
     window.addEventListener('resize', resizeCanvas);
 
