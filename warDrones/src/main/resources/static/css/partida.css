@@ -189,7 +189,7 @@
 /* SELECCIONADO */
 .drone-card.active,
 .porta-btn.active {
-    border: 2px solid #ffffff !important;
+    border: 3px solid #ffffff !important;
     background: rgba(255, 230, 140, 0.25) !important;
     box-shadow:
         0 0 6px rgba(255, 255, 255, 0.25),
@@ -200,18 +200,18 @@
 /* DESPLEGADO */
 .drone-card.deployed,
 .porta-btn.deployed {
-    border: 2px solid #42ff73;
+    border: 3px solid #42ff73;
 }
 
 /* RESERVA */
 .drone-card.reserve {
-    border: 2px solid #ff5555;
+    border: 3px solid #f72424;
 }
 
 /* DESTRUIDO */
 .drone-card.dead,
 .porta-btn.dead {
-    border: 2px solid #666;
+    border: 3px solid #666;
     opacity: 0.5;
     cursor: default;
     filter: grayscale(0.35);
