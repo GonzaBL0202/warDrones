@@ -717,9 +717,23 @@ if (usuarioId && currentPartidaId) {
                             const parsed = JSON.parse(raw);
                             if (parsed && typeof parsed === 'object') display = parsed.error || parsed.message || parsed.msg || display;
                         } catch (e) { }
+                
                         console.error('Error en atacarDronOPorta:', display);
                         showBattleToast(display, "error", 2200);
+                    
                     } else {
+                        const dronLocal = drones.find(d => d.id === atacante.id);
+
+                        if (dronLocal && typeof dronLocal.municion === "number" && dronLocal.municion > 0) {
+                            dronLocal.municion -= 1;
+                        }
+
+                        if (atacante && typeof atacante.municion === "number" && atacante.municion > 0) {
+                            atacante.municion = dronLocal ? dronLocal.municion : atacante.municion - 1;
+                        }
+
+                        updateInfoPanel();
+                        drawScene();
                         showBattleToast("Ataque enviado.", "success");
                     }
                 } catch (err) {
@@ -1065,7 +1079,7 @@ if (usuarioId && currentPartidaId) {
             showBattleToast("No hay dron desplegado para recargar.", "error");
             return;
         }
-        
+
         if (drone.recargas <= 0) {
             showBattleToast("Este dron ya no tiene recargas disponibles.", "error");
             return;

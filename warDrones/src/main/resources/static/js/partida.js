@@ -1512,6 +1512,30 @@ async function recargarDronElegido(drone) {
             return;
         }
 
+        const dronLocal = drones.find(d => d.id === drone.id);
+
+        if (dronLocal) {
+            const tipoDronLocal = String(dronLocal.bando ?? bandoSeleccionado ?? "").toUpperCase();
+            const maxMunicionLocal = (tipoDronLocal === "NAVAL") ? 2 : 1;
+
+            dronLocal.municion = maxMunicionLocal;
+
+            if (typeof dronLocal.recargas === "number" && dronLocal.recargas > 0) {
+                dronLocal.recargas -= 1;
+            }
+        }
+
+        if (drone) {
+            const tipoDronLocal = String(drone.bando ?? bandoSeleccionado ?? "").toUpperCase();
+            const maxMunicionLocal = (tipoDronLocal === "NAVAL") ? 2 : 1;
+
+            drone.municion = maxMunicionLocal;
+
+            if (typeof drone.recargas === "number" && drone.recargas > 0) {
+                drone.recargas -= 1;
+            }
+        }
+
         showBattleToast("Recarga exitosa.", "success", 2200);
 
         isReloadMode = false;
@@ -1519,7 +1543,8 @@ async function recargarDronElegido(drone) {
         isMoveMode = false;
         updateActionButtonSelection();
 
-        await actualizarInfo();
+        updateInfoPanel();
+        drawScene();
 
     } catch (err) {
         console.error('Error recargando dron:', err);
