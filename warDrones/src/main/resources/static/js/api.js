@@ -1,4 +1,5 @@
-const API_URL = "http://localhost:8080";
+// const API_URL = "http://localhost:8080";
+const API_URL = window.location.origin;
 
 async function postJson(path, payload) {
     const res = await fetch(`${API_URL}${path}`, {
