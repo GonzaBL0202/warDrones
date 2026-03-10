@@ -55,7 +55,7 @@ async function cargarRanking() {
 
     const medal = puesto === 1 ? "🥇" : puesto === 2 ? "🥈" : puesto === 3 ? "🥉" : "";
 
-    // ✅ Resaltar SIEMPRE si soy yo
+    // Resaltar SIEMPRE si soy yo
     const highlight = isMe;
 
     // Negrita solo para el usuario
@@ -71,7 +71,7 @@ async function cargarRanking() {
     }
   });
 
-  // ✅ Solo scrollea si NO estoy en el top3 (si estoy top3 ya se ve arriba)
+  // Solo scrollea si NO estoy en el top3 (si estoy top3 ya se ve arriba)
   if (myRowEl && scrollBox && !iAmTop3) {
     myRowEl.scrollIntoView({ block: "center" });
   }

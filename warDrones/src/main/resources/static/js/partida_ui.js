@@ -54,7 +54,7 @@ async function asignarBandosAlServidor(bando1, bando2) {
 
         /* Actualizar bandoSeleccionado para usuario 1 */
         if (isUsuario1) {
-            /* Recargar la pÃ¡gina con el bando correcto */
+            /* Recargar la pagina con el bando correcto */
             window.location.href = `partida.html?bando=${bando1.toLowerCase()}`;
         }
     } catch (err) {
@@ -211,7 +211,7 @@ async function guardarPartida() {
     }
 }
 
-async function salirPartida(){
+async function salirPartida() {
     cerrarMensajeVictoria();
     cerrarMensajeAviso();
     window.location.href = 'menu.html';
@@ -237,7 +237,7 @@ document.getElementById("btnBandoAereo")?.addEventListener("click", seleccionarB
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-/* InicializaciÃ³n: obtener info de partida y validar si mostrar modal */
+/* Inicializacion: obtener info de partida y validar si mostrar modal */
 async function inicializarPartida() {
     currentUserId = parseInt(localStorage.getItem('userId'));
     if (!currentUserId || isNaN(currentUserId)) {
@@ -324,7 +324,7 @@ async function inicializarPartida() {
 
         /* Solo revelar columnas iniciales si los bandos estÃ¡n confirmados */
         if (bandasAsignadas) {
-            if(!discovered.length > 0)
+            if (!discovered.length > 0)
                 discovered = Array.from({ length: rows }, () => Array(cols).fill(false));
             revealStartColumnsByBando();
             revealAroundAllDeployedDrones(); // revela entorno de todos los drones, no solo el activo
@@ -340,7 +340,7 @@ async function inicializarPartida() {
             if (info.bandosDesplegados === 2) {
                 updateButtonsVisibility(true);
             }
-    actualizarAyudaPartida();
+            actualizarAyudaPartida();
 
             drawScene();
         } else {
@@ -373,7 +373,6 @@ if (usuarioId && currentPartidaId) {
             // En vez de quitarte te muestra el mensaje
             abrirModalVictoria();
             mostrarGanador(getId());
-            // window.location.href = "menu.html";
         }
     });
 
@@ -422,7 +421,7 @@ if (usuarioId && currentPartidaId) {
                         revealAroundActiveDrone();
                         updateInfoPanel();
                         updateButtonsVisibility(true);
-                            actualizarAyudaPartida();
+                        actualizarAyudaPartida();
 
                         actualizarEstadoTurno();  // Actualizar estado del turno
                         drawScene();
@@ -452,20 +451,20 @@ if (usuarioId && currentPartidaId) {
         if (pid === String(currentPartidaId))
             guardarDiscovered();
 
-        if(!uGuardador){
+        if (!uGuardador) {
             abrirMensajeAviso();
             mostrarAviso("El usuario rival a guardado la partida");
         }
-        else{
+        else {
             window.location.href = "menu.html";
         }
     });
 
-    async function guardarDiscovered(){
-        try{
+    async function guardarDiscovered() {
+        try {
             let fogJson = JSON.stringify(discovered);
             const res = await api.guardarDiscovered(currentPartidaId, getId(), fogJson);
-        }catch(error){
+        } catch (error) {
             console.error("Error guardando discovered:", error);
         }
     }
@@ -503,7 +502,7 @@ if (usuarioId && currentPartidaId) {
 
         const b1 = info.partidaBando1 ?? info.bando1 ?? info.partida_bando1 ?? info.partida_bando_1;
         const b2 = info.partidaBando2 ?? info.bando2 ?? info.partida_bando2 ?? info.partida_bando_2;
-        
+
         hydrateDronesFromServer(info.drones);
         getAllDrones(info.drones);
 
@@ -523,7 +522,7 @@ if (usuarioId && currentPartidaId) {
         bandosDesplegados = info.bandosDesplegados || bandosDesplegados;
         actualizarEstadoTurno();
 
-        drawScene(); // ← único punto de render
+        drawScene(); // único punto de render
     }
 
 
@@ -632,7 +631,6 @@ if (usuarioId && currentPartidaId) {
         animateStep();
     }
 
-    //************SOLUCION TEMPORAL PARA QUE PERMITA ELEGIR LA ULTIMA COLUMNA, HAY QUE CORREGIR DIRECTAMENTE COMO SE ARMA EL CANVAS ****************************/
     function isInsideDeploymentZone(x, y) {
         const firstThirdEnd = Math.floor(cols / 3);
         const secondThirdStart = cols - firstThirdEnd;
@@ -678,7 +676,7 @@ if (usuarioId && currentPartidaId) {
         if (isAttackMode) {
             let objetivoId = null;
             const atacante = getActiveDrone(); // Ya validado en el listener del botÃ³n de ataque
-            
+
             if (!atacante || !atacante.deployed || atacante.vida <= 0) {
                 setupHint.textContent = 'El dron seleccionado ya no puede atacar.';
                 isAttackMode = false;
@@ -717,9 +715,19 @@ if (usuarioId && currentPartidaId) {
                             const parsed = JSON.parse(raw);
                             if (parsed && typeof parsed === 'object') display = parsed.error || parsed.message || parsed.msg || display;
                         } catch (e) { }
+
                         console.error('Error en atacarDronOPorta:', display);
                         showBattleToast(display, "error", 2200);
+
                     } else {
+                        const dronLocal = drones.find(d => d.id === atacante.id);
+
+                        if (dronLocal && typeof dronLocal.municion === "number" && dronLocal.municion > 0) {
+                            dronLocal.municion -= 1;
+                        }
+
+                        updateInfoPanel();
+                        drawScene();
                         showBattleToast("Ataque enviado.", "success");
                     }
                 } catch (err) {
@@ -934,7 +942,6 @@ if (usuarioId && currentPartidaId) {
                     }
                     if (drone.vida <= 0) {
                         showBattleToast('El dron seleccionado ya no puede moverse.', 'error', 2200);
-                        // setupHint.textContent = 'El dron seleccionado ya no puede moverse.';
                         isMoveMode = false;
                         return;
                     }
@@ -950,11 +957,8 @@ if (usuarioId && currentPartidaId) {
                 }
 
                 if (res.ok) {
-                    // Actualizacion optimista: Mueve la unidad en el cliente para dar feedback visual inmediato.
-                    // Lo ideal seri­a que el servidor envi­e el nuevo estado del juego vi­a SSE.
                     moveActiveDroneTo(x, y);
                     saveFogLocally();
-
                 } else {
                     const raw = await res.text();
                     let display = raw;
@@ -978,7 +982,7 @@ if (usuarioId && currentPartidaId) {
                 updateActionButtonSelection();
 
             }
-            return; // La acciÃ³n de click ha sido manejada.
+            return; // La accion de click ha sido manejada.
         }
 
         // Si se hizo click sin estar en modo movimiento, asegurarse de que el modo se desactive.
@@ -1015,7 +1019,7 @@ if (usuarioId && currentPartidaId) {
     });
 
 
-    // nuevo botÃ³n movimiento
+    // nuevo boton movimiento
     moveBtn.addEventListener('click', () => {
         const activeDrone = getActiveDrone();
         if (!activeDrone || !activeDrone.deployed || activeDrone.vida <= 0) {
@@ -1060,10 +1064,21 @@ if (usuarioId && currentPartidaId) {
             return;
         }
 
-        // Si hay un dron seleccionado, mantenemos el comportamiento actual por ahora
         const drone = getActiveDrone();
         if (!drone || !drone.deployed) {
             showBattleToast("No hay dron desplegado para recargar.", "error");
+            return;
+        }
+
+        if (drone.recargas <= 0) {
+            showBattleToast("Este dron ya no tiene recargas disponibles.", "error");
+            return;
+        }
+
+        const maxMunicion = (bandoSeleccionado === "NAVAL") ? 2 : 1;
+
+        if (drone.municion >= maxMunicion) {
+            showBattleToast("Este dron ya tiene munición completa.", "error");
             return;
         }
 
@@ -1073,19 +1088,26 @@ if (usuarioId && currentPartidaId) {
                 jugadorId: getId(),
                 dronId: drone.id
             });
+
             console.log('Respuesta recargarDron:', res.status, res.statusText);
+
             if (!res.ok) {
                 const raw = await res.text();
                 let display = raw;
+
                 try {
                     const parsed = JSON.parse(raw);
-                    if (parsed && typeof parsed === 'object') display = parsed.error || parsed.message || parsed.msg || display;
+                    if (parsed && typeof parsed === 'object')
+                        display = parsed.error || parsed.message || parsed.msg || display;
                 } catch (e) { }
+
                 console.error('Error en recargarDron:', display);
                 showBattleToast(display, "error", 2200);
+
             } else {
                 showBattleToast("Recarga exitosa.", "success");
             }
+
         } catch (err) {
             console.error('Error recargando dron:', err);
         }
@@ -1095,7 +1117,7 @@ if (usuarioId && currentPartidaId) {
         isMoveMode = false;
     });
 
-    /* Evento que se ejecuta cuando cambia el tamaï¿½o de la ventana.
+    /* Evento que se ejecuta cuando cambia el tamaño de la ventana.
        Recalcula el canvas y redibuja el mapa para mantener la escala correcta */
     window.addEventListener('resize', resizeCanvas);
 

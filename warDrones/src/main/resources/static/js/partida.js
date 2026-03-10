@@ -52,7 +52,7 @@ const btnCerrarKillModal = document.getElementById('btnCerrarKillModal');
 const bandoGanador = document.getElementById('lblGanador');
 const msjAviso = document.getElementById('lblAviso');
 
-/* Modos de acciÃ³n activados por botones */
+/* Modos de accion activados por botones */
 let isMoveMode = false;      // espera click para mover dron activo
 let isAttackMode = false;    // espera seleccionar objetivo para atacar
 let isReloadMode = false;    // espera seleccionar un dron aliado para recargar
@@ -110,7 +110,7 @@ let portaDronAereoReady = false;
 const portaDronNaval = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#4ec5ff', nombre: 'Porta Dron Naval', vida: 3, estado: true };
 const portaDronAereo = { x: 0, y: 0, size: 2, moveRadius: 2, revealRadius: 2, color: '#ffd166', nombre: 'Porta Dron Aereo', vida: 6, estado: true };
 
-/* Cuando carga la imagen, calcula tamaï¿½o y numero de frames */
+/* Cuando carga la imagen, calcula tamaño y numero de frames */
 droneSprite.onload = () => {
     /* Asume un sprite horizontal de frames cuadrados */
     spriteFrameSize = droneSprite.height;
@@ -159,6 +159,7 @@ function mapDroneFromServer(droneInfo) {
         deployed,
         vida: droneInfo.vida,
         municion: droneInfo.municion ?? 0,
+        recargas: droneInfo.recargas ?? 0,
         x: droneInfo.posicionX,
         y: droneInfo.posicionY
     };
@@ -213,7 +214,7 @@ function hydratePortadronesFromServer(portadrones) {
         target.x = porta.posicionX;
         target.y = porta.posicionY;
         target.vida = porta.vida;
-        target.estado = porta.vida > 0 ? true : false; 
+        target.estado = porta.vida > 0 ? true : false;
         if (portasHydratedOnce && prevVida > 0 && target.vida <= 0) {
             abrirModalObjetivoDestruido('PORTA', porta.tipo === 'NAVAL' ? 'NAVAL' : 'AEREO');
         }
@@ -467,6 +468,7 @@ function updateInfoPanel() {
         ico.className = 'drone-icon';
 
         const b = String(d.bando || bandoSeleccionado).toUpperCase();
+        const recargasDisponibles = d.recargas ?? d.dronRecargas ?? 0;
         ico.src = (b === 'NAVAL')
             ? '../img/dron_icon_naval.png'
             : '../img/dron_icon_aereo.png';
@@ -494,8 +496,20 @@ function updateInfoPanel() {
         const ammoText = document.createElement('span');
         ammoText.textContent = `x${dead ? 0 : (d.municion ?? 0)}`;
 
+        const reloadImg = document.createElement('img');
+        reloadImg.className = 'ammo-icon';
+        reloadImg.src = (b === 'NAVAL')
+            ? '../img/m1sil_recarga.png'
+            : '../img/bomb_recarga.png';
+        reloadImg.draggable = false;
+
+        const reloadText = document.createElement('span');
+        reloadText.textContent = `x${dead ? 0 : recargasDisponibles}`;
+
         ammoRow.appendChild(ammoImg);
         ammoRow.appendChild(ammoText);
+        ammoRow.appendChild(reloadImg);
+        ammoRow.appendChild(reloadText);
 
         meta.appendChild(title);
         meta.appendChild(ammoRow);
@@ -558,7 +572,7 @@ function updateInfoPanel() {
 }
 
 
-/* Actualiza la visibilidad de los botones en funciÃ³n de si la partida estÃ¡ iniciada */
+/* Actualiza la visibilidad de los botones en funcion de si la partida esta iniciada */
 function updateButtonsVisibility(iniciada = false) {
     if (!nextDroneBtn || !moveBtn || !attackBtn || !reloadBtn) return;
 
@@ -571,7 +585,7 @@ function updateButtonsVisibility(iniciada = false) {
     if (iniciada) {
         gameStarted = true;
         updateActionBarVisibility();
-            actualizarAyudaPartida();
+        actualizarAyudaPartida();
 
     }
 }
@@ -669,7 +683,7 @@ function resizeCanvas() {
 }
 
 
-/* Dibuja el fondo del mapa y la grilla t?ctica donde se mover?n
+/* Dibuja el fondo del mapa y la grilla tactica donde se moverieron
    las unidades (drones) dentro del tablero */
 function drawMap() {
     if (waterReady) {
@@ -700,8 +714,8 @@ function drawMap() {
     }
 }
 
-/* Revela las celdas alrededor del jugador seg?n su radio de visi?n.
-   Implementa la l?gica principal del sistema de fog of war */
+/* Revela las celdas alrededor del jugador segun su radio de visi?n.
+   Implementa la logica principal del sistema de fog of war */
 function revealAroundActiveDrone() {
     let centerX = 0;
     let centerY = 0;
@@ -784,7 +798,7 @@ function validaPosicion(x, y) {
     const dx = (x + 0.5) - centerX;
     const dy = (y + 0.5) - centerY;
 
-    /* Distancia circular (sin ra?z) para rendimiento */
+    /* Distancia circular (sin raiz) para rendimiento */
     if ((dx * dx) + (dy * dy) <= drone.moveRadius * drone.moveRadius) {
         return true;
     }
@@ -884,13 +898,13 @@ function drawFog() {
     const maxVisibleWidth = cols * cellSize;
     const maxVisibleHeight = rows * cellSize;
 
-    /* Cubrir el Ã¡rea a la derecha si no alcanza a llenar toda la anchura */
+    /* Cubrir el area a la derecha si no alcanza a llenar toda la anchura */
     if (maxVisibleWidth < canvas.width) {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
         ctx.fillRect(maxVisibleWidth, 0, canvas.width - maxVisibleWidth, canvas.height);
     }
 
-    /* Cubrir el Ã¡rea abajo si no alcanza a llenar toda la altura */
+    /* Cubrir el area abajo si no alcanza a llenar toda la altura */
     if (maxVisibleHeight < canvas.height) {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
         ctx.fillRect(0, maxVisibleHeight, canvas.width, canvas.height - maxVisibleHeight);
@@ -927,7 +941,7 @@ function drawRecoveredFog() {
 }
 
 /* Dibuja todos los drones en el tablero.
-   Usa sprite animado si est? cargado, o un c?rculo de respaldo si no */
+   Usa sprite animado si esta cargado, o un circulo de respaldo si no */
 function drawSinglePortaDron(porta, sprite, spriteReady, isSelected) {
     const px = porta.x * cellSize;
     const py = porta.y * cellSize;
@@ -1452,8 +1466,24 @@ async function recargarDronElegido(drone) {
         return;
     }
 
-    if (drone.vida <= 0) {
+    if ((drone.vida ?? drone.dronVida ?? 0) <= 0) {
         showBattleToast("No puedes recargar un dron destruido.", "error");
+        return;
+    }
+
+    const recargasDisponibles = drone.recargas ?? drone.dronRecargas ?? 0;
+    const municionActual = drone.municion ?? drone.dronMunicion ?? 0;
+    const tipoDron = String(drone.bando ?? drone.tipo ?? drone.dronTipo ?? bandoSeleccionado ?? "").toUpperCase();
+
+    if (recargasDisponibles <= 0) {
+        showBattleToast("Este dron ya no tiene recargas disponibles.", "error");
+        return;
+    }
+
+    const maxMunicion = (tipoDron === "NAVAL") ? 2 : 1;
+
+    if (municionActual >= maxMunicion) {
+        showBattleToast("Este dron ya tiene munición completa.", "error");
         return;
     }
 
@@ -1469,6 +1499,7 @@ async function recargarDronElegido(drone) {
         if (!res.ok) {
             const raw = await res.text();
             let display = raw;
+
             try {
                 const parsed = JSON.parse(raw);
                 if (parsed && typeof parsed === 'object') {
@@ -1481,12 +1512,39 @@ async function recargarDronElegido(drone) {
             return;
         }
 
-        showBattleToast("Recarga exitosa.", "success");
+        const dronLocal = drones.find(d => d.id === drone.id);
+
+        if (dronLocal) {
+            const tipoDronLocal = String(dronLocal.bando ?? bandoSeleccionado ?? "").toUpperCase();
+            const maxMunicionLocal = (tipoDronLocal === "NAVAL") ? 2 : 1;
+
+            dronLocal.municion = maxMunicionLocal;
+
+            if (typeof dronLocal.recargas === "number" && dronLocal.recargas > 0) {
+                dronLocal.recargas -= 1;
+            }
+        }
+
+        if (drone) {
+            const tipoDronLocal = String(drone.bando ?? bandoSeleccionado ?? "").toUpperCase();
+            const maxMunicionLocal = (tipoDronLocal === "NAVAL") ? 2 : 1;
+
+            drone.municion = maxMunicionLocal;
+
+            if (typeof drone.recargas === "number" && drone.recargas > 0) {
+                drone.recargas -= 1;
+            }
+        }
+
+        showBattleToast("Recarga exitosa.", "success", 2200);
 
         isReloadMode = false;
         isAttackMode = false;
         isMoveMode = false;
         updateActionButtonSelection();
+
+        updateInfoPanel();
+        drawScene();
 
     } catch (err) {
         console.error('Error recargando dron:', err);
