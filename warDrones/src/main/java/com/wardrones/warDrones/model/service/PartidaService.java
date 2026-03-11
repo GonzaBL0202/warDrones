@@ -397,7 +397,7 @@ public class PartidaService {
         }
     }
 
-      // helper used internally to map a usuarioId -> portadron record
+      // funcion auxiliar para comprobar el bando del usuario segun su ID
     private Portadron resolvePortadronForUsuario(int partidaId, int usuarioId) {
         Partida partida = pRepository.findById(partidaId).orElseThrow(() -> new RuntimeException("Partida no encontrada"));
 

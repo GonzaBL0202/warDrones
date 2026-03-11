@@ -196,7 +196,6 @@ public class PartidaController {
     }
 
     //-----------Guardado de partida -----------
-    // the request body should contain the fog-of-war matrix serialized as JSON
     @PutMapping("/partida/guardar/{partidaId}")
     public ResponseEntity<?> guardar(
             @PathVariable int partidaId) {
@@ -228,14 +227,6 @@ public class PartidaController {
         return ResponseEntity.ok().build();
     }
 
- 
-    // @GetMapping("/partida/fog/{partidaId}")
-    // public Object fog(@PathVariable int partidaId, @RequestParam int usuarioId) throws Exception {
-    //     String discovered = pService.obtenerNieblaDescubierta(partidaId, usuarioId);
-
-    //     ObjectMapper mapper = new ObjectMapper();
-    //     return mapper.readValue(discovered, boolean[][].class);
-    // }
 
     @GetMapping("/partida/fog/{partidaId}")
     public ResponseEntity<?> fog(@PathVariable int partidaId, @RequestParam int usuarioId) {
