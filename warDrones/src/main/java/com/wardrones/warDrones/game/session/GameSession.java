@@ -456,13 +456,12 @@ public class GameSession {
         PortadronAereo.setListadoDronesIds(idsAereo);
         PortadronNaval.setListadoDronesIds(idsNaval);
 
-        // Debugging: print assigned ids for each portadron
+        // Debbugeo de los portadrones
         try {
             System.out.println("[GameSession] Portadron Aereo IDs: " + idsAereo);
             System.out.println("[GameSession] Portadron Naval IDs: " + idsNaval);
             System.out.println("[GameSession] Total drones in map: " + drones.size());
         } catch (Exception e) {
-            // no-op
         }
     }
 

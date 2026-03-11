@@ -16,7 +16,7 @@ public class LobbyNotifier {
     private final Map<Integer, SseEmitter> emitters = new ConcurrentHashMap<>();
     
     public SseEmitter register(int usuarioId) {
-        SseEmitter emitter = new SseEmitter(0L); // no timeout
+        SseEmitter emitter = new SseEmitter(0L); 
         emitters.put(usuarioId, emitter);
 
         emitter.onCompletion(() -> emitters.remove(usuarioId));
@@ -26,7 +26,6 @@ public class LobbyNotifier {
         try {
             emitter.send(SseEmitter.event().name("connected").data("ok"));
         } catch (IOException e) {
-            // ignore
         }
 
         return emitter;
@@ -36,7 +35,7 @@ public class LobbyNotifier {
         SseEmitter emitter = emitters.get(usuarioId);
         if (emitter != null) {
             try {
-                // Send event but do NOT complete the emitter so the client remains connected
+                //Envía evento pero NO completa emmiter para que el cliente permanezca conectado
                 emitter.send(SseEmitter.event()
                 .name("partida-start")
                 .data(partidaId));

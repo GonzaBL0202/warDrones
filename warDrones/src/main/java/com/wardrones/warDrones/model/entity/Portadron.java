@@ -32,7 +32,7 @@ public class Portadron {
     private boolean portadronEstado;
     private int portadronVida;
 
-    // fog-of-war matrix serialized as JSON, stored separately for each portadron/player
+    // Matriz de niebla de guerra serializada como JSON
     @jakarta.persistence.Column(columnDefinition = "TEXT")
     private String discovered;
 
@@ -79,6 +79,10 @@ public class Portadron {
         return portadronVida;
     }
 
+    public String getDiscovered() {
+        return discovered;
+    }
+
     //Setters
     public void setPosicionX(int x) {
         this.portadronPosicionX = x;
@@ -94,11 +98,6 @@ public class Portadron {
 
     public void setVida(int vida) {
         this.portadronVida = vida;
-    }
-
-    // fog accessors
-    public String getDiscovered() {
-        return discovered;
     }
 
     public void setDiscovered(String discovered) {
